@@ -9,6 +9,7 @@ import { useState } from "react";
 import Input from "../common/input";
 import { SignupProps } from "./types";
 import Link from "next/link";
+import Button from "../common/button/Button";
 
 const signupSchema = z
   .object({
@@ -104,17 +105,17 @@ const SignUp = ({ onSignupSuccess, onSignupError }: SignupProps) => {
                   error={errors.password?.message}
                 />
               </div>
+
+              <Button
+              type="submit"
+              variant="primary"
+              disabled={isSubmitting}
+              
+            >
+              {isSubmitting ? "Logging In..." : "Continue"}
+            </Button>
             </form>
 
-              <button
-                type="submit"
-                className="w-full mt-8 px-6 py-4 bg-primary text-white rounded-full font-medium disabled:cursor-not-allowed cursor-pointer"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Signing Up..." : "Continue"}
-              </button>
-
-              {/* Added "ALREADY HAVE AN ACCOUNT? LOGIN" */}
               <div className="mt-4 text-center text-sm text-gray-600">
                 ALREADY HAVE AN ACCOUNT?{" "}
                 <Link href="/login" className="text-primary font-medium ">

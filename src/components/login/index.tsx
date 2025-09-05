@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import Input from "../common/input";
+import Button from "../common/button/Button";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -81,13 +82,14 @@ const Login = () => {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full px-6 py-4 bg-primary text-white rounded-full text-lg disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Logging In..." : "Continue"}
-              </button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isSubmitting}
+              
+            >
+              {isSubmitting ? "Logging In..." : "Continue"}
+            </Button>
             </form>
 
               <div className="text-center mt-4 text-md text-gray-600">

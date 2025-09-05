@@ -1,10 +1,9 @@
-import Navbar from "@/src/components/common/layout/navbar/Navbar";
 import { homepageHero } from "./data";
 
 export default function HomePage() {
   return (
     <div>
-      {/* <section className="text-center py-16 text-white bg-primary">
+      <section className="text-center py-40 text-white bg-primary">
         <h1 className="text-4xl md:text-5xl font-bold mb-6">
           {homepageHero.title}
         </h1>
@@ -17,8 +16,7 @@ export default function HomePage() {
         >
           {homepageHero.ctaText}
         </a>
-      </section> */}
-      <Navbar />
+      </section>
     </div>
   );
 }
