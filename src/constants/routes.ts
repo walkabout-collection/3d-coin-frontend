@@ -1,3 +1,5 @@
+import path from "path";
+
 export const routes = {
   HOME: {
     title: "Home",
@@ -63,4 +65,26 @@ export const routes = {
     description:
       "Generate unique coin shapes and styles with Legacy Forge’s AI-powered Custom Shape Builder.",
   },
+  BLOGS: {
+    title: "Blogs",
+    path: "/blogs",
+    metaTitle: "Legacy Forge | Blog",
+    description:
+      "Read the latest articles on coin design, industry trends, and tips from the Legacy Forge team.",
+  },    
+  ABOUT_US: {
+    title: "About Us",
+    path: "/about-us",
+    metaTitle: "Legacy Forge | About Us",
+    description:
+      "Learn more about Legacy Forge’s mission to provide high-quality custom coins and exceptional customer service.",
+  },
+  SERVICES: {
+    title: "Services",
+    path: "/services",
+    metaTitle: "Legacy Forge | Our Services",
+    description:
+      "Discover the range of services offered by Legacy Forge, including custom coin design, manufacturing, and more.",
+  },
+
 } as const;
