@@ -8,6 +8,7 @@ import { NavbarProps, User } from "./types";
 
 const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) => {
   const [userData, setUserData] = useState<User | null>(null);
+  const [activeLink, setActiveLink] = useState<string | null>(null); // Track active auth link
   const router = useRouter();
   const pathname = usePathname();
 
@@ -35,6 +36,14 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
 
   useEffect(() => {
     updateUserData();
+    // Set active link based on current pathname
+    if (pathname === navLinksAuth[1].href) {
+      setActiveLink(navLinksAuth[1].href);
+    } else if (pathname === navLinksAuth[0].href) {
+      setActiveLink(navLinksAuth[0].href);
+    } else {
+      setActiveLink(null);
+    }
   }, [pathname]);
 
   const handleLogout = () => {
@@ -55,21 +64,21 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
         <div className="container-fluid flex items-center justify-between h-full px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-          <div className="w-36 h-20 rounded-full flex items-center justify-center px-4">
-            <Image
-              src="/images/navbar/legacy-forge-icon.svg"
-              alt="Legacy Forge Icon"
-              width={80}
-              height={60}
-              priority
-            />
-            <Image
-              src="/images/navbar/legacy-forge.svg"
-              alt="Legacy Forge"
-              width={150}
-              height={80}
-              priority
-            />
+            <div className="w-36 h-20 rounded-full flex items-center justify-center px-4">
+              <Image
+                src="/images/navbar/legacy-forge-icon.svg"
+                alt="Legacy Forge Icon"
+                width={80}
+                height={60}
+                priority
+              />
+              <Image
+                src="/images/navbar/legacy-forge.svg"
+                alt="Legacy Forge"
+                width={150}
+                height={80}
+                priority
+              />
             </div>
           </Link>
 
@@ -90,49 +99,58 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
 
           {/* User Authentication Section */}
           {userData ? (
-         <div className="flex items-center space-x-6">
-                  <button className="text-white hover:text-amber-400 transition-colors">
-                    <Image
-                      src="/images/navbar/shopping-cart.svg"
-                      alt="Shopping Cart"
-                      width={25}
-                      height={25}
-                    />
-                  </button>
-                  
-                  <button className="relative text-white hover:text-amber-400 transition-colors">
-                    <Image
-                      src="/images/navbar/notification.svg"
-                      alt="Notifications"
-                      width={25}
-                      height={25}
-                    />
-                   
-                  </button>
-                  
-                  <button className="w-12 h-12 rounded-full ">
-                    <Image
-                      src="/images/navbar/profile.svg"
-                      alt="Profile"
-                      width={40}
-                      height={40}
-                    />
-                  </button>
-                </div>
+            <div className="flex items-center space-x-6">
+              <button className="text-white hover:text-amber-400 transition-colors">
+                <Image
+                  src="/images/navbar/shopping-cart.svg"
+                  alt="Shopping Cart"
+                  width={25}
+                  height={25}
+                />
+              </button>
+              <button className="relative text-white hover:text-amber-400 transition-colors">
+                <Image
+                  src="/images/navbar/notification.svg"
+                  alt="Notifications"
+                  width={25}
+                  height={25}
+                />
+              </button>
+              <button className="w-12 h-12 rounded-full">
+                <Image
+                  src="/images/navbar/profile.svg"
+                  alt="Profile"
+                  width={40}
+                  height={40}
+                />
+              </button>
+            </div>
           ) : (
             <div className="flex items-center space-x-2">
               <Link href={navLinksAuth[1].href}>
-                <button className="bg-ternary-light  text-black px-4 py-2 rounded-full font-medium shadow-2xl  shadow-ternary-light transition">
+                <button
+                  className={`px-4 py-2 rounded-full font-medium transition ${
+                    activeLink === navLinksAuth[1].href
+                      ? "bg-ternary-light text-black shadow-2xl shadow-ternary-light"
+                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
+                  }`}
+                >
                   {navLinksAuth[1].title}
                 </button>
               </Link>
               <Link href={navLinksAuth[0].href}>
-                <button className="text-white hover:text-white px-4 py-2 rounded-full font-medium">
+                <button
+                  className={`px-4 py-2 rounded-full font-medium ${
+                    activeLink === navLinksAuth[0].href
+                      ? "bg-ternary-light text-black shadow-2xl shadow-ternary-light"
+                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
+                  }`}
+                >
                   {navLinksAuth[0].title}
                 </button>
               </Link>
             </div>
-          )} 
+          )}
         </div>
       </div>
     </nav>
