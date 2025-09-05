@@ -31,14 +31,14 @@ export const routes = {
       "Have questions about designing your coin? Get in touch with Legacy Forge for expert support and design assistance.",
   },
   SIGNUP: {
-    title: "Sign Up",
+    title: "REGISTER",
     path: "/signup",
     metaTitle: "Legacy Forge | Create Your Account",
     description:
       "Sign up to start designing your custom coin with Legacy Forge’s 3D builder.",
   },
   LOGIN: {
-    title: "Login",
+    title: "SIGN In",
     path: "/login",
     metaTitle: "Legacy Forge | Login to Your Account",
     description:
