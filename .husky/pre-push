@@ -1,0 +1,13 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🚀✨ Running pre-push hook"
+
+# Build the app
+echo "🚀✨ Building the app before push... 🔨📦"
+if ! npm run build; then
+  echo "❌⛔ Build failed. 🔍 Please fix the errors before pushing. 🛠️"
+  exit 1
+fi
+
+echo "✅🎉 Build succeeded! 🚀 Proceeding with the push... 📤✨"
