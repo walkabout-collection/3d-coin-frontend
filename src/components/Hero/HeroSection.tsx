@@ -4,17 +4,22 @@ import Image from "next/image";
 import { HeroSection as HeroSectionType } from "../../containers/home/types";
 import HeroClient from "./HeroClient";
 import Button from "../common/button/Button";
+import { useRouter } from "next/navigation";
 
 interface HeroSectionProps {
   data: HeroSectionType;
 }
 
 export default function HeroSection({ data }: HeroSectionProps) {
+  const router = useRouter();
+  
+  const handleGoToStandardBuilder = () => {
+    router.push("/standard-builder");
+  };
+
   return (
     <HeroClient>
       <section className="relative min-h-screen max-h-screen bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] shadow-lg  overflow-hidden">
-        {/* Dark overlay for that deep navy look */}
-        <div className="absolute inset-0 bg-[#0F1C2E]" />
 
         {/* Subtle texture overlay */}
         <div
@@ -52,9 +57,10 @@ export default function HeroSection({ data }: HeroSectionProps) {
 
               <div className="pt-6 lg:pt-8">
                 <Button
-                  width="w-full sm:w-auto px-8"
+                  width="w-full sm:w-auto"
+                  className="px-8 py-5 text-lg font-semibold"
                   variant="secondary"
-                  onClick={() => console.log("CTA clicked")}
+                  onClick={handleGoToStandardBuilder}
                 >
                   <span>{data.ctaText}</span>
                 </Button>

@@ -4,14 +4,25 @@ import Link from "next/link";
 import Image from "next/image";
 import { menuItems, companyItems, instaImages, socialLinks } from "./data";
 import Button from "../../button/Button";
+import { useRouter } from "next/navigation";
 
 const Footer: React.FC = () => {
+  const router = useRouter();
+  const handleGoToStandardBuilder = () => {
+    router.push("/standard-builder");
+  };
+
   return (
     <footer className="bg-primary text-white px-6 md:px-20 py-12 ">
       {/* CTA */}
       <div className="text-center mb-12 w-full flex flex-col items-center">
-        <Button variant="secondary" className="py-6 text-6xl font-bold" width="w-1/2" onClick={()=> console.log("Start Design Clicked")} >
-            Start Designing Your Coin Today
+        <Button
+          variant="secondary"
+          className="px-8 py-5 text-lg font-semibold"
+          width="w-1/2"
+          onClick={handleGoToStandardBuilder}
+        >
+          Start Designing Your Coin Today
         </Button>
       </div>
 
@@ -33,7 +44,10 @@ const Footer: React.FC = () => {
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.title}>
-                <Link href={item.href} className="hover:text-ternary transition">
+                <Link
+                  href={item.href}
+                  className="hover:text-ternary transition"
+                >
                   {item.title}
                 </Link>
               </li>
@@ -47,7 +61,10 @@ const Footer: React.FC = () => {
           <ul className="space-y-2">
             {companyItems.map((item) => (
               <li key={item.title}>
-                <Link href={item.href} className="hover:text-ternary transition">
+                <Link
+                  href={item.href}
+                  className="hover:text-ternary transition"
+                >
                   {item.title}
                 </Link>
               </li>
@@ -58,14 +75,14 @@ const Footer: React.FC = () => {
         {/* Instagram */}
         <div>
           <h3 className="font-semibold mb-4">Follow on Instagram</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-y-2">
             {instaImages.map((img) => (
               <Image
                 key={img.src}
                 src={img.src}
                 alt={img.alt}
-                width={100}
-                height={100}
+                width={140}
+                height={140}
                 className="rounded-lg"
               />
             ))}
