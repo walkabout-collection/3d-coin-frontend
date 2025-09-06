@@ -13,9 +13,13 @@ export const navLinks = [
     title: routes.SERVICES.title,
     href: routes.SERVICES.path,
   },
+  // {
+  //   title: routes.BLOGS.title,
+  //   href: routes.BLOGS.path,
+  // },
   {
-    title: routes.BLOGS.title,
-    href: routes.BLOGS.path,
+    title: routes.PRICING.title,
+    href: routes.PRICING.path,
   },
 ];
 
