@@ -11,7 +11,6 @@ const Navbar: React.FC<NavbarProps> = ({
   className = "",
 }) => {
   const [userData, setUserData] = useState<User | null>(null);
-  const [activeLink, setActiveLink] = useState<string | null>(null); // Track active auth link
   const pathname = usePathname();
 
   const updateUserData = () => {
@@ -35,26 +34,6 @@ const Navbar: React.FC<NavbarProps> = ({
     window.addEventListener("userChanged", handleStorageChange);
     return () => window.removeEventListener("userChanged", handleStorageChange);
   }, []);
-
-  useEffect(() => {
-    updateUserData();
-    // Set active link based on current pathname
-    if (pathname === navLinksAuth[1].href) {
-      setActiveLink(navLinksAuth[1].href);
-    } else if (pathname === navLinksAuth[0].href) {
-      setActiveLink(navLinksAuth[0].href);
-    } else {
-      setActiveLink(null);
-    }
-  }, [pathname]);
-
-  //   const handleLogout = () => {
-  //     localStorage.removeItem("user");
-  //     localStorage.removeItem("token");
-  //     window.dispatchEvent(new Event("userChanged"));
-  //     setUserData(null);
-  //     router.push("/signin");
-  //   };
 
   const isActiveLink = (href: string): boolean => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -94,8 +73,10 @@ const Navbar: React.FC<NavbarProps> = ({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-white text-base font-medium hover:text-amber-400 ${
-                  isActiveLink(item.href) ? "text-amber-400 font-semibold" : ""
+                className={`text-base font-medium transition-colors ${
+                  isActiveLink(item.href)
+                    ? "text-amber-400 font-semibold"
+                    : "text-white hover:text-amber-400"
                 }`}
               >
                 {item.title}
@@ -133,28 +114,19 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <Link href={navLinksAuth[1].href}>
-                <button
-                  className={`px-4 py-2 rounded-full font-medium transition cursor-pointer ${
-                    activeLink === navLinksAuth[1].href
-                      ? "text-black bg-gradient-to-b from-[#FFD700] to-[#FFC300] shadow-[0_6px_12px_rgba(255,215,0,0.6)] hover:from-[#FFC300] hover:to-[#FFB700]"
-                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
-                  }`}
-                >
-                  {navLinksAuth[1].title}
-                </button>
-              </Link>
-              <Link href={navLinksAuth[0].href}>
-                <button
-                  className={`px-4 py-2 rounded-full font-medium cursor-pointer ${
-                    activeLink === navLinksAuth[0].href
-                      ? "text-black bg-gradient-to-b from-[#FFD700] to-[#FFC300] shadow-[0_6px_12px_rgba(255,215,0,0.6)] hover:from-[#FFC300] hover:to-[#FFB700]"
-                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
-                  }`}
-                >
-                  {navLinksAuth[0].title}
-                </button>
-              </Link>
+              {navLinksAuth.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <button
+                    className={`px-4 py-2 rounded-full font-medium transition cursor-pointer ${
+                      isActiveLink(item.href)
+                        ? "text-black bg-gradient-to-b from-[#FFD700] to-[#FFC300] shadow-[0_6px_12px_rgba(255,215,0,0.6)] hover:from-[#FFC107] hover:to-[#FF8C00]"
+                        : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
+                    }`}
+                  >
+                    {item.title}
+                  </button>
+                </Link>
+              ))}
             </div>
           )}
         </div>
