@@ -1,7 +1,12 @@
-export default function LoginPage() {
+import Login from "@/src/components/login";
+import React from "react";
+
+const LoginPage = () => {
   return (
-    <div className="flex items-center justify-center h-screen ">
-      <h1 className="text-3xl font-bold text-black">Login Page</h1>
-    </div>
+    <>
+    <Login />
+    </>
   );
-}
+};
+
+export default LoginPage;

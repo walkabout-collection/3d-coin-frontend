@@ -1,26 +1,143 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+ 
+  font-family: var(--font-poppins);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --background: #FFFFFF;
+  --foreground: #1E293B;
+
+  --primary: #121C2A;
+  --secondary: #193359;
+
+  /* Ternary Colors */
+  --ternary: #F9D104;
+  --ternary-light: #C9A227;
+
+  /* Text Colors */
+  --text-dark: #1E293B;
+  --text-medium: #64748B;
+
+  /* Shadows */
+  --shadow-primary: rgba(0, 0, 0, 0.1);
+
+  /* Spacing (default Tailwind spacing unit) */
+  --spacing: 0.25rem;
+
+  /* Breakpoints */
+  --mobile-xs: 320px;
+  --mobile-sm: 375px;
+  --mobile-md: 414px;
+  --mobile-lg: 480px;
+  --mobile-xl: 540px;
+  --tablet-sm: 600px;
+  --tablet: 768px;
+  --tablet-lg: 900px;
+  --laptop: 1024px;
+  --laptop-lg: 1280px;
+  --laptop-xl: 1440px;
+  --desktop: 1600px;
+  --desktop-lg: 1920px;
+  --4k: 2560px;
+
+  /* Font Family */
+  --font-poppins: "Poppins", "sans-serif";
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #ededed;
-    --foreground: #ededed;
+/* Custom utilities */
+@layer utilities {
+  /* Background utilities */
+  .bg-primary {
+    background-color: var(--primary);
   }
-}
+  .bg-secondary {
+    background-color: var(--secondary);
+  }
+  .bg-ternary {
+    background-color: var(--ternary);
+  }
+  .bg-ternary-light {
+    background-color: var(--ternary-light);
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Text utilities */
+  .text-primary {
+    color: var(--primary);
+  }
+  .text-secondary {
+    color: var(--secondary);
+  }
+  .text-ternary {
+    color: var(--ternary);
+  }
+  .text-ternary-light {
+    color: var(--ternary-light);
+  }
+
+  /* Shadow */
+  .shadow-primary {
+    box-shadow: 0 10px 25px var(--shadow-primary);
+  }
+
+  /* Custom gradients */
+  .bg-gradient-light {
+    background-image: linear-gradient(to bottom, var(--primary), #FFFFFF);
+  }
+  .bg-gradient-mobile {
+    background-image: linear-gradient(to bottom, var(--secondary), #E9D9F5);
+  }
+
+  /* Grayscale utils */
+  .grayscale {
+    filter: grayscale(100%);
+  }
+  .grayscale-0 {
+    filter: grayscale(0);
+  }
+
+  /* Section container styles */
+  .section-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 4rem 0;
+  }
+  .section-container-odd {
+    flex-direction: row;
+  }
+  .section-container-even {
+    flex-direction: row-reverse;
+  }
+  .section-text {
+    flex: 1;
+    max-width: 50%;
+  }
+  .max-h-minus-navbar {
+    min-height: calc(100vh - 80px);
+  }
+  .section-image {
+    flex: 1;
+    max-width: 50%;
+    background-color: var(--ternary-light);
+    border-radius: 1rem;
+    height: 300px; 
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .section-container {
+      flex-direction: column !important;
+      padding: 2rem 0;
+    }
+    .section-text,
+    .section-image {
+      max-width: 100%;
+    }
+    .section-image {
+      height: 200px;
+    }
+  }
 }
