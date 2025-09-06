@@ -4,38 +4,37 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
 import authPanel from "@/public/images/auth-right-panel.png";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Input from "../common/input";
 import { SignupProps } from "./types";
 import Link from "next/link";
 import Button from "../common/button/Button";
 
-const signupSchema = z
-  .object({
-    first_name: z.string().min(1, "First name is required"),
-    last_name: z.string().min(1, "Last name is required"),
-    email: z.string().email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(
-        /^(?=.[A-Z])(?=.\d)/,
-        "Password must contain at least one uppercase letter and one number",
-      ),   
-  });
+const signupSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.[A-Z])(?=.\d)/,
+      "Password must contain at least one uppercase letter and one number"
+    ),
+});
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
-const SignUp = ({ onSignupSuccess, onSignupError }: SignupProps) => {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+const SignUp = ({}: SignupProps) => {
+  //   const router = useRouter();
+
+  const [error] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setValue,
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -47,9 +46,9 @@ const SignUp = ({ onSignupSuccess, onSignupError }: SignupProps) => {
   });
 
   const onSubmit = (data: SignupFormData) => {
-    console.log("Signup Data:", data); 
+    console.log("Signup Data:", data);
     // onSignupSuccess?.();
-    // router.push("/verify-otp"); 
+    // router.push("/verify-otp");
   };
 
   return (
@@ -63,7 +62,10 @@ const SignUp = ({ onSignupSuccess, onSignupError }: SignupProps) => {
 
           <>
             {error && <p className="text-red-600 text-center mb-4">{error}</p>}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-10 mt-10">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-10 mt-10"
+            >
               <div className="relative">
                 <Input
                   label="FIRST NAME"
@@ -106,22 +108,17 @@ const SignUp = ({ onSignupSuccess, onSignupError }: SignupProps) => {
                 />
               </div>
 
-              <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting}
-              
-            >
-              {isSubmitting ? "Logging In..." : "Continue"}
-            </Button>
+              <Button type="submit" variant="primary" disabled={isSubmitting}>
+                {isSubmitting ? "Logging In..." : "Continue"}
+              </Button>
             </form>
 
-              <div className="mt-4 text-center text-sm text-gray-600">
-                ALREADY HAVE AN ACCOUNT?{" "}
-                <Link href="/login" className="text-primary font-medium ">
-                  LOGIN
-                </Link>
-              </div>
+            <div className="mt-4 text-center text-sm text-gray-600">
+              ALREADY HAVE AN ACCOUNT?{" "}
+              <Link href="/login" className="text-primary font-medium ">
+                LOGIN
+              </Link>
+            </div>
           </>
         </div>
       </section>

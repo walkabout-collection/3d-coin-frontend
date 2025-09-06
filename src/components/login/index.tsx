@@ -25,7 +25,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
   const {
     register,
@@ -93,7 +93,7 @@ const Login = () => {
             </form>
 
               <div className="text-center mt-4 text-md text-gray-600">
-                DON'T HAVE AN ACCOUNT?{" "}
+                DON&apos;T HAVE AN ACCOUNT?{" "}
                 <Link href="/signup" className="text-primary font-medium ">
                     SIGN UP
                 </Link>

@@ -2,14 +2,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps, User } from "./types";
 
 const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) => {
   const [userData, setUserData] = useState<User | null>(null);
   const [activeLink, setActiveLink] = useState<string | null>(null); // Track active auth link
-  const router = useRouter();
   const pathname = usePathname();
 
   const updateUserData = () => {
@@ -46,20 +45,20 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
     }
   }, [pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    window.dispatchEvent(new Event("userChanged"));
-    setUserData(null);
-    router.push("/signin");
-  };
+//   const handleLogout = () => {
+//     localStorage.removeItem("user");
+//     localStorage.removeItem("token");
+//     window.dispatchEvent(new Event("userChanged"));
+//     setUserData(null);
+//     router.push("/signin");
+//   };
 
   const isActiveLink = (href: string): boolean => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 ${className}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 ${className} ${transparent ? "bg-transparent" : ""}`}>
       <div className="bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] shadow-lg h-20">
         <div className="container-fluid flex items-center justify-between h-full px-8">
           {/* Logo */}
