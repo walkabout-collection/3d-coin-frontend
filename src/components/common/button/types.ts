@@ -16,4 +16,5 @@ export interface ButtonProps {
   className?: string;
   shadow?: string;
   style?: React.CSSProperties;
+  href?: string;
 }
