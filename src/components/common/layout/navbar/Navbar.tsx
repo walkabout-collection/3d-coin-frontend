@@ -11,6 +11,7 @@ const Navbar: React.FC<NavbarProps> = ({
   className = "",
 }) => {
   const [userData, setUserData] = useState<User | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
 
   const updateUserData = () => {
@@ -35,9 +36,21 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener("userChanged", handleStorageChange);
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const isActiveLink = (href: string): boolean => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
+
+  const shouldShowShadow =
+    (pathname !== "/" && pathname !== "/pricing") || isScrolled;
 
   return (
     <nav
@@ -45,7 +58,11 @@ const Navbar: React.FC<NavbarProps> = ({
         transparent ? "bg-transparent" : ""
       }`}
     >
-      <div className="bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] shadow-lg h-20">
+      <div
+        className={`bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] h-20 ${
+          shouldShowShadow ? "shadow-lg" : ""
+        }`}
+      >
         <div className="container-fluid flex items-center justify-between h-full px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
