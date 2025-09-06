@@ -10,7 +10,6 @@ const Button: React.FC<ButtonProps> = ({
   bgColor = "bg-primary",
   borderColor = "border-primary",
   fontWeight = "font-medium",
-  opacity = 1,
   padding = "px-6 py-4",
   radius = "rounded-full",
   children,
