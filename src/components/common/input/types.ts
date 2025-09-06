@@ -7,13 +7,15 @@ export interface InputProps
   variant?: "primary" | "secondary" | "outline";
   inputSize?: "sm" | "md" | "lg";
   className?: string;
-  error?: string | string[]; 
-  register?: UseFormRegisterReturn; 
-  label?: string; 
-  required?: boolean; 
-  placeholder?: string; 
+  error?: string | string[];
+  register?: UseFormRegisterReturn;
+  label?: string;
+  required?: boolean;
+  placeholder?: string;
   rounded?: boolean;
   bg?: string;
+  textarea?: boolean; // new flag
+  rows?: number;
 }
 
 export interface SignupFormData {

@@ -12,9 +12,7 @@ import Button from "../common/button/Button";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z
-    .string()
-    .min(1, "Please enter your password"),
+  password: z.string().min(1, "Please enter your password"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -66,6 +64,7 @@ const Login = () => {
                   rounded={true}
                   {...register("email")}
                   error={errors.email?.message}
+                  bg="bg-white"
                 />
               </div>
 
@@ -80,6 +79,7 @@ const Login = () => {
                   rounded={true}
                   {...register("password")}
                   error={errors.password?.message}
+                  bg="bg-white"
                 />
               </div>
 

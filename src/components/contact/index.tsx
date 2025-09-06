@@ -23,12 +23,14 @@ export default function Contact() {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
   });
 
   const onSubmit = (data: ContactFormData) => {
     console.log("✅ Form submitted:", data);
+    reset();
   };
 
   const iconMap = {
@@ -145,7 +147,7 @@ export default function Contact() {
             {/* Message */}
             <div>
               <label className="block text-sm font-medium mb-1">Message</label>
-              <textarea
+              <Input
                 {...register("message")}
                 rows={4}
                 placeholder="Please type your message here..."

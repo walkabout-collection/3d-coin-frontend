@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { InputProps } from "./types";
 
-const Input = forwardRef<HTMLInputElement, InputProps>(
+const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
   (
     {
       variant = "primary",
@@ -12,31 +12,37 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       label,
       placeholder = "",
       rounded = false,
-      bg = "bg-[#f4f6fa]",
+      bg = "bg-gray-100", // Default background color
+      textarea = false,
+      rows = 3, // default rows for textarea
       ...props
     },
     ref
   ) => {
-    // Base styles: white background, no rounding by default, full width
-    const baseStyles = `w-full font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-      rounded ? "rounded-full" : "rounded-none"
-    } bg-${bg} border border-gray-300`; 
+    const effectiveBg = bg === "" || bg === "bg-transparent" ? "" : bg;
 
-    // Variant-specific styles
+    const baseStyles = `
+      w-full font-medium text-gray-900 placeholder-gray-400
+      focus:outline-none focus:ring-2 focus:ring-blue-500
+      focus:border-transparent transition-colors
+      ${rounded ? "rounded-full" : "rounded-md"}
+      border border-gray-300
+      appearance-none
+      ${effectiveBg}
+    `;
+
     const variantStyles = {
-      primary: "bg-white text-gray-900 hover:bg-gray-500",
-      secondary: "bg-transparent border-primary text-gray-900 hover:bg-gray-50",
-      outline: "bg-transparent border-primary text-gray-900 hover:border-blue-500",
+      primary: "text-gray-900",
+      secondary: "border-primary text-gray-900 hover:bg-gray-50",
+      outline: "border-primary text-gray-900 hover:border-blue-500",
     };
 
-    // Size-specific styles
     const sizeStyles = {
       sm: "px-3 py-2 text-sm",
-      md: "px-4 py-4 text-sm", // Adjusted padding to match image height
-      lg: "px-5 py-4 text-lg",
+      md: "px-4 py-2 text-base",
+      lg: "px-5 py-3 text-lg",
     };
 
-    // Combine all styles
     const combinedStyles = [
       baseStyles,
       variantStyles[variant],
@@ -50,20 +56,30 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="mb-4">
         {label && (
-          <label className="block mb-2 text-sm font-normal text-gray-700">{label}</label>
+          <label className="block mb-2 text-sm font-normal text-gray-700">
+            {label}
+          </label>
         )}
-        <input
-          ref={ref}
-          className={combinedStyles}
-          placeholder={placeholder}
-          {...(register
-            ? (() => {
-                const { ref: _registerRef, ...rest } = register;
-                return rest;
-              })()
-            : {})}
-          {...props}
-        />
+
+        {textarea ? (
+          <textarea
+            ref={ref as React.Ref<HTMLTextAreaElement>}
+            className={combinedStyles}
+            placeholder={placeholder}
+            rows={rows}
+            {...(register)}
+            {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+          />
+        ) : (
+          <input
+            ref={ref as React.Ref<HTMLInputElement>}
+            className={combinedStyles}
+            placeholder={placeholder}
+            {...(register)}
+            {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
+          />
+        )}
+
         {error && (
           <div className="mt-1 text-red-500 text-sm">
             <span>{error}</span>

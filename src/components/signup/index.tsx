@@ -29,7 +29,6 @@ type SignupFormData = z.infer<typeof signupSchema>;
 const SignUp = ({}: SignupProps) => {
   const router = useRouter();
   const [error] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -48,10 +47,7 @@ const SignUp = ({}: SignupProps) => {
   const onSubmit = (data: SignupFormData) => {
     console.log("Signup Data:", data);
     router.push("/dashboard");
-
   };
-
-  
 
   return (
     <section className="flex flex-col lg:flex-row w-full max-h-minus-navbar overflow-hidden relative">
@@ -77,6 +73,7 @@ const SignUp = ({}: SignupProps) => {
                   rounded={true}
                   {...register("first_name")}
                   error={errors.first_name?.message}
+                  bg="bg-white"
                 />
               </div>
               <div className="relative">
@@ -88,6 +85,7 @@ const SignUp = ({}: SignupProps) => {
                   rounded={true}
                   {...register("last_name")}
                   error={errors.last_name?.message}
+                  bg="bg-white"
                 />
               </div>
               <div className="relative">
@@ -99,6 +97,7 @@ const SignUp = ({}: SignupProps) => {
                   rounded={true}
                   {...register("email")}
                   error={errors.email?.message}
+                  bg="bg-white"
                 />
               </div>
               <div className="relative">
@@ -107,10 +106,11 @@ const SignUp = ({}: SignupProps) => {
                   placeholder="ENTER YOUR PASSWORD"
                   variant="primary"
                   inputSize="md"
-                  type={showPassword ? "text" : "password"}
+                  type={"password"}
                   rounded={true}
                   {...register("password")}
                   error={errors.password?.message}
+                  bg="bg-white"
                 />
               </div>
 
