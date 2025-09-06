@@ -80,7 +80,7 @@ export default function Contact() {
                 href={getLink(item.icon, item.value)}
                 target={item.icon === "map-pin" ? "_blank" : "_self"}
                 rel="noopener noreferrer"
-                className="flex items-center space-x-4 bg-gradient-to-r from-[#0F1D37] to-[#143D6B] text-white px-6 py-4 shadow-md hover:opacity-90 transition"
+                className="flex items-center rounded-md space-x-4 bg-gradient-to-r from-[#0F1D37] to-[#143D6B] text-white px-6 py-4 shadow-md hover:opacity-90 transition"
               >
                 <div className="flex items-center justify-center bg-white p-2">
                   {iconMap[item.icon as keyof typeof iconMap]}
