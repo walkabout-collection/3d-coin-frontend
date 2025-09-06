@@ -36,7 +36,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
       >
-        <Navbar />
+        <div className="mb-20">
+          <Navbar />
+        </div>
         {children}
         <Footer />
       </body>
