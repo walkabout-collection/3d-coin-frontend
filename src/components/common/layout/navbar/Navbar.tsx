@@ -141,8 +141,8 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
                 <button
                   className={`px-4 py-2 rounded-full font-medium ${
                     activeLink === navLinksAuth[0].href
-                      ? "bg-ternary-light text-black shadow-2xl shadow-ternary-light"
-                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
+                      ? "bg-ternary-light text-black shadow-2xl shadow-ternary-light hover:cursor-pointer"
+                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black hover:cursor-pointer"
                   }`}
                 >
                   {navLinksAuth[0].title}
