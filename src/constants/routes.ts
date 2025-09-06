@@ -36,7 +36,7 @@ export const routes = {
       "Sign up to start designing your custom coin with Legacy Forge’s 3D builder.",
   },
   LOGIN: {
-    title: "SIGN In",
+    title: "SIGN IN",
     path: "/login",
     metaTitle: "Legacy Forge | Login to Your Account",
     description:
