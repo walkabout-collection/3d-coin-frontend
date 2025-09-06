@@ -6,35 +6,53 @@ const Button: React.FC<ButtonProps> = ({
   width = "w-full",
   height = "",
   variant = "primary",
-  textColor = "text-white",
-  bgColor = "bg-primary",
-  borderColor = "border-primary",
-  fontWeight = "font-medium",
-  padding = "px-6 py-4",
-  radius = "rounded-full",
   children,
   onClick,
   disabled = false,
   className = "",
-  shadow = "shadow-md",
   style,
 }) => {
-  const baseStyles = `${textColor} ${padding} ${fontWeight} ${width} ${height} ${radius} flex justify-center items-center transition-all duration-300 ease-out ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`;
+  const baseStyles = `
+    flex justify-center items-center
+    px-6 py-3 font-semibold text-base
+    rounded-full transition-all duration-300 ease-out cursor-pointer
+    ${width} ${height}
+    ${disabled ? "cursor-not-allowed opacity-50" : ""}
+    ${className}
+  `;
 
-  const variantStyles = {
-    primary: `${baseStyles} ${bgColor} ${shadow} bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark`,
-    secondary: `${baseStyles} bg-white ${textColor} border border-primary ${shadow} hover:bg-gray-100`,
-    ternary: `${baseStyles} bg-ternary-light ${textColor} ${shadow} hover:bg-ternary-light`,
-    outline: `${baseStyles} border-2 ${borderColor} bg-transparent ${textColor} ${shadow} hover:bg-primary/10`,
+  const variantStyles: Record<string, string> = {
+    primary: `
+      ${baseStyles}
+      text-white
+      bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978]
+      shadow-[0_4px_12px_rgba(0,0,0,0.6)]
+      hover:from-[#203a43] hover:via-[#2c5364] hover:to-[#0f2027]
+    `,
+    
+    secondary: `
+      ${baseStyles}
+      text-black
+      bg-gradient-to-b from-[#FFD700] to-[#FFC300]
+      shadow-[0_6px_12px_rgba(255,215,0,0.6)]
+      hover:from-[#FFC300] hover:to-[#FFB700]
+    `,
+
+    ternary: `
+      ${baseStyles}
+      text-black bg-white border border-gray-300
+      hover:bg-gray-100
+      shadow-sm
+    `,
   };
 
   return (
     <button
-      className={variantStyles[variant]}
+      type={type}
       onClick={!disabled ? onClick : undefined}
       disabled={disabled}
-      type={type}
       style={style}
+      className={variantStyles[variant]}
     >
       {children}
     </button>

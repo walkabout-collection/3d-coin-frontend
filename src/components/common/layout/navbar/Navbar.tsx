@@ -6,7 +6,10 @@ import { usePathname } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps, User } from "./types";
 
-const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  transparent = false,
+  className = "",
+}) => {
   const [userData, setUserData] = useState<User | null>(null);
   const [activeLink, setActiveLink] = useState<string | null>(null); // Track active auth link
   const pathname = usePathname();
@@ -45,20 +48,24 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
     }
   }, [pathname]);
 
-//   const handleLogout = () => {
-//     localStorage.removeItem("user");
-//     localStorage.removeItem("token");
-//     window.dispatchEvent(new Event("userChanged"));
-//     setUserData(null);
-//     router.push("/signin");
-//   };
+  //   const handleLogout = () => {
+  //     localStorage.removeItem("user");
+  //     localStorage.removeItem("token");
+  //     window.dispatchEvent(new Event("userChanged"));
+  //     setUserData(null);
+  //     router.push("/signin");
+  //   };
 
   const isActiveLink = (href: string): boolean => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 ${className} ${transparent ? "bg-transparent" : ""}`}>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 ${className} ${
+        transparent ? "bg-transparent" : ""
+      }`}
+    >
       <div className="bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] shadow-lg h-20">
         <div className="container-fluid flex items-center justify-between h-full px-8">
           {/* Logo */}
@@ -128,9 +135,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
             <div className="flex items-center space-x-2">
               <Link href={navLinksAuth[1].href}>
                 <button
-                  className={`px-4 py-2 rounded-full font-medium transition ${
+                  className={`px-4 py-2 rounded-full font-medium transition cursor-pointer ${
                     activeLink === navLinksAuth[1].href
-                      ? "bg-ternary-light text-black shadow-2xl shadow-ternary-light"
+                      ? "text-black bg-gradient-to-b from-[#FFD700] to-[#FFC300] shadow-[0_6px_12px_rgba(255,215,0,0.6)] hover:from-[#FFC300] hover:to-[#FFB700]"
                       : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
                   }`}
                 >
@@ -139,10 +146,10 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false, className = "" }) 
               </Link>
               <Link href={navLinksAuth[0].href}>
                 <button
-                  className={`px-4 py-2 rounded-full font-medium ${
+                  className={`px-4 py-2 rounded-full font-medium cursor-pointer ${
                     activeLink === navLinksAuth[0].href
-                      ? "bg-ternary-light text-black shadow-2xl shadow-ternary-light hover:cursor-pointer"
-                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black hover:cursor-pointer"
+                      ? "text-black bg-gradient-to-b from-[#FFD700] to-[#FFC300] shadow-[0_6px_12px_rgba(255,215,0,0.6)] hover:from-[#FFC300] hover:to-[#FFB700]"
+                      : "bg-transparent text-white hover:bg-ternary-light hover:text-black"
                   }`}
                 >
                   {navLinksAuth[0].title}
