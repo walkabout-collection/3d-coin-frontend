@@ -32,7 +32,7 @@ export default function HeroSection({ data }: HeroSectionProps) {
             <div className="text-white space-y-8 lg:space-b-10 -mt-32">
               {data.badge && (
                 <div className="inline-block">
-                  <span className="text-white text-md font-semibold tracking-[0.2em] uppercase">
+                  <span className="text-white text-xl font-semibold tracking-[0.2em] uppercase">
                     {data.badge}
                   </span>
                 </div>
@@ -44,16 +44,16 @@ export default function HeroSection({ data }: HeroSectionProps) {
                 </span>
               </h1>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-3xl font-light leading-[1.2] tracking-tight w-full">
-                <span className="mb-2 block text-white font-bold">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-xl font-light leading-[1.2] tracking-tight w-full">
+                <span className="mb-2 block text-white font-bold max-w-9/12">
                   {data.description}
                 </span>
               </h1>
 
               <div className="pt-6 lg:pt-8">
                 <Button
+                  width="w-full sm:w-auto px-8"
                   variant="secondary"
-                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold px-8 py-4 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   onClick={() => console.log("CTA clicked")}
                 >
                   <span>{data.ctaText}</span>
