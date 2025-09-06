@@ -12,6 +12,8 @@ export interface InputProps
   label?: string; 
   required?: boolean; 
   placeholder?: string; 
+  rounded?: boolean;
+  bg?: string;
 }
 
 export interface SignupFormData {
