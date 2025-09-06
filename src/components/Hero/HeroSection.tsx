@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { HeroSection as HeroSectionType } from "../../containers/home/types";
-import HeroClient from "../Hero/HeroClient";
+import HeroClient from "./HeroClient";
 import Button from "../common/button/Button";
 
 interface HeroSectionProps {

@@ -1,4 +1,4 @@
-import HeroSection from "@/src/components/home/HeroSection";
+import HeroSection from "@/src/components/Hero/HeroSection";
 import { heroSectionData } from "./data";
 
 export default function HomePage() {
