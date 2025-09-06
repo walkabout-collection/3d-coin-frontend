@@ -13,3 +13,12 @@ export const heroSectionData: HeroSection = {
   }
 };
 
+export const pricingData = [
+    { dimensions: '1.5”', material: 'Any', edge: 'Rope', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+    { dimensions: '1.7”', material: 'Any', edge: 'Oblique', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+    { dimensions: '2”', material: 'Any', edge: 'Diamond', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+    { dimensions: '2.25”', material: 'Any', edge: 'Curve', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+    { dimensions: '2.5”', material: 'Any', edge: 'Diamond', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+    { dimensions: '2.75”', material: 'Any', edge: 'Curve', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+    { dimensions: '3”', material: 'Any', edge: 'Diamond', textRings: 'Custom', artwork: 'Custom', price: '$50.00' },
+  ];
