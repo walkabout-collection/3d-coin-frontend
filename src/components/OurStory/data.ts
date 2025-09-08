@@ -1,4 +1,4 @@
-import coinImage from '@/public/images/home/coin.png';
+import coinImage from '@/public/images/home/coin-ourstory.png';
 import { OurStoryData } from './types';
 
 export const ourStoryData: OurStoryData = {

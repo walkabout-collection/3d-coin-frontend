@@ -5,6 +5,7 @@ import HowItWork from "@/src/components/HowItWorksSection";
 import CoinBuilder from "@/src/components/CoinBuilderSection.tsx";
 import WhoWeBuildFor from "@/src/components/WhoWeBuildFor";
 import OurStory from "@/src/components/OurStory";
+import Testimonials from "@/src/components/Testimonials";
 
 export default function HomePage() {
   return (
@@ -14,6 +15,7 @@ export default function HomePage() {
       <HowItWork />
       <CoinBuilder />
       <WhoWeBuildFor />
+      <Testimonials />
       <OurStory />
     </main>
   );
