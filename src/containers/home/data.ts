@@ -8,7 +8,7 @@ export const heroSectionData: HeroSection = {
   ctaText: "Design Your Own Challenge Coin",
   ctaLink: "/design",
   heroImage: {
-    src: "/images/HeroCoin.png",
+    src: "/images/home/coin.png",
     alt: "Custom Challenge Coins with Freedom and military emblems"
   }
 };

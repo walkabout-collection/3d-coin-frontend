@@ -3,6 +3,8 @@ import { heroSectionData } from "./data";
 import CardSection from "@/src/components/HomeCardsSection";
 import HowItWork from "@/src/components/HowItWorksSection";
 import CoinBuilder from "@/src/components/CoinBuilderSection.tsx";
+import WhoWeBuildFor from "@/src/components/WhoWeBuildFor";
+import OurStory from "@/src/components/OurStory";
 
 export default function HomePage() {
   return (
@@ -11,6 +13,8 @@ export default function HomePage() {
       <CardSection />
       <HowItWork />
       <CoinBuilder />
+      <WhoWeBuildFor />
+      <OurStory />
     </main>
   );
 }
