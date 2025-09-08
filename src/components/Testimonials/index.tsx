@@ -37,10 +37,10 @@ export default function Testimonials() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+          <h2 className="text-4xl md:text-5xl font-bold text-primary mb-2">
             {testimonialsData.mainTitle}
           </h2>
-          <h3 className="text-4xl md:text-5xl font-bold text-gray-900">
+          <h3 className="text-4xl md:text-5xl font-bold text-primary uppercase">
             {testimonialsData.subtitle}
           </h3>
         </div>
@@ -49,7 +49,7 @@ export default function Testimonials() {
             <blockquote className="text-xl md:text-2xl text-gray-700 font-medium leading-relaxed h-34 mb-6">
               "{activeTestimonial.testimonial}"
             </blockquote>
-            <cite className="text-lg font-semibold text-gray-900">
+            <cite className="text-lg font-semibold text-primary">
               {activeTestimonial.name}, {activeTestimonial.title}
             </cite>
           </div>
@@ -73,11 +73,11 @@ export default function Testimonials() {
           <div className="flex items-center justify-center space-x-4 relative z-10 h-24"> 
             {visibleTestimonials.map((testimonial, index) => {
               const isCenter = index === 1;
-              const sizeClass = isCenter ? 'w-24 h-24 scale-100' : 'w-16 h-16 scale-75 opacity-60';
+              const sizeClass = isCenter ? 'w-28 h-28 scale-100' : 'w-16 h-16 ';
               return (
                 <div
                   key={testimonial.id}
-                  className={`relative rounded-full overflow-hidden transition-all duration-500 cursor-pointer ${sizeClass}`}
+                  className={`relative rounded-full  transition-all duration-500 cursor-pointer ${sizeClass}`}
                 >
                   <Image
                     src={testimonial.image}
@@ -90,20 +90,14 @@ export default function Testimonials() {
               );
             })}
           </div>
-          {visibleTestimonials[1] && (
-            <div className="text-center mt-4">
-              <span className="text-sm font-medium text-gray-800">
-                {visibleTestimonials[1].name}
-              </span>
-            </div>
-          )}
+         
         </div>
 
         <div className="absolute inset-0 flex items-center justify-between mx-auto max-w-7xl  z-20">
           <button
             onClick={prevTestimonial}
             className={`p-5 rounded-full transition-colors duration-300 flex-shrink-0 ${
-              currentIndex === 0 ? 'bg-gray-300' : 'bg-primary hover:bg-primary-dark text-white'
+              currentIndex === 0 ? 'bg-gray-300' : 'bg-primary hover:bg-primary text-white'
             }`}
             aria-label="Previous testimonial"
           >
