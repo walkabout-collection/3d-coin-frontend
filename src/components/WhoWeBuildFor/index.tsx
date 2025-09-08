@@ -15,8 +15,7 @@ export default function WhoWeBuildFor() {
             custom coins make moments unforgettable.
           </p>
         </div>
-
-        <div className="max-w-7xl flex flex-wrap justify-center items-center gap-4">
+        <div className="max-w-7xl flex flex-wrap justify-center gap-6">
           {whoWeBuildForData.map((item, index) => (
             <WhoWeBuildForCard key={index} item={item} />
           ))}
