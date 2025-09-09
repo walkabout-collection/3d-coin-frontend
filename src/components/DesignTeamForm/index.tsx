@@ -7,14 +7,14 @@ import * as z from 'zod';
 import Image from 'next/image';
 import Input from '../common/input';
 import Button from '../common/button/Button';
-
+import ImageUpload from '../common/imageUpload';
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
   contactNumber: z.string().min(10, 'Contact number must be at least 10 digits').max(15, 'Contact number too long'),
   description: z.string().min(10, 'Description must be at least 10 characters long'),
-  image: z.any().optional(), 
+  image: z.any().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -41,14 +41,11 @@ const DesignTeamForm: React.FC = () => {
 
   const onSubmit = (data: FormData) => {
     console.log('Form Data:', data);
-  
-    alert('Form submitted! Check console for data.');
     reset();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setValue('image', file || null);
+  const handleFileChange = (file: File | null) => {
+    setValue('image', file);
   };
 
   return (
@@ -65,10 +62,9 @@ const DesignTeamForm: React.FC = () => {
             inputSize="md"
             {...register('firstName')}
             error={errors.firstName?.message}
-            className='border-none py-4 px-6 rounded-xl '
-            bg='bg-gray-100 '
-            labelClassName='text-md !font-semibold text-gray-900'
-
+            className="border-none py-4 px-6 rounded-xl"
+            bg="bg-gray-100"
+            labelClassName="text-md !font-semibold text-gray-900"
           />
           <Input
             label="Last Name"
@@ -76,11 +72,10 @@ const DesignTeamForm: React.FC = () => {
             inputSize="md"
             {...register('lastName')}
             error={errors.lastName?.message}
-             className='border-none py-4 px-6 rounded-xl'
-            bg='bg-gray-100 '
-            labelClassName='text-md !font-semibold text-gray-900'
+            className="border-none py-4 px-6 rounded-xl"
+            bg="bg-gray-100"
+            labelClassName="text-md !font-semibold text-gray-900"
           />
-
         </div>
         <Input
           label="Email"
@@ -89,9 +84,9 @@ const DesignTeamForm: React.FC = () => {
           inputSize="md"
           {...register('email')}
           error={errors.email?.message}
-           className='border-none py-4 px-6 rounded-xl'
-            bg='bg-gray-100 '
-            labelClassName='text-md !font-semibold text-gray-900'
+          className="border-none py-4 px-6 rounded-xl"
+          bg="bg-gray-100"
+          labelClassName="text-md !font-semibold text-gray-900"
         />
         <Input
           label="Contact Number"
@@ -100,10 +95,9 @@ const DesignTeamForm: React.FC = () => {
           inputSize="md"
           {...register('contactNumber')}
           error={errors.contactNumber?.message}
-           className='border-none py-4 px-6 rounded-xl'
-            bg='bg-gray-100 '
-            labelClassName='text-md !font-semibold text-gray-900'
-
+          className="border-none py-4 px-6 rounded-xl"
+          bg="bg-gray-100"
+          labelClassName="text-md !font-semibold text-gray-900"
         />
         <Input
           label="Describe your coin in detail"
@@ -113,57 +107,27 @@ const DesignTeamForm: React.FC = () => {
           rows={4}
           {...register('description')}
           error={errors.description?.message}
-           className='border-none py-4 px-6 rounded-xl'
-            bg='bg-gray-100 '
-            labelClassName='text-md !font-semibold text-gray-900'
-
+          className="border-none py-4 px-6 rounded-xl"
+          bg="bg-gray-100"
+          labelClassName="text-md !font-semibold text-gray-900"
         />
         <div className="flex justify-center my-2 items-center">
-          <div className="border-t border-gray-400  w-full"></div>
+          <div className="border-t border-gray-400 w-full"></div>
           <div className="px-4 text-sm text-center font-medium text-gray-700 bg-white">
             AND/OR
           </div>
-          <div className="border-t border-gray-400  w-full"></div>
+          <div className="border-t border-gray-400 w-full"></div>
         </div>
-
-        {/* Image Upload */}
-        <div className="mb-4">
-          <div className=" rounded-xl p-8 text-center bg-gray-100 hover:border-primary transition-colors">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              id="image-upload"
-            />
-            <label htmlFor="image-upload" className="cursor-pointer">
-              <div className="flex flex-col items-center">
-                <Image
-                  src="/images/home/upload-icon.svg" 
-                  alt="Upload"
-                  width={48}
-                  height={48}
-                  className="mb-2 opacity-50"
-                />
-                <p className="text-sm text-gray-500 mb-1">Upload Image</p>
-                <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
-              </div>
-            </label>
-            {watch('image') && (
-              <p className="mt-2 text-sm text-green-600">
-                Image selected: {(watch('image') as File)?.name}
-              </p>
-            )}
-          </div>
-          {errors.image && (
-            <div className="mt-1 text-red-500 text-sm">
-             <span>{errors.image.message as string}</span>
-            </div>
-          )}
-          <label className="block mb-2 text-[15px] font-semibold text-gray-900 mt-2">
-            Add a design preference image
-          </label>
-        </div>
+        
+        <ImageUpload
+          onChange={handleFileChange}
+          value={watch('image')}
+          error={errors.image}
+        />
+         <label className="block mb-2 text-[15px] font-semibold text-gray-900 mt-2">
+          Add a design preference image
+        </label>
+        
         <Button
           type="submit"
           variant="primary"
