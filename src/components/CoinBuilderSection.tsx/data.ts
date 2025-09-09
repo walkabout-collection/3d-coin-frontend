@@ -26,6 +26,6 @@ export const coinBuilderSections: CoinBuilderSection[] = [
     description: 'When you have a vision but want professional polish, our design team collaborates with you to create something unforgettable.',
     image: designTeamImage,
     buttonText: 'Work with Designers',
-    link: '/contact-us',
+    link: '/design-team',
   },
 ];
