@@ -15,6 +15,7 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
       bg = "bg-gray-100", // Default background color
       textarea = false,
       rows = 3, // default rows for textarea
+      labelClassName = "",
       ...props
     },
     ref
@@ -56,7 +57,7 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
     return (
       <div className="mb-4">
         {label && (
-          <label className="block mb-2 text-sm font-normal text-gray-700">
+          <label className={`block mb-2 text-sm font-normal text-gray-700 ${labelClassName}`}>
             {label}
           </label>
         )}

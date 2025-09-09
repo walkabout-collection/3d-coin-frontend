@@ -65,6 +65,10 @@ const DesignTeamForm: React.FC = () => {
             inputSize="md"
             {...register('firstName')}
             error={errors.firstName?.message}
+            className='border-none py-4 px-6 rounded-xl '
+            bg='bg-gray-100 '
+            labelClassName='text-md !font-semibold text-gray-900'
+
           />
           <Input
             label="Last Name"
@@ -72,7 +76,11 @@ const DesignTeamForm: React.FC = () => {
             inputSize="md"
             {...register('lastName')}
             error={errors.lastName?.message}
+             className='border-none py-4 px-6 rounded-xl'
+            bg='bg-gray-100 '
+            labelClassName='text-md !font-semibold text-gray-900'
           />
+
         </div>
         <Input
           label="Email"
@@ -81,6 +89,9 @@ const DesignTeamForm: React.FC = () => {
           inputSize="md"
           {...register('email')}
           error={errors.email?.message}
+           className='border-none py-4 px-6 rounded-xl'
+            bg='bg-gray-100 '
+            labelClassName='text-md !font-semibold text-gray-900'
         />
         <Input
           label="Contact Number"
@@ -89,6 +100,10 @@ const DesignTeamForm: React.FC = () => {
           inputSize="md"
           {...register('contactNumber')}
           error={errors.contactNumber?.message}
+           className='border-none py-4 px-6 rounded-xl'
+            bg='bg-gray-100 '
+            labelClassName='text-md !font-semibold text-gray-900'
+
         />
         <Input
           label="Describe your coin in detail"
@@ -98,21 +113,22 @@ const DesignTeamForm: React.FC = () => {
           rows={4}
           {...register('description')}
           error={errors.description?.message}
+           className='border-none py-4 px-6 rounded-xl'
+            bg='bg-gray-100 '
+            labelClassName='text-md !font-semibold text-gray-900'
+
         />
         <div className="flex justify-center my-2 items-center">
-          <div className="border-t border-gray-500  w-full"></div>
-          <div className="px-4 text-md text-center font-medium text-gray-500 bg-white">
+          <div className="border-t border-gray-400  w-full"></div>
+          <div className="px-4 text-sm text-center font-medium text-gray-700 bg-white">
             AND/OR
           </div>
-          <div className="border-t border-gray-500  w-full"></div>
+          <div className="border-t border-gray-400  w-full"></div>
         </div>
 
         {/* Image Upload */}
         <div className="mb-4">
-          <label className="block mb-2 text-sm font-normal text-gray-700">
-            Add a design preference image
-          </label>
-          <div className="border  border-gray-300 rounded-lg p-8 text-center bg-gray-100 hover:border-primary transition-colors">
+          <div className=" rounded-xl p-8 text-center bg-gray-100 hover:border-primary transition-colors">
             <input
               type="file"
               accept="image/*"
@@ -144,6 +160,9 @@ const DesignTeamForm: React.FC = () => {
              <span>{errors.image.message as string}</span>
             </div>
           )}
+          <label className="block mb-2 text-[15px] font-semibold text-gray-900 mt-2">
+            Add a design preference image
+          </label>
         </div>
         <Button
           type="submit"

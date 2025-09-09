@@ -22,7 +22,7 @@ export default function Gallery() {
       const index = (currentIndex - 1 + i + items.length) % items.length;
       visible.push({
         ...items[index],
-        position: i // 0: left, 1: center, 2: right
+        position: i 
       });
     }
     return visible;
