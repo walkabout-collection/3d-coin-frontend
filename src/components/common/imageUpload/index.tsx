@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import { ImageUploadProps } from './types';
 
-const ImageUpload: React.FC<ImageUploadProps> = ({  onChange, value, error }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({  onChange, value, error,  className}) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     onChange(file || null);
@@ -11,7 +11,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({  onChange, value, error }) =>
   return (
     <div className="mb-4">
       <div
-        className="rounded-xl p-8 text-center bg-gray-100 hover:border-primary transition-colors"
+        className={`rounded-xl p-8 text-center bg-gray-100 hover:border-primary transition-colors ${className}`}
       >
         <input
           type="file"

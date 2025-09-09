@@ -1,7 +1,14 @@
-export default function CustomShapesPage() {
+import AIGenerator from "@/src/components/AIGenerator";
+import React from "react";
+
+const CustomShapes = () => {
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <h1 className="text-3xl font-bold text-black">Custom Shapes Page</h1>
-    </div>
+    <>
+    <AIGenerator />
+    </>
   );
-}
+};
+
+export default CustomShapes;
+
+
