@@ -171,6 +171,7 @@ const CoinDesignInterface: React.FC = () => {
           <Button
             type="button"
             variant="ternary"
+            onClick={handleSaveDraft}
             className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
           >
             SAVE AS DRAFT

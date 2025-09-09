@@ -1,4 +1,4 @@
-import { GeneratorState, UIState } from "./types";
+import { ChatbotQuestions, ChatbotState, GeneratorState, UIState } from "./types";
 
 export const initialGeneratorState: GeneratorState = {
   showUpload: false,
@@ -15,4 +15,16 @@ export const initialUIState: UIState = {
     '/images/thumbnail4.jpg',
   ],
   isLoggedIn: false,
+};
+export const initialChatbotState: ChatbotState = {
+  isDrawerOpen: false,
+};
+
+export const chatbotQuestions: ChatbotQuestions = {
+  questions: [
+    "What types of coins can I design?",
+    "How do I upload a custom image?",
+    "What is the regeneration process?",
+    "Can I save my designs?",
+  ],
 };

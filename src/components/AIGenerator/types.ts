@@ -8,7 +8,6 @@ export interface UploadData {
   image: File | null;
 }
 
-// types.ts
 export interface UIState {
   previewImage: string | null;
   thumbnails: string[];
@@ -17,4 +16,11 @@ export interface UIState {
 
 export interface ImageData {
   file: File | null;
+}
+export interface ChatbotState {
+  isDrawerOpen: boolean;
+}
+
+export interface ChatbotQuestions {
+  questions: string[];
 }
