@@ -56,7 +56,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, class
                 alt="Upload"
                 width={48}
                 height={48}
-                className="mb-2 opacity-50"
+                className="mb-2 "
               />
               <p className="text-sm text-gray-500 mb-1">Upload Image</p>
             </div>

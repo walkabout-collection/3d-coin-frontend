@@ -18,10 +18,12 @@ const initialUIState: UIState = {
   selectedThumbnail: null,
   isLoggedIn: true
 };
+interface CoinDesignInterfaceProps {
+  onContinue: () => void; 
+}
 
 
-
-const CoinDesignInterface: React.FC = () => {
+const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({ onContinue }) => {
   const [state, setState] = useState<UIState>(initialUIState);
   const [imageData, setImageData] = useState<ImageData>({ file: null });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -178,7 +180,7 @@ const CoinDesignInterface: React.FC = () => {
           </Button>
 
           <Button
-            onClick={handleContinue}
+                onClick={onContinue} 
             type="button"
             variant="primary"
             className="max-w-[180px] w-full text-lg font-medium"

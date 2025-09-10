@@ -1,47 +1,53 @@
-import { forwardRef } from "react";
-import { InputProps } from "./types";
+'use client';
+import { forwardRef } from 'react';
+import { InputProps } from './types';
 
-const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
+const Input = forwardRef<
+  HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  InputProps
+>(
   (
     {
-      variant = "primary",
-      inputSize = "md",
-      className = "",
+      variant = 'primary',
+      inputSize = 'md',
+      className = '',
       error,
       register,
       label,
-      placeholder = "",
+      placeholder = '',
       rounded = false,
-      bg = "bg-gray-100", // Default background color
+      bg = 'bg-gray-100',
       textarea = false,
-      rows = 3, // default rows for textarea
-      labelClassName = "",
+      select = false, 
+      options = [], 
+      rows = 3, 
+      labelClassName = '',
       ...props
     },
     ref
   ) => {
-    const effectiveBg = bg === "" || bg === "bg-transparent" ? "" : bg;
+    const effectiveBg = bg === '' || bg === 'bg-transparent' ? '' : bg;
 
     const baseStyles = `
       w-full font-medium text-gray-900 placeholder-gray-400
       focus:outline-none focus:ring-2 focus:ring-blue-500
       focus:border-transparent transition-colors
-      ${rounded ? "rounded-full" : "rounded-md"}
+      ${rounded ? 'rounded-full' : 'rounded-md'}
       border border-gray-300
       appearance-none
       ${effectiveBg}
     `;
 
     const variantStyles = {
-      primary: "text-gray-900",
-      secondary: "border-primary text-gray-900 hover:bg-gray-50",
-      outline: "border-primary text-gray-900 hover:border-blue-500",
+      primary: 'text-gray-900',
+      secondary: 'border-primary text-gray-900 hover:bg-gray-50',
+      outline: 'border-primary text-gray-900 hover:border-blue-500',
     };
 
     const sizeStyles = {
-      sm: "px-3 py-2 text-sm",
-      md: "px-4 py-2 text-base",
-      lg: "px-5 py-3 text-lg",
+      sm: 'px-3 py-2 text-sm',
+      md: 'px-4 py-2 text-base',
+      lg: 'px-5 py-3 text-lg',
     };
 
     const combinedStyles = [
@@ -49,10 +55,10 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
       variantStyles[variant],
       sizeStyles[inputSize],
       className,
-      error ? "border-red-500" : "",
+      error ? 'border-red-500' : '',
     ]
       .filter(Boolean)
-      .join(" ");
+      .join(' ');
 
     return (
       <div className="mb-4">
@@ -62,7 +68,25 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
           </label>
         )}
 
-        {textarea ? (
+        {select ? (
+          <select
+            ref={ref as React.Ref<HTMLSelectElement>}
+            className={combinedStyles}
+            {...(register)}
+            {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
+          >
+            {placeholder && (
+              <option value="" disabled selected>
+                {placeholder}
+              </option>
+            )}
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : textarea ? (
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
             className={combinedStyles}
@@ -91,5 +115,5 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
   }
 );
 
-Input.displayName = "Input";
+Input.displayName = 'Input';
 export default Input;
