@@ -19,7 +19,7 @@ export default function HeroSection({ data }: HeroSectionProps) {
 
   return (
     <HeroClient>
-      <section className="relative max-h-[calc(100vh-130px)] bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] shadow-lg overflow-hidden">
+      <section className="relative max-h-[calc(100vh-40px)] bg-gradient-to-r from-[#0F1C2E] to-[#1E3A6B] shadow-lg overflow-hidden">
 
         {/* Subtle texture overlay */}
         <div

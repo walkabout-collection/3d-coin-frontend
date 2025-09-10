@@ -4,7 +4,7 @@ import { cardsData } from "./data";
 
 const CardSection = () => {
   return (
-    <section className="py-16 px-4 bg-gray-50 min-h-screen">
+    <section className="py-16 px-4  min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Section Title */}
         <div className="text-center mb-16">

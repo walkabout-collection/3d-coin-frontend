@@ -7,7 +7,7 @@ export const cardsData: CardsData = [
     description:
       "Want Some Extra Help? Collaborate With Our Design Team For Something 100% Custom.",
     buttonText: "Collaborate Now",
-    buttonHref: "/contact-us",
+    buttonHref: "/design-team",
     height: 500,
     width: 400,
   },

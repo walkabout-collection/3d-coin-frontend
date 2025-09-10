@@ -82,7 +82,7 @@ export default function Contact() {
                 rel="noopener noreferrer"
                 className="flex items-center rounded-md space-x-4 bg-gradient-to-r from-[#0F1D37] to-[#143D6B] text-white px-6 py-4 shadow-md hover:opacity-90 transition"
               >
-                <div className="flex items-center justify-center bg-white p-2">
+                <div className="flex items-center justify-center bg-white rounded-lg p-2">
                   {iconMap[item.icon as keyof typeof iconMap]}
                 </div>
                 <div className="whitespace-pre-line">{item.value}</div>
@@ -103,7 +103,8 @@ export default function Contact() {
                 {...register("fullName")}
                 type="text"
                 placeholder="Enter your full name"
-                className="w-full border border-gray-300   "
+                 className='border-none py-3 px-6 rounded-xl text-[12px]'
+                bg='bg-gray-100 '
               />
               {errors.fullName && (
                 <p className="text-red-500 text-sm mt-1">
@@ -119,8 +120,8 @@ export default function Contact() {
                 {...register("email")}
                 type="email"
                 placeholder="Enter your email address"
-                className="w-full border border-gray-300 px-4 py-3   "
-              />
+                className='border-none py-3 px-6 rounded-xl text-[12px]'
+                bg='bg-gray-100 '              />
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.email.message}
@@ -135,7 +136,8 @@ export default function Contact() {
                 {...register("contact")}
                 type="text"
                 placeholder="Enter your contact number"
-                className="w-full border border-gray-300 px-4 py-3   "
+                className='border-none py-3 px-6 rounded-xl text-[12px]'
+                bg='bg-gray-100 '
               />
               {errors.contact && (
                 <p className="text-red-500 text-sm mt-1">
@@ -151,8 +153,8 @@ export default function Contact() {
                 {...register("message")}
                 rows={4}
                 placeholder="Please type your message here..."
-                className="w-full border border-gray-300 px-4 py-3   "
-              />
+                className='border-none py-3 px-6 rounded-xl text-[12px]'
+                 bg='bg-gray-100 '              />
               {errors.message && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.message.message}
