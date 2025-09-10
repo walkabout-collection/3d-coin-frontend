@@ -28,7 +28,6 @@ const Button: React.FC<ButtonProps> = ({
       text-white
       bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978]
       shadow-[0_4px_12px_rgba(0,0,0,0.6)]
-      hover:from-[#203a43] hover:via-[#2c5364] hover:to-[#0f2027]
     `,
     secondary: `
       ${baseStyles}

@@ -1,8 +1,23 @@
-import React from 'react';
+'use client';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ImageUploadProps } from './types';
 
-const ImageUpload: React.FC<ImageUploadProps> = ({  onChange, value, error,  className}) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, className }) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (value) {
+      const url = URL.createObjectURL(value);
+      setPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [value]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     onChange(file || null);
@@ -20,17 +35,32 @@ const ImageUpload: React.FC<ImageUploadProps> = ({  onChange, value, error,  cla
           className="hidden"
           id="image-upload"
         />
-        <label htmlFor="image-upload" className="cursor-pointer h-full flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <Image
-              src="/images/home/upload-icon.svg"
-              alt="Upload"
-              width={48}
-              height={48}
-              className="mb-2 opacity-50"
-            />
-            <p className="text-sm text-gray-500 mb-1">Upload Image</p>
-          </div>
+        <label
+          htmlFor="image-upload"
+          className="cursor-pointer h-full flex items-center justify-center"
+        >
+          {previewUrl ? (
+            <div className="flex flex-col items-center w-full h-48">
+              <Image
+                src={previewUrl}
+                alt="Uploaded Preview"
+                width={300}
+                height={200}
+                className="object-contain max-h-full max-w-full"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <Image
+                src="/images/home/upload-icon.svg"
+                alt="Upload"
+                width={48}
+                height={48}
+                className="mb-2 opacity-50"
+              />
+              <p className="text-sm text-gray-500 mb-1">Upload Image</p>
+            </div>
+          )}
         </label>
         {value && (
           <p className="mt-2 text-sm text-green-600">

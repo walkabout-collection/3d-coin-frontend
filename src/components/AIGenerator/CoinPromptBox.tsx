@@ -47,7 +47,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
             
             <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
               <button
-                className="flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
+                className=" mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
                 onClick={() => document.getElementById('image-upload')?.click()}
               >
                 <Paperclip size={16} />
@@ -68,11 +68,11 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
                   className="hover:scale-105 transition-transform duration-200"
                 >
                   <Image
-                    src="/images/home/chatbot.svg"
+                    src="/images/home/bot-icon.svg"
                     alt="Chatbot Assistant"
                     width={48}
                     height={48}
-                    className="cursor-pointer"
+                    className="cursor-pointer mt-5"
                   />
                 </button>
                 
@@ -80,7 +80,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
           onClick={onGenerate}
           type="button"
           variant='primary'
-          className="mt-6 max-w-[200px] w-full  text-xl font-medium max-auto items-center justify-center flex mx-auto"
+          className="mt-5 max-w-[120px] w-full  text-sm font-base max-auto items-center justify-center flex mx-auto"
         >
           GENERATE
         </Button>
