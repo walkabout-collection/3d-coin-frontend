@@ -11,6 +11,7 @@ const Button: React.FC<ButtonProps> = ({
   disabled = false,
   className = "",
   style,
+  href,
 }) => {
   const baseStyles = `
     flex justify-center items-center
@@ -29,7 +30,6 @@ const Button: React.FC<ButtonProps> = ({
       shadow-[0_4px_12px_rgba(0,0,0,0.6)]
       hover:from-[#203a43] hover:via-[#2c5364] hover:to-[#0f2027]
     `,
-    
     secondary: `
       ${baseStyles}
       text-black
@@ -37,7 +37,6 @@ const Button: React.FC<ButtonProps> = ({
       shadow-[0_6px_12px_rgba(255,215,0,0.6)]
       hover:from-[#FFC300] hover:to-[#FFB700]
     `,
-
     ternary: `
       ${baseStyles}
       text-black bg-white border border-gray-300
@@ -45,6 +44,14 @@ const Button: React.FC<ButtonProps> = ({
       shadow-sm
     `,
   };
+
+  if (href) {
+    return (
+      <a href={href} style={style} className={variantStyles[variant]}>
+        {children}
+      </a>
+    );
+  }
 
   return (
     <button

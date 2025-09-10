@@ -4,12 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
 import authPanel from "@/public/images/auth-right-panel.png";
-// import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Input from "../common/input";
 import { SignupProps } from "./types";
 import Link from "next/link";
 import Button from "../common/button/Button";
+import { useRouter } from "next/navigation";
 
 const signupSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -19,7 +19,7 @@ const signupSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .regex(
-      /^(?=.[A-Z])(?=.\d)/,
+      /^(?=.*[A-Z])(?=.*\d)/,
       "Password must contain at least one uppercase letter and one number"
     ),
 });
@@ -27,8 +27,7 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 
 const SignUp = ({}: SignupProps) => {
-  //   const router = useRouter();
-
+  const router = useRouter();
   const [error] = useState<string | null>(null);
 
   const {
@@ -47,8 +46,7 @@ const SignUp = ({}: SignupProps) => {
 
   const onSubmit = (data: SignupFormData) => {
     console.log("Signup Data:", data);
-    // onSignupSuccess?.();
-    // router.push("/verify-otp");
+    router.push("/dashboard");
   };
 
   return (
@@ -72,8 +70,10 @@ const SignUp = ({}: SignupProps) => {
                   placeholder="WRITE YOUR FIRST NAME"
                   variant="primary"
                   inputSize="md"
+                  rounded={true}
                   {...register("first_name")}
                   error={errors.first_name?.message}
+                  bg="bg-white"
                 />
               </div>
               <div className="relative">
@@ -82,8 +82,10 @@ const SignUp = ({}: SignupProps) => {
                   placeholder="WRITE YOUR LAST NAME"
                   variant="primary"
                   inputSize="md"
+                  rounded={true}
                   {...register("last_name")}
                   error={errors.last_name?.message}
+                  bg="bg-white"
                 />
               </div>
               <div className="relative">
@@ -92,8 +94,10 @@ const SignUp = ({}: SignupProps) => {
                   placeholder="ENTER YOUR EMAIL"
                   variant="primary"
                   inputSize="md"
+                  rounded={true}
                   {...register("email")}
                   error={errors.email?.message}
+                  bg="bg-white"
                 />
               </div>
               <div className="relative">
@@ -102,9 +106,11 @@ const SignUp = ({}: SignupProps) => {
                   placeholder="ENTER YOUR PASSWORD"
                   variant="primary"
                   inputSize="md"
-                  type="password"
+                  type={"password"}
+                  rounded={true}
                   {...register("password")}
                   error={errors.password?.message}
+                  bg="bg-white"
                 />
               </div>
 
