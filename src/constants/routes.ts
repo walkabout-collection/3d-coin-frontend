@@ -16,14 +16,16 @@ export const routes = {
   },
   PRICING: {
     title: "Pricing",
-    path: "/pricing",
+    // path: "/pricing",
+    path: "/price",
     metaTitle: "Legacy Forge | Affordable Custom Coin Pricing Plans",
     description:
       "Explore Legacy Forge’s transparent pricing plans for custom coins. Choose dimensions, materials, and finishes that fit your needs.",
   },
   CONTACT_US: {
     title: "Contact Us",
-    path: "/contact-us",
+    // path: "/contact-us",
+    path: "/contact",
     metaTitle: "Legacy Forge | Contact Our Team",
     description:
       "Have questions about designing your coin? Get in touch with Legacy Forge for expert support and design assistance.",
