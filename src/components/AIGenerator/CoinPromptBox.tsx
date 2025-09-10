@@ -1,20 +1,23 @@
 'use client';
 import React, { useState } from 'react';
-import ImageUpload from '../common/imageUpload';
 import Button from '../common/button/Button';
 import { Paperclip } from 'lucide-react';
 import Image from 'next/image';
-import ChatbotDrawer from './ChatbotDrawer'; 
-import { chatbotQuestions, initialChatbotState } from './data'; 
+import ChatbotDrawer from './ChatbotDrawer';
+import { chatbotQuestions, initialChatbotState } from './data';
+import { z } from 'zod';
 
 interface CoinPromptBoxProps {
-  onGenerate: () => void; 
+  onGenerate: () => void;
 }
+
+const imageSchema = z.instanceof(File, { message: 'Please upload an image' });
 
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [chatbotState, setChatbotState] = useState(initialChatbotState);
+  const [error, setError] = useState<{ message: string } | undefined>(undefined);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,12 +25,28 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
       setUploadedImage(file);
       const imageUrl = URL.createObjectURL(file);
       setPreviewImage(imageUrl);
+      setError(undefined); 
+    } else {
+      setUploadedImage(null);
+      setPreviewImage(null);
     }
   };
 
-
   const handleChatbotClick = () => {
-    setChatbotState((prev: { isDrawerOpen: any; }) => ({ ...prev, isDrawerOpen: !prev.isDrawerOpen }));
+    setChatbotState((prev: { isDrawerOpen: any }) => ({
+      ...prev,
+      isDrawerOpen: !prev.isDrawerOpen,
+    }));
+  };
+
+  const handleGenerateClick = () => {
+    const validation = imageSchema.safeParse(uploadedImage);
+    if (validation.success) {
+      setError(undefined); 
+      onGenerate(); 
+    } else {
+      setError({ message: validation.error.issues[0].message });
+    }
   };
 
   return (
@@ -36,7 +55,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
         <h2 className="text-4xl font-semibold mb-6 mt-8">
           START YOUR JOURNEY OF COLLECTING UNIQUE COINS, ONE POCKET AT A TIME
         </h2>
-        
+
         <div className="flex flex-col">
           <div className="relative mb-8 mt-10">
             <textarea
@@ -44,16 +63,16 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
               placeholder="Ask anything…"
               rows={5}
             />
-            
+
             <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
               <button
-                className=" mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
+                className="mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
                 onClick={() => document.getElementById('image-upload')?.click()}
               >
                 <Paperclip size={16} />
                 <span className="text-sm font-medium">Attach</span>
               </button>
-              
+
               <input
                 type="file"
                 accept="image/*"
@@ -75,18 +94,24 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
                     className="cursor-pointer mt-5"
                   />
                 </button>
-                
-                 <Button
-          onClick={onGenerate}
-          type="button"
-          variant='primary'
-          className="mt-5 max-w-[120px] w-full  text-sm font-base max-auto items-center justify-center flex mx-auto"
-        >
-          GENERATE
-        </Button>
+
+                <Button
+                  onClick={handleGenerateClick} 
+                  type="button"
+                  variant="primary"
+                  className="mt-5 max-w-[120px] w-full text-sm font-base items-center justify-center flex mx-auto"
+                >
+                  GENERATE
+                </Button>
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="mt-1 text-red-500 text-sm" aria-live="polite">
+              <span>{error.message}</span>
+            </div>
+          )}
         </div>
 
         {previewImage && (
@@ -100,8 +125,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
           </div>
         )}
       </div>
-      
-      {/* Chatbot Drawer */}
+
       <ChatbotDrawer
         isOpen={chatbotState.isDrawerOpen}
         onClose={handleChatbotClick}
@@ -112,3 +136,4 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
 };
 
 export default CoinPromptBox;
+

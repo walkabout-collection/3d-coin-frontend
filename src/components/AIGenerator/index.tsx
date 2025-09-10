@@ -10,13 +10,13 @@ import Button from '../common/button/Button';
 const AIGenerator: React.FC = () => {
   const [state, setState] = useState<GeneratorState>(initialGeneratorState);
   const [uploadData, setUploadData] = useState<UploadData>({ image: null });
-  const [historyStack, setHistoryStack] = useState<string[]>(['main']); 
+  const [historyStack, setHistoryStack] = useState<string[]>(['main']);
 
   useEffect(() => {
     const handlePopState = () => {
       setHistoryStack((prev) => {
         const newStack = [...prev];
-        newStack.pop(); 
+        newStack.pop();
         const previousState = newStack[newStack.length - 1] || 'main';
 
         if (previousState === 'main') {
@@ -57,13 +57,9 @@ const AIGenerator: React.FC = () => {
   };
 
   const handleGenerate = () => {
-    if (uploadData.image) {
-      setState((prev) => ({ ...prev, showUpload: false, showGuide: false, showDesignInterface: true }));
-      setHistoryStack((prev) => [...prev, 'design']);
-      window.history.pushState({ screen: 'design' }, '', window.location.href);
-    } else {
-      console.log('Please upload an image first!');
-    }
+    setState((prev) => ({ ...prev, showUpload: false, showGuide: false, showDesignInterface: true }));
+    setHistoryStack((prev) => [...prev, 'design']);
+    window.history.pushState({ screen: 'design' }, '', window.location.href);
   };
 
   const handlePromptGenerate = () => {
