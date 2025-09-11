@@ -1,3 +1,4 @@
+// CoinPromptBox.tsx
 'use client';
 import React, { useState } from 'react';
 import Button from '../common/button/Button';
@@ -18,6 +19,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [chatbotState, setChatbotState] = useState(initialChatbotState);
   const [error, setError] = useState<{ message: string } | undefined>(undefined);
+  const [prompt, setPrompt] = useState(""); 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -25,7 +27,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
       setUploadedImage(file);
       const imageUrl = URL.createObjectURL(file);
       setPreviewImage(imageUrl);
-      setError(undefined); 
+      setError(undefined);
     } else {
       setUploadedImage(null);
       setPreviewImage(null);
@@ -42,11 +44,16 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const handleGenerateClick = () => {
     const validation = imageSchema.safeParse(uploadedImage);
     if (validation.success) {
-      setError(undefined); 
-      onGenerate(); 
+      setError(undefined);
+      onGenerate();
     } else {
       setError({ message: validation.error.issues[0].message });
     }
+  };
+
+ const handleQuestionInsert = (question: string) => {
+    setPrompt(question); // replace textarea with clicked question
+    setChatbotState({ ...chatbotState, isDrawerOpen: false }); // auto close drawer
   };
 
   return (
@@ -62,6 +69,8 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
               className="w-full p-6 border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500 text-lg resize-none"
               placeholder="Ask anything…"
               rows={5}
+              value={prompt} // Bind state to textarea
+              onChange={(e) => setPrompt(e.target.value)} // Update state on manual input
             />
 
             <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
@@ -96,7 +105,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
                 </button>
 
                 <Button
-                  onClick={handleGenerateClick} 
+                  onClick={handleGenerateClick}
                   type="button"
                   variant="primary"
                   className="mt-5 max-w-[120px] w-full text-sm font-base items-center justify-center flex mx-auto"
@@ -130,10 +139,10 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
         isOpen={chatbotState.isDrawerOpen}
         onClose={handleChatbotClick}
         questions={chatbotQuestions.questions}
+         onQuestionClick={handleQuestionInsert}  
       />
     </div>
   );
 };
 
 export default CoinPromptBox;
-
