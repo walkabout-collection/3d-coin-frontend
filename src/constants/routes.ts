@@ -84,5 +84,12 @@ export const routes = {
     description:
       "Discover the range of services offered by Legacy Forge, including custom coin design, manufacturing, and more.",
   },
+  DESIGN_SUMMARY: {
+    title: "Design Summary",
+    path: "/design-summary",
+    metaTitle: "Legacy Forge | Design Summary",
+    description:
+      "Review and manage your custom coin designs with Legacy Forge.",
+  },
 
 } as const;
