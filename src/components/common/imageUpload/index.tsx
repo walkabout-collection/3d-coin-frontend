@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ImageUploadProps } from './types';
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, className }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, className, id }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,14 +33,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, class
           accept="image/*"
           onChange={handleFileChange}
           className="hidden"
-          id="image-upload"
+          id={id}
         />
         <label
-          htmlFor="image-upload"
+          htmlFor={id}
           className="cursor-pointer h-full flex items-center justify-center"
         >
           {previewUrl ? (
-            <div className="flex flex-col items-center w-full h-48">
+            <div className="flex flex-col items-center h-48 w-48">
               <Image
                 src={previewUrl}
                 alt="Uploaded Preview"
@@ -56,7 +56,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, class
                 alt="Upload"
                 width={48}
                 height={48}
-                className="mb-2 "
+                className="mb-2"
               />
               <p className="text-sm text-gray-500 mb-1">Upload Image</p>
             </div>
@@ -64,13 +64,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, class
         </label>
         {value && (
           <p className="mt-2 text-sm text-green-600">
-            Image selected: {(value as File)?.name}
+            Image selected: {value.name}
           </p>
         )}
       </div>
       {error && (
         <div className="mt-1 text-red-500 text-sm">
-          <span>{error.message as string}</span>
+          <span>{error}</span>
         </div>
       )}
     </div>

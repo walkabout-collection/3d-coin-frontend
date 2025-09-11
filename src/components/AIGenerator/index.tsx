@@ -86,8 +86,8 @@ const AIGenerator: React.FC = () => {
     setHistoryStack((prev) => [...prev, 'threeDRender']);
     window.history.pushState({ screen: 'threeDRender' }, '', window.location.href);
   };
-   const frontImage =  '/images/home/gallery1.png';
-  const backImage =  '/images/home/gallery2.png';
+   const frontImage =  '/images/home/front-side.png';
+  const backImage =  '/images/home/front-side.png';
     const handleSaveAsDraft = async () => {
     console.log('Saving as draft...');
     

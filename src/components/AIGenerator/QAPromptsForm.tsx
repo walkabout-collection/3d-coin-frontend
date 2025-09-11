@@ -18,29 +18,24 @@ import ImageUpload from '../common/imageUpload';
 import Button from '../common/button/Button';
 
 const formSchema = z.object({
-  
-  coinShape: z.string().min(1, "Coin shape is required"),
-  subject: z.string().min(1, "Subject is required"),
-  metalFinishes: z.string().min(1, "Metal finish is required"),
-  coinStyles: z.string().min(1, "Coin style is required"),
-  detailLevel: z.string().min(1, "Detail level is required"),
-
-  frontDescription: z.string().min(1, "Front description is required"),
-  frontReferenceImage: z.instanceof(File).nullable().optional(),
-  frontReferenceImageImpact: z.string().optional(),
-  frontTextInsideArtwork: z.string().optional(),
-  frontTextStyle: z.string().optional(),
-  frontCompositionNotes: z.string().optional(),
-
-  backDescription: z.string().min(1, "Back description is required"),
-//   backReferenceImage: z.instanceof(File).nullable().optional(),
-  backReferenceImageImpact: z.string().optional(),
-  backTextInsideArtwork: z.string().optional(),
-  backTextStyle: z.string().optional(),
-  backCompositionNotes: z.string().optional(),
-
-  // Additional Information
-  prohibitedContent: z.string().optional(),
+  coinShape: z.string().min(1, 'Coin shape is required'),
+  subject: z.string().min(1, 'Subject is required'),
+  metalFinishes: z.string().min(1, 'Metal finish is required'),
+  coinStyles: z.string().min(1, 'Coin style is required'),
+  detailLevel: z.string().min(1, 'Detail level is required'),
+  frontDescription: z.string().min(1, 'Front description is required'),
+  frontReferenceImage: z.instanceof(File, { message: 'Front reference image is required' }),
+  frontReferenceImageImpact: z.string().min(1, 'Front reference image impact is required'),
+  frontTextInsideArtwork: z.string().min(1, 'Front text inside artwork is required'),
+  frontTextStyle: z.string().min(1, 'Front text style is required'),
+  frontCompositionNotes: z.string().min(1, 'Front composition notes are required'),
+  backDescription: z.string().min(1, 'Back description is required'),
+  backReferenceImage: z.instanceof(File, { message: 'Back reference image is required' }),
+  backReferenceImageImpact: z.string().min(1, 'Back reference image impact is required'),
+  backTextInsideArtwork: z.string().min(1, 'Back text inside artwork is required'),
+  backTextStyle: z.string().min(1, 'Back text style is required'),
+  backCompositionNotes: z.string().min(1, 'Back composition notes are required'),
+  prohibitedContent: z.string().min(1, 'Prohibited content is required'),
 });
 
 export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialData = {} }) => {
@@ -59,14 +54,12 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
       coinStyles: '',
       detailLevel: '',
       frontDescription: '',
-      frontReferenceImage: null,
       frontReferenceImageImpact: '',
       frontTextInsideArtwork: '',
       frontTextStyle: '',
       frontCompositionNotes: '',
       backDescription: '',
-      backReferenceImage: null,
-    //   backReferenceImageImpact: '',
+      backReferenceImageImpact: '',
       backTextInsideArtwork: '',
       backTextStyle: '',
       backCompositionNotes: '',
@@ -78,14 +71,17 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
   const formData = watch();
 
   const handleImageChange = (field: 'frontReferenceImage' | 'backReferenceImage', file: File | null) => {
-    setValue(field, file, { shouldValidate: true });
+    // console.log(`handleImageChange for ${field}:`, file);
+    if (file) {
+      setValue(field, file, { shouldValidate: true });
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 ">
+    <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-light text-gray-800 mb-2">ANSWER GUIDED Q&A</h1>
-        <h2 className="text-2xl font-light text-gray-600">PROMPTS</h2>
+        <h1 className="text-3xl font-semibold text-primary mb-2 mt-4">ANSWER GUIDED Q&A</h1>
+        <h2 className="text-3xl font-semibold text-primary">PROMPTS</h2>
       </div>
 
       <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-8">
@@ -159,9 +155,8 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-8">
+        <div className="bg-white shadow-md rounded-2xl p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">FRONT SIDE</h2>
-
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">1. DESCRIPTION</h3>
@@ -185,6 +180,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
                 value={formData.frontReferenceImage}
                 className="py-16"
                 error={errors.frontReferenceImage?.message}
+                id="front-image-upload"
               />
             </div>
 
@@ -221,23 +217,23 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
               <Input
                 {...register('frontTextStyle')}
                 textarea
-                rows={3}
+                rows={1}
                 placeholder={placeholderTexts.frontTextStyle}
                 inputSize="md"
-                className="border-none py-5 px-6 rounded-xl"
+                className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
                 error={errors.frontTextStyle?.message}
               />
             </div>
+
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">6. COMPOSITION NOTES</h3>
               <Input
                 {...register('frontCompositionNotes')}
-                textarea
-                rows={3}
+                rows={1}
                 placeholder={placeholderTexts.frontCompositionNotes}
                 inputSize="md"
-                className="border-none py-5 px-6 rounded-xl"
+                className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
                 error={errors.frontCompositionNotes?.message}
               />
@@ -245,9 +241,9 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-2xl p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">BACK SIDE</h2>
 
+        <div className="bg-white shadow-md rounded-2xl p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">BACK SIDE</h2>
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">1. DESCRIPTION</h3>
@@ -263,8 +259,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
               />
             </div>
 
-            {/* 2. Reference Image */}
-            {/* <div>
+            <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">2. REFERENCE IMAGE</h3>
               <ImageUpload
                 {...register('backReferenceImage')}
@@ -272,10 +267,10 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
                 value={formData.backReferenceImage}
                 className="py-16"
                 error={errors.backReferenceImage?.message}
+                id="back-image-upload"
               />
-            </div> */}
+            </div>
 
-            {/* 3. Reference Image Impact */}
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">3. REFERENCE IMAGE IMPACT</h3>
               <Input
@@ -309,10 +304,10 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
               <Input
                 {...register('backTextStyle')}
                 textarea
-                rows={3}
+                rows={1}
                 placeholder={placeholderTexts.backTextStyle}
                 inputSize="md"
-                className="border-none py-5 px-6 rounded-xl"
+                className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
                 error={errors.backTextStyle?.message}
               />
@@ -323,10 +318,10 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
               <Input
                 {...register('backCompositionNotes')}
                 textarea
-                rows={3}
+                rows={1}
                 placeholder={placeholderTexts.backCompositionNotes}
                 inputSize="md"
-                className="border-none py-5 px-6 rounded-xl"
+                className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
                 error={errors.backCompositionNotes?.message}
               />
@@ -334,20 +329,21 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
             </div>
           </div>
         </div>
+
         <div>
           <h2 className="text-2xl font-bold text-gray-800 mb-6">PROHIBITED CONTENT</h2>
           <Input
             {...register('prohibitedContent')}
-            textarea
-            rows={3}
+            rows={1}
             placeholder={placeholderTexts.prohibitedContent}
             inputSize="md"
-            className="border-none py-5 px-6 rounded-xl"
+            className="border-none py-4 px-6 rounded-xl"
             bg="bg-gray-100"
             error={errors.prohibitedContent?.message}
           />
           <p className="text-xs text-gray-500 mt-2">{exampleTexts.prohibitedContent}</p>
         </div>
+
         <div className="text-center items-center justify-center flex pt-8">
           <Button
             type="submit"

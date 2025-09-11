@@ -40,22 +40,18 @@ export interface QAFormData {
   metalFinishes: string;
   coinStyles: string;
   detailLevel: string;
-  
-
   frontDescription: string;
-  frontReferenceImage?: File | null;
+  frontReferenceImage: File ; 
   frontReferenceImageImpact: string;
   frontTextInsideArtwork: string;
   frontTextStyle: string;
   frontCompositionNotes: string;
-
   backDescription: string;
-  backReferenceImage?: File | null;
+  backReferenceImage: File; 
   backReferenceImageImpact: string;
   backTextInsideArtwork: string;
   backTextStyle: string;
   backCompositionNotes: string;
-
   prohibitedContent: string;
 }
 
