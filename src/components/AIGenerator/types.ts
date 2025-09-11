@@ -4,6 +4,7 @@ export interface GeneratorState {
   showDesignInterface: boolean;
   showQAPrompts: boolean;
   showThreeDRender: boolean;
+  showDesignSummary: boolean; 
 }
 
 export interface UploadData {

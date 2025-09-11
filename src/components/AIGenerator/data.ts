@@ -5,7 +5,8 @@ export const initialGeneratorState: GeneratorState = {
   showGuide: false,
   showDesignInterface: false, 
   showQAPrompts: false,
-  showThreeDRender: false
+  showThreeDRender: false,
+  showDesignSummary: false  
 };
 
 export const initialUIState: UIState = {

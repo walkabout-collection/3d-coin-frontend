@@ -1,25 +1,26 @@
-// CoinPromptBox.tsx
-'use client';
-import React, { useState } from 'react';
-import Button from '../common/button/Button';
-import { Paperclip } from 'lucide-react';
-import Image from 'next/image';
-import ChatbotDrawer from './ChatbotDrawer';
-import { chatbotQuestions, initialChatbotState } from './data';
-import { z } from 'zod';
+"use client";
+import React, { useState } from "react";
+import Button from "../common/button/Button";
+import { Paperclip } from "lucide-react";
+import Image from "next/image";
+import ChatbotDrawer from "./ChatbotDrawer";
+import { chatbotQuestions, initialChatbotState } from "./data";
+import { z } from "zod";
 
 interface CoinPromptBoxProps {
   onGenerate: () => void;
 }
 
-const imageSchema = z.instanceof(File, { message: 'Please upload an image' });
+const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [chatbotState, setChatbotState] = useState(initialChatbotState);
-  const [error, setError] = useState<{ message: string } | undefined>(undefined);
-  const [prompt, setPrompt] = useState(""); 
+  const [error, setError] = useState<{ message: string } | undefined>(
+    undefined
+  );
+  const [prompt, setPrompt] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,17 +44,19 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
 
   const handleGenerateClick = () => {
     const validation = imageSchema.safeParse(uploadedImage);
-    if (validation.success) {
+    if (prompt.trim().length > 0 || (validation.success && uploadedImage)) {
       setError(undefined);
       onGenerate();
     } else {
-      setError({ message: validation.error.issues[0].message });
+      setError({
+        message: "Please provide a prompt or upload an image to generate.",
+      });
     }
   };
 
- const handleQuestionInsert = (question: string) => {
-    setPrompt(question); // replace textarea with clicked question
-    setChatbotState({ ...chatbotState, isDrawerOpen: false }); // auto close drawer
+  const handleQuestionInsert = (question: string) => {
+    setPrompt(question); 
+    setChatbotState({ ...chatbotState, isDrawerOpen: false }); 
   };
 
   return (
@@ -65,18 +68,32 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
 
         <div className="flex flex-col">
           <div className="relative mb-8 mt-10">
-            <textarea
-              className="w-full p-6 border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500 text-lg resize-none"
-              placeholder="Ask anything…"
-              rows={5}
-              value={prompt} // Bind state to textarea
-              onChange={(e) => setPrompt(e.target.value)} // Update state on manual input
-            />
+            <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
+              {previewImage && (
+                <div className="mb-3">
+                  <img
+                    src={previewImage}
+                    alt="Attached Preview"
+                    className="w-16 h-16 object-cover rounded-md border border-gray-300 shadow"
+                  />
+                </div>
+              )}
 
+              {/* Textarea */}
+              <textarea
+                className="w-full bg-transparent outline-none resize-none text-lg placeholder-gray-400"
+                placeholder="Ask anything…"
+                rows={4}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+              />
+            </div>
+
+            {/* Actions */}
             <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
               <button
                 className="mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
-                onClick={() => document.getElementById('image-upload')?.click()}
+                onClick={() => document.getElementById("image-upload")?.click()}
               >
                 <Paperclip size={16} />
                 <span className="text-sm font-medium">Attach</span>
@@ -122,24 +139,13 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
             </div>
           )}
         </div>
-
-        {previewImage && (
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600 mb-2">Attached Image Preview:</p>
-            <img
-              src={previewImage}
-              alt="Attached Preview"
-              className="w-32 h-32 object-cover rounded-lg mx-auto shadow-md"
-            />
-          </div>
-        )}
       </div>
 
       <ChatbotDrawer
         isOpen={chatbotState.isDrawerOpen}
         onClose={handleChatbotClick}
         questions={chatbotQuestions.questions}
-         onQuestionClick={handleQuestionInsert}  
+        onQuestionClick={handleQuestionInsert}
       />
     </div>
   );
