@@ -1,7 +1,12 @@
+"use client";
 import { forwardRef } from "react";
 import { InputProps } from "./types";
+import Image from "next/image";
 
-const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
+const Input = forwardRef<
+  HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  InputProps
+>(
   (
     {
       variant = "primary",
@@ -12,9 +17,11 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
       label,
       placeholder = "",
       rounded = false,
-      bg = "bg-gray-100", // Default background color
+      bg = "bg-gray-100",
       textarea = false,
-      rows = 3, // default rows for textarea
+      select = false,
+      options = [],
+      rows = 3,
       labelClassName = "",
       ...props
     },
@@ -57,18 +64,48 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
     return (
       <div className="mb-4">
         {label && (
-          <label className={`block mb-2 text-sm font-normal text-gray-700 ${labelClassName}`}>
+          <label
+            className={`block mb-2 text-sm font-normal text-gray-700 ${labelClassName}`}
+          >
             {label}
           </label>
         )}
 
-        {textarea ? (
+        {select ? (
+          <div className="relative">
+            <select
+              ref={ref as React.Ref<HTMLSelectElement>}
+              className={`${combinedStyles} pr-14`}
+              {...register}
+              {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
+            >
+              {placeholder && (
+                <option value="" disabled selected>
+                  {placeholder}
+                </option>
+              )}
+              {options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <Image
+              src="/images/home/select-icon.svg"
+              alt="Select Icon"
+              width={13}
+              height={13}
+              className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            />
+          </div>
+        ) : textarea ? (
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
             className={combinedStyles}
             placeholder={placeholder}
             rows={rows}
-            {...(register)}
+            {...register}
             {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
           />
         ) : (
@@ -76,7 +113,7 @@ const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
             ref={ref as React.Ref<HTMLInputElement>}
             className={combinedStyles}
             placeholder={placeholder}
-            {...(register)}
+            {...register}
             {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
           />
         )}

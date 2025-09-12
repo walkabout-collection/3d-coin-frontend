@@ -17,6 +17,8 @@ export interface InputProps
   textarea?: boolean; // new flag
   rows?: number;
   labelClassName?: string;
+  select?: boolean; 
+  options?: { value: string; label: string }[]; 
 }
 
 export interface SignupFormData {
