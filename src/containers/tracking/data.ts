@@ -1,0 +1,42 @@
+export const TrackingData = [
+  {
+    trackingNo: '#TRK2025-001',
+    carrier: 'logistics',
+    status: 'IN TRANSIT',
+    weightsG: 500, 
+    order: '101',
+    date: '15/09/2025', 
+  },
+  {
+    trackingNo: '#TRK2025-002',
+    carrier: 'logistics',
+    status: 'DELIVERED',
+    weightsG: 750,
+    order: '102',
+    date: '14/09/2025',
+  },
+  {
+    trackingNo: '#TRK2025-003',
+    carrier: 'logistics',
+    status: 'PENDING',
+    weightsG: 300,
+    order: '103',
+    date: '13/09/2025',
+  },
+  {
+    trackingNo: '#TRK2025-004',
+    carrier: 'logistics',
+    status: 'OUT FOR DELIVERY',
+    weightsG: 600,
+    order: '104',
+    date: '12/09/2025',
+  },
+  {
+    trackingNo: '#TRK2025-005',
+    carrier: 'logistics',
+    status: 'SHIPPED',
+    weightsG: 450,
+    order: '105',
+    date: '11/09/2025',
+  },
+];
