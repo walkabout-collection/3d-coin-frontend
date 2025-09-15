@@ -171,7 +171,7 @@ const Table: React.FC<TableProps> = ({
                 <tr
                   key={index}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    alternatingRows && index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                    alternatingRows && index % 2 === 1 ? 'bg-gray-100' : 'bg-white'
                   } ${rowClassName}`}
                 >
                   {columns.map((column) => (

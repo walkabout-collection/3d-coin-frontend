@@ -16,7 +16,6 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
   className = '',
   placeholder = 'Select sort option',
   showLabel = true,
-  labelText = 'Sort:',
 }) => {
   const [internalSort, setInternalSort] = useState(initialValue || '');
 
@@ -52,7 +51,7 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {showLabel && (
-        <span className="text-md text-primary font-semibold">{labelText}</span>
+        <span className="text-md text-primary font-semibold">Sort:</span>
       )}
       <div className="relative">
         <select

@@ -1,5 +1,5 @@
 "use client";
-import { useState, forwardRef } from "react";
+import { useState, forwardRef, useEffect } from "react";
 import { Search as SearchIcon } from "lucide-react"; 
 import Button from "../button/Button";
 import { SearchProps } from "./types";
@@ -20,6 +20,11 @@ const Search = forwardRef<HTMLInputElement, SearchProps>(
     ref
   ) => {
     const [searchValue, setSearchValue] = useState(value || "");
+       useEffect(() => {
+      if (searchValue === "" && onSearch) {
+        onSearch("");
+      }
+    }, [searchValue, onSearch]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;

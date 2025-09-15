@@ -29,7 +29,7 @@ const PaymentMethod: React.FC = () => {
           <div
             key={option.id}
             onClick={() => handleSelect(option)}
-            className={`relative cursor-pointer  rounded-xl p-6 flex flex-col items-center justify-center gap-3 bg-gray-100 hover:bg-gray-100 transition 
+            className={`relative cursor-pointer  rounded-xl h-[232px] w-[332px] flex flex-col items-center justify-center gap-3 bg-gray-100 hover:bg-gray-100 transition 
               `}
           >
             <div className="absolute top-3 right-3">
@@ -38,7 +38,7 @@ const PaymentMethod: React.FC = () => {
                 //   ${selected === option.id ? "" : "border-gray-400"}`}
               >
                 {selected === option.id && (
-                  <span className="w-3.5 h-3.5 rounded-full bg-blue-800"></span>
+                  <span className="w-3.5 h-3.5 rounded-full bg-blue-900"></span>
                 )}
               </span>
             </div>

@@ -7,17 +7,18 @@ import { sidebarItems } from "@/src/containers/dashboard/data";
 
 export default function UserProfilesLayout({ children }: UserProfilesLayoutProps) {
   const pathname = usePathname();
-  
-  const mainItems = sidebarItems.filter(item => 
-    item.name !== "Account Setting" && item.name !== "Log Out"
+
+  const mainItems = sidebarItems.filter(
+    (item) => item.name !== "Account Setting" && item.name !== "Log Out"
   );
-  const bottomItems = sidebarItems.filter(item => 
-    item.name === "Account Setting" || item.name === "Log Out"
+  const bottomItems = sidebarItems.filter(
+    (item) => item.name === "Account Setting" || item.name === "Log Out"
   );
-  
+
   return (
     <div className="flex h-screen">
-      <aside className="w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col">
+      <aside className="w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col justify-between">
+        {/* Top navigation */}
         <nav className="flex flex-col space-y-4">
           {mainItems.map((item) => {
             const isActive = pathname === item.href;
@@ -38,15 +39,14 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                     className={`object-contain ${isActive ? "filter brightness-0 invert" : ""}`}
                   />
                 </div>
-                                <span className="text-sm">{item.name}</span>
+                <span className="text-sm">{item.name}</span>
               </Link>
             );
           })}
         </nav>
-        
-        <div className="flex-1"></div>
-        
-        <nav className="flex flex-col space-y-2 mt-4">
+
+        {/* Bottom navigation */}
+        <nav className="flex flex-col space-y-2 mt-6">
           {bottomItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -58,7 +58,6 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                   ${isActive ? "bg-[#1a2a3a] text-white" : "text-gray-700 hover:text-gray-900"}
                 `}
               >
-                {/* Icon */}
                 <div className="w-5 h-5 relative flex-shrink-0">
                   <Image
                     src={item.icon}
@@ -67,14 +66,13 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                     className={`object-contain ${isActive ? "filter brightness-0 invert" : ""}`}
                   />
                 </div>
-                
                 <span className="text-sm">{item.name}</span>
               </Link>
             );
           })}
         </nav>
       </aside>
-      
+
       <main className="flex-1 p-6 bg-white">{children}</main>
     </div>
   );
