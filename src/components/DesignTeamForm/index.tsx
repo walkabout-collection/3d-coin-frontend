@@ -3,7 +3,6 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Image from 'next/image';
 import Input from '../common/input';
 import Button from '../common/button/Button';
 import ImageUpload from '../common/imageUpload';
@@ -14,7 +13,7 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
   contactNumber: z.string().min(10, 'Contact number must be at least 10 digits').max(15, 'Contact number too long'),
   description: z.string().min(10, 'Description must be at least 10 characters long'),
-  image: z.instanceof(File, { message: 'Image is required' }), // Make image required
+  image: z.instanceof(File, { message: 'Image is required' }), 
 });
 
 type FormData = z.infer<typeof formSchema>;

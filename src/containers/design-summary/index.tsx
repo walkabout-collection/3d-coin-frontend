@@ -2,11 +2,9 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
-import { useRouter } from "next/navigation";
 import { bottomButtons } from "@/src/containers/design-summary/data";
 
 const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
-  const router = useRouter();
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [data, setData] = useState<any>(null);
 
