@@ -1,49 +1,40 @@
-export interface TableColumn {
-  key: string;
+import { SortOption } from "../SortDropdown/types";
+
+export interface TableColumn<T> {
+  key: keyof T;
   label: string;
   width?: string;
   align?: 'left' | 'center' | 'right';
   sortable?: boolean;
-  render?: (value: any, row: any, index: number) => React.ReactNode;
+  render?: (value: T[keyof T], row: T, index: number) => React.ReactNode;
 }
 
-export interface TableAction {
-  label: string;
-  icon?: string;
-  onClick: (row: any) => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  show?: (row: any) => boolean;
-}
-
-export interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  totalEntries: number;
-  entriesPerPage: number;
-  onPageChange: (page: number) => void;
-  showPrevious?: boolean;
-  showNext?: boolean;
-}
-
-export interface SortOption {
-  value: string;
-  label: string;
-}
-
-export interface TableProps {
-  columns: TableColumn[];
-  data: any[];
+export interface TableProps<T extends { date?: string; order?: string }> {
+  columns: TableColumn<T>[];
+  data: T[];
   className?: string;
   alternatingRows?: boolean;
   showActions?: boolean;
-  actions?: TableAction[];
-  pagination?: PaginationProps;
-  sortable?: boolean; 
+  actions?: {
+    label: string;
+    onClick: (row: T) => void;
+    icon?: string;
+    variant?: 'primary' | 'secondary' | 'danger';
+    show?: (row: T) => boolean;
+  }[];
+  pagination?: {
+    currentPage: number;
+    entriesPerPage: number;
+    totalEntries: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  };
+  sortable?: boolean;
   sortOptions?: SortOption[];
   currentSort?: string;
   onSortChange?: (sort: string) => void;
   searchable?: boolean;
-  onSearch?: (searchTerm: string) => void;
+  onSearch?: (term: string) => void;
   searchPlaceholder?: string;
   loading?: boolean;
   emptyMessage?: string;

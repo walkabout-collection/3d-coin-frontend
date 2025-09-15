@@ -3,12 +3,12 @@ export interface SortOption {
   label: string;
 }
 
-export interface SortDropdownProps {
+export interface SortDropdownProps<T> {
   options?: SortOption[];
   value?: string;
   onChange?: (value: string) => void;
-  data?: any[]; 
-  onSort?: (sortedData: any[]) => void; 
+  data?: T[];
+  onSort?: (sortedData: T[]) => void;
   className?: string;
   placeholder?: string;
   showLabel?: boolean;

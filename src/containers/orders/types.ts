@@ -1,8 +1,8 @@
-export interface Order {
-  id: number;
-  orderNumber: string;
-  customerName: string;
+export interface OrderDataItem {
+  trackingNo: string;
+  packaging: string;
+  order: string;
   date: string;
-  status: "Pending" | "Processing" | "Completed" | "Cancelled";
-  total: number;
+  payment: string;
+  status: string;
 }

@@ -1,9 +1,10 @@
 import Table from '@/src/components/common/Table';
 import { TableColumn } from '@/src/components/common/Table/types';
 import { TrackingData } from './data';
+import { TrackingDataItem } from './types';
 
 const Tracking = () => {
-  const orderColumns: TableColumn[] = [
+  const orderColumns: TableColumn<TrackingDataItem>[] = [
     { key: 'trackingNo', label: 'Tracking No.', width: 'w-32' },
     { key: 'carrier', label: 'Carrier', width: 'w-24' },
     { key: 'status', label: 'Status', width: 'w-28' },

@@ -39,7 +39,7 @@ const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({ onFileChange, image
         />
         <p className="text-sm text-gray-700 font-medium mt-8">
           LOREM IPSUM IS SIMPLY DUMMY TEXT OF THE PRINTING AND TYPESETTING INDUSTRY. LOREM IPSUM HAS BEEN THE
-          INDUSTRY'S STANDARD
+          INDUSTRY STANDARD
         </p>
         <Button
           onClick={handleGenerateClick}

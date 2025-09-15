@@ -1,4 +1,6 @@
-export const TrackingData = [
+import { TrackingDataItem } from "./types";
+
+export const TrackingData: TrackingDataItem[] = [
   {
     trackingNo: '#TRK2025-001',
     carrier: 'logistics',

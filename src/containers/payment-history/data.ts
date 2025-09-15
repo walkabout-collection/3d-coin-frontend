@@ -1,5 +1,7 @@
-export const paymentData = [
-  {
+import { PaymentDataItem } from "./types";
+
+
+export const paymentData: PaymentDataItem[] = [  {
     paymentMethod: 'CREDIT CARD',
     order: '101',
     total: '$8.93',

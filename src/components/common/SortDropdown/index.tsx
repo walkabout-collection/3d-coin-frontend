@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { SortDropdownProps } from './types';
 
-const SortDropdown: React.FC<SortDropdownProps> = ({
+const SortDropdown = <T extends { date?: string; order?: string }>({
   options = [
     { value: 'newest', label: 'Newest To Oldest' },
     { value: 'oldest', label: 'Oldest To Newest' },
@@ -11,12 +11,12 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
   ],
   value: initialValue,
   onChange,
-  data = [], 
-  onSort, 
+  data = [],
+  onSort,
   className = '',
   placeholder = 'Select sort option',
   showLabel = true,
-}) => {
+}: SortDropdownProps<T>) => {
   const [internalSort, setInternalSort] = useState(initialValue || '');
 
   const sortedData = useMemo(() => {
@@ -25,13 +25,13 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
     return [...data].sort((a, b) => {
       switch (internalSort) {
         case 'newest':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
+          return new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime();
         case 'oldest':
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
+          return new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime();
         case 'order_asc':
-          return parseInt(b.order) - parseInt(a.order);
+          return Number(a.order ?? 0) - Number(b.order ?? 0);
         case 'order_desc':
-          return parseInt(b.order) - parseInt(a.order);
+          return Number(b.order ?? 0) - Number(a.order ?? 0);
         default:
           return 0;
       }
@@ -40,13 +40,10 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
 
   const handleSortChange = (sort: string) => {
     setInternalSort(sort);
-    if (onChange) {
-      onChange(sort);
-    }
-    if (onSort) {
-      onSort(sortedData); 
-    }
+    onChange?.(sort);
+    onSort?.(sortedData);
   };
+
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
@@ -90,6 +87,6 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default SortDropdown;

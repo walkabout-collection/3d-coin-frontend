@@ -1,4 +1,7 @@
-export const orderData = [
+import { OrderDataItem } from "./types";
+
+
+export const orderData: OrderDataItem[] = [
   {
     trackingNo: '#TRK1234',
     packaging: 'YES',

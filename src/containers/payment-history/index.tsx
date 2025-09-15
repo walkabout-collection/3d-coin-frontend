@@ -1,9 +1,10 @@
 import Table from '@/src/components/common/Table';
 import { TableColumn } from '@/src/components/common/Table/types';
 import { paymentData } from './data';
+import { PaymentDataItem } from './types';
 
 const PaymentHistory = () => {
-  const paymentColumns: TableColumn[] = [
+  const paymentColumns: TableColumn<PaymentDataItem>[] = [
     { key: 'paymentMethod', label: 'Payment Method', width: 'w-32' },
     { key: 'order', label: 'Order', width: 'w-20' },
     { key: 'total', label: 'Total', width: 'w-24' },

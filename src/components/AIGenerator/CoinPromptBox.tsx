@@ -10,13 +10,17 @@ import { z } from "zod";
 interface CoinPromptBoxProps {
   onGenerate: () => void;
 }
+interface ChatbotState {
+  isDrawerOpen: boolean;
+}
 
 const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [chatbotState, setChatbotState] = useState(initialChatbotState);
+  const [chatbotState, setChatbotState] =
+    useState<ChatbotState>(initialChatbotState);
   const [error, setError] = useState<{ message: string } | undefined>(
     undefined
   );
@@ -34,9 +38,8 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
       setPreviewImage(null);
     }
   };
-
   const handleChatbotClick = () => {
-    setChatbotState((prev: { isDrawerOpen: any }) => ({
+    setChatbotState((prev) => ({
       ...prev,
       isDrawerOpen: !prev.isDrawerOpen,
     }));
@@ -55,8 +58,8 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   };
 
   const handleQuestionInsert = (question: string) => {
-    setPrompt(question); 
-    setChatbotState({ ...chatbotState, isDrawerOpen: false }); 
+    setPrompt(question);
+    setChatbotState({ ...chatbotState, isDrawerOpen: false });
   };
 
   return (
@@ -71,10 +74,12 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
             <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
               {previewImage && (
                 <div className="mb-3">
-                  <img
-                    src={previewImage}
+                  <Image
+                    src={previewImage || "/placeholder.png"}
                     alt="Attached Preview"
-                    className="w-16 h-16 object-cover rounded-md border border-gray-300 shadow"
+                    width={64} 
+                    height={64} 
+                    className="object-cover rounded-md border border-gray-300 shadow"
                   />
                 </div>
               )}
