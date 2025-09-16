@@ -1,0 +1,61 @@
+import { OrderDataItem } from "./types";
+
+
+export const orderData: OrderDataItem[] = [
+  {
+    trackingNo: '#TRK1234',
+    packaging: 'YES',
+    order: '25',
+    date: '12/06/2020',
+    payment: 'QUICKBOOKS',
+    status: 'PENDING',
+  },
+  {
+    trackingNo: '#PKG5678',
+    packaging: 'NO',
+    order: '32',
+    date: '16/08/2013',
+    payment: 'QUICKBOOKS',
+    status: 'APPROVED',
+  },
+  {
+    trackingNo: '#BOX9012',
+    packaging: 'YES',
+    order: '45',
+    date: '15/08/2017',
+    payment: 'QUICKBOOKS',
+    status: 'CANCEL',
+  },
+  {
+    trackingNo: '#SHIP3456',
+    packaging: 'NO',
+    order: '92',
+    date: '28/10/2012',
+    payment: 'PAYPAL',
+    status: 'PENDING',
+  },
+  {
+    trackingNo: '#ORD7890',
+    packaging: 'YES',
+    order: '55',
+    date: '28/10/2012',
+    payment: 'QUICKBOOKS',
+    status: 'APPROVED',
+  },
+  {
+    trackingNo: '#DEL2345',
+    packaging: 'NO',
+    order: '35',
+    date: '16/08/2013',
+    payment: 'QUICKBOOKS',
+    status: 'CANCEL',
+  },
+  {
+    trackingNo: '#TRK6789',
+    packaging: 'YES',
+    order: '28',
+    date: '18/09/2016',
+    payment: 'QUICKBOOKS',
+    status: 'APPROVED',
+  },
+];
