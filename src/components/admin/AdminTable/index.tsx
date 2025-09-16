@@ -5,8 +5,9 @@ import Search from '../../common/search';
 import SortDropdown from '../../common/SortDropdown';
 import StatusBadge from '../StatusBadge';
 import Image from 'next/image';
+import PackagingModal from '../PackagingOrderModal.tsx';
 
-function AdminTable<T extends { date?: string; order?: string; status?: string; userId?: string | number }>({
+function AdminTable<T extends { date?: string; order?: string; status?: string; userId?: string | number; packaging?: string; packagingDescription?: string; backText?: string }>({
   columns,
   data,
   className = '',
@@ -35,10 +36,11 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
   const [internalSort, setInternalSort] = useState(currentSort || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortedDataState, setSortedDataState] = useState<T[]>(data);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<T | null>(null);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
-
     return sortedDataState.filter((row) =>
       Object.values(row as object).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
@@ -71,6 +73,16 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     setSortedDataState(sortedData);
   };
 
+  const openModal = (row: T) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedRow(null);
+  };
+
   const renderCellContent = (
     column: TableColumn<T>,
     value: T[keyof T],
@@ -97,7 +109,22 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     }
 
     if (String(column.key).toLowerCase().includes('packaging')) {
-      return <span className="text-sm">{String(value)}</span>;
+      const packagingValue = String(value);
+      return packagingValue === 'YES' ? (
+        <div className="flex items-center">
+          <span className="text-sm mr-2">{packagingValue}</span>
+          <Image
+            src="/images/dashboard/up-right.svg"
+            alt="View Packaging"
+            width={14}
+            height={14}
+            className="cursor-pointer"
+            onClick={() => openModal(row)}
+          />
+        </div>
+      ) : (
+        <span className="text-sm">{packagingValue}</span>
+      );
     }
 
     return value as React.ReactNode;
@@ -122,6 +149,8 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     }
     return pageNumbers;
   };
+
+  const isAdmin = true; // Simulate admin check; replace with actual auth logic
 
   return (
     <div className={`w-full ${className}`}>
@@ -275,6 +304,13 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
             </button>
           </div>
         </div>
+      )}
+      {isAdmin && isModalOpen && selectedRow && (
+        <PackagingModal
+          packagingDescription={selectedRow.packagingDescription || 'No description available'}
+          backText={selectedRow.backText || 'No back text available'}
+          onClose={closeModal}
+        />
       )}
     </div>
   );

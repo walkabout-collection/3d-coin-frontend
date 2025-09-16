@@ -5,4 +5,6 @@ export interface OrderDataItem {
   date: string;
   payment: string;
   status: string;
+  packagingDescription?: string;
+  backText?: string;
 }
