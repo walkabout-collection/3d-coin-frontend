@@ -150,8 +150,7 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     return pageNumbers;
   };
 
-  const isAdmin = true; // Simulate admin check; replace with actual auth logic
-
+  const isAdmin = true; 
   return (
     <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-6">
