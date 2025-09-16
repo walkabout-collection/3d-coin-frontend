@@ -4,6 +4,7 @@ import { TableProps, TableColumn } from './types';
 import Search from '../../common/search';
 import SortDropdown from '../../common/SortDropdown';
 import StatusBadge from '../StatusBadge';
+import Image from 'next/image';
 
 function AdminTable<T extends { date?: string; order?: string; status?: string; userId?: string | number }>({
   columns,
@@ -45,6 +46,13 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     );
   }, [sortedDataState, searchTerm]);
 
+  const paginatedData = useMemo(() => {
+    if (!pagination) return filteredData;
+    const startIndex = (pagination.currentPage - 1) * pagination.entriesPerPage;
+    const endIndex = startIndex + pagination.entriesPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, pagination]);
+
   const handleSortChange = (sort: string) => {
     setInternalSort(sort);
     if (onSortChange) {
@@ -76,13 +84,13 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     if (String(column.key).toLowerCase().includes('status')) {
       return (
         <StatusBadge
-          status={String(value)} 
-          editable={true} 
+          status={String(value)}
+          editable={true}
           onStatusChange={(newStatus) => {
             const updatedData = [...sortedDataState];
             updatedData[index] = { ...updatedData[index], status: newStatus };
             setSortedDataState(updatedData);
-          }} 
+          }}
           userId={row.userId}
         />
       );
@@ -95,8 +103,28 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     return value as React.ReactNode;
   };
 
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+    const totalPages = pagination.totalPages;
+    const currentPage = pagination.currentPage;
+    const maxPagesToShow = 5;
+    const pageNumbers: number[] = [];
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
+  };
+
   return (
-    <div className={`w-full min-h-screen ${className}`}>
+    <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           {searchable && (
@@ -128,9 +156,7 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${
-                    column.width || ''
-                  }`}
+                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${column.width || ''}`}
                   style={{ textAlign: column.align || 'left' }}
                 >
                   {column.label}
@@ -153,7 +179,7 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
                   Loading...
                 </td>
               </tr>
-            ) : filteredData.length === 0 ? (
+            ) : paginatedData.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length + (showActions ? 1 : 0)}
@@ -163,13 +189,11 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
                 </td>
               </tr>
             ) : (
-              filteredData.map((row, index) => (
+              paginatedData.map((row, index) => (
                 <tr
                   key={index}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    alternatingRows && index % 2 === 1
-                      ? 'bg-gray-100'
-                      : 'bg-white'
+                    alternatingRows && index % 2 === 1 ? 'bg-gray-100' : 'bg-white'
                   } ${rowClassName}`}
                 >
                   {columns.map((column) => (
@@ -217,9 +241,10 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
       {pagination && (
         <div className="flex items-center justify-between mt-6 pt-4 mb-10">
           <div className="text-sm text-gray-500">
-            Showing {((pagination.currentPage - 1) * pagination.entriesPerPage) + 1} to {Math.min(pagination.currentPage * pagination.entriesPerPage, pagination.totalEntries)} of {pagination.totalEntries} entries
+            Showing {(pagination.currentPage - 1) * pagination.entriesPerPage + 1} to{' '}
+            {Math.min(pagination.currentPage * pagination.entriesPerPage, pagination.totalEntries)}{' '}
+            of {pagination.totalEntries} entries
           </div>
-          
           <div className="flex items-center gap-2">
             <button
               onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
@@ -228,26 +253,19 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
             >
               Previous
             </button>
-            
-            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-              const pageNumber = i + 1;
-              const isActive = pageNumber === pagination.currentPage;
-              
-              return (
-                <button
-                  key={pageNumber}
-                  onClick={() => pagination.onPageChange(pageNumber)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-primary text-white'
-                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-            
+            {getPageNumbers().map((pageNumber) => (
+              <button
+                key={pageNumber}
+                onClick={() => pagination.onPageChange(pageNumber)}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  pageNumber === pagination.currentPage
+                    ? 'bg-primary text-white'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
             <button
               onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
               disabled={pagination.currentPage === pagination.totalPages}

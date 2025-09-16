@@ -16,7 +16,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
       <aside className="w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col justify-between">
         {/* Top navigation */}
         <nav className="flex flex-col space-y-4">
@@ -73,7 +74,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
       </aside>
 
-      <main className="flex-1 p-6 bg-white">{children}</main>
+      {/* Main Content + Footer */}
+      <div className="flex flex-col flex-1 bg-white">
+        <main className="flex-grow p-6">{children}</main>
+      </div>
     </div>
   );
 }

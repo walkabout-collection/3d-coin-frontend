@@ -1,11 +1,15 @@
 'use client';
+import { useState } from 'react';
 import { TableColumn } from '@/src/components/common/Table/types';
 import { orderData } from './data';
 import { OrderDataItem } from './types';
 import AdminTable from '@/src/components/admin/AdminTable';
 
 const OrdersHistory = () => {
-  const orderColumns: TableColumn<OrderDataItem>[] = [
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 10;
+
+ const orderColumns: TableColumn<OrderDataItem>[] = [
     { key: 'trackingNo', label: 'Order No.', width: 'w-32' },
     { key: 'packaging', label: 'Packaging', width: 'w-24' },
     { key: 'order', label: 'Order', width: 'w-20' },
@@ -25,17 +29,13 @@ const OrdersHistory = () => {
         searchPlaceholder="Search orders..."
         sortable={true}
         currentSort="newest"
-        pagination={    
-          {
-            currentPage: 1,
-            entriesPerPage: 10,
-            totalEntries: orderData.length,
-            totalPages: Math.ceil(orderData.length / 10),
-            onPageChange: (page: number) => {
-              console.log(`Current page: ${page}`);
-            },
-          }
-        }
+        pagination={{
+          currentPage,
+          entriesPerPage,
+          totalEntries: orderData.length,
+          totalPages: Math.ceil(orderData.length / entriesPerPage),
+          onPageChange: (page: number) => setCurrentPage(page),
+        }}
       />
     </div>
   );
