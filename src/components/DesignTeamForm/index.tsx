@@ -3,18 +3,17 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-
-import Image from 'next/image';
 import Input from '../common/input';
 import Button from '../common/button/Button';
 import ImageUpload from '../common/imageUpload';
+
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
   contactNumber: z.string().min(10, 'Contact number must be at least 10 digits').max(15, 'Contact number too long'),
   description: z.string().min(10, 'Description must be at least 10 characters long'),
-  image: z.any().optional(),
+  image: z.instanceof(File, { message: 'Image is required' }), 
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -35,7 +34,7 @@ const DesignTeamForm: React.FC = () => {
       email: '',
       contactNumber: '',
       description: '',
-      image: null,
+      // Omit image from defaultValues, as it must be a File
     },
   });
 
@@ -45,7 +44,9 @@ const DesignTeamForm: React.FC = () => {
   };
 
   const handleFileChange = (file: File | null) => {
-    setValue('image', file);
+    if (file) {
+      setValue('image', file, { shouldValidate: true });
+    }
   };
 
   return (
@@ -118,16 +119,15 @@ const DesignTeamForm: React.FC = () => {
           </div>
           <div className="border-t border-gray-400 w-full"></div>
         </div>
-        
+        <label className="block mb-2 text-[15px] font-semibold text-gray-900 mt-2">
+          Add a design preference image
+        </label>
         <ImageUpload
           onChange={handleFileChange}
           value={watch('image')}
-          error={errors.image}
+          error={errors.image?.message} 
+          id="design-image-upload" 
         />
-         <label className="block mb-2 text-[15px] font-semibold text-gray-900 mt-2">
-          Add a design preference image
-        </label>
-        
         <Button
           type="submit"
           variant="primary"

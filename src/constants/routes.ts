@@ -84,5 +84,116 @@ export const routes = {
     description:
       "Discover the range of services offered by Legacy Forge, including custom coin design, manufacturing, and more.",
   },
+  DESIGN_SUMMARY: {
+    title: "Design Summary",
+    path: "/design-summary",
+    metaTitle: "Legacy Forge | Design Summary",
+    description:
+      "Review and manage your custom coin designs with Legacy Forge.",
+  },
+  DASHBOARD : {
+    title: "Dashboard",
+    path: "/dashboard",
+    metaTitle: "Legacy Forge | Dashboard",
+    description:
+      "Access your account dashboard to manage your custom coin designs and orders.",
+  },
+  ORDERS : {
+    title: "Orders",
+    path: "/dashboard/orders",
+    metaTitle: "Legacy Forge | Orders",
+    description:
+      "Review and manage your custom coin orders with Legacy Forge.",
+  },
+  QUOTES : {
+    title: "Quotes",
+    path: "/dashboard/quotes",
+    metaTitle: "Legacy Forge | Quotes",
+    description:
+      "Review and manage your custom coin quotes with Legacy Forge.",
+  },
+  PAYMENT_METHOD : {
+    title: "Payment Method",
+    path: "/dashboard/payment-method",
+    metaTitle: "Legacy Forge | Payment Method",
+    description:
+      "Manage your payment methods with Legacy Forge.",
+  },
+  PAYMENT_HISTORY : {
+    title: "Payment History",
+    path: "/dashboard/payment-history",
+    metaTitle: "Legacy Forge | Payment History",
+    description:
+      "Review your payment history with Legacy Forge.",
+  },
+  ACCOUNT_SETTING : {
+    title: "Account Setting",
+    path: "/dashboard/account-setting",
+    metaTitle: "Legacy Forge | Account Setting",
+    description:
+      "Manage your account settings with Legacy Forge.",    
+  },
+  TRACKING : {
+    title: "Tracking",
+    path: "/dashboard/tracking",
+    metaTitle: "Legacy Forge | Tracking",
+    description:
+      "Track your custom coin orders with Legacy Forge.",
+  },
 
 } as const;
+
+export const adminRoutes = {
+  DASHBOARD: {
+    title: "Dashboard",
+    path: "/admin/dashboard",
+    metaTitle: "Legacy Forge | Dashboard",
+    description:
+      "Access your account dashboard to manage your custom coin designs and orders.",
+  },
+  ORDERS: {
+    title: "Orders",
+    path: "/admin/orders",
+    metaTitle: "Legacy Forge | Orders",
+    description:
+      "Review and manage your custom coin orders with Legacy Forge.",
+  },
+  QUOTES: {
+    title: "Quotes",
+    path: "/admin/quotes",
+    metaTitle: "Legacy Forge | Quotes",
+    description:
+      "Review and manage your custom coin quotes with Legacy Forge.",
+  },
+  PAYMENT_METHOD: {
+    title: "Payment Method",
+    path: "/admin/payment-method",
+    metaTitle: "Legacy Forge | Payment Method",
+    description:
+      "Manage your payment methods with Legacy Forge.",
+  },
+  PAYMENT_HISTORY: {
+    title: "Payment History",
+    path: "/admin/payment-history",
+    metaTitle: "Legacy Forge | Payment History",
+    description:
+      "Review your payment history with Legacy Forge.",
+  },
+  ACCOUNT_SETTING: {
+    title: "Account Setting",
+    path: "/admin/account-setting",
+    metaTitle: "Legacy Forge | Account Setting",
+    description:
+      "Manage your account settings with Legacy Forge.",
+  },
+  TRACKING: {
+    title: "Tracking",
+    path: "/admin/tracking",
+    metaTitle: "Legacy Forge | Tracking",
+    description:
+      "Track your custom coin orders with Legacy Forge.",
+  },
+} as const;
+
+
+
