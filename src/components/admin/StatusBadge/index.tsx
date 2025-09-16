@@ -16,7 +16,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   className = '',
   editable = false,
   onStatusChange,
-  userId
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
