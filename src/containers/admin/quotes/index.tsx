@@ -4,14 +4,15 @@ import { quotesCards, quotesData } from './data';
 import { Quote } from './types';
 import Search from '@/src/components/common/search';
 import SortDropdown from '@/src/components/common/SortDropdown';
-import { Eye } from 'lucide-react';
 import Image from 'next/image';
 import Button from '@/src/components/common/button/Button';
+import AddQuoteModal from '@/src/components/admin/AddQuoteModal';
 
 const AdminQuotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [internalSort, setInternalSort] = useState('newest');
   const [sortedDataState, setSortedDataState] = useState<Quote[]>(quotesData);
+  const [isModalOpen, setIsModalOpen] = useState(false); 
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort.length) return dataToSort;
@@ -58,42 +59,58 @@ const AdminQuotes: React.FC = () => {
     console.log(`Viewing quote ${id}`);
   };
 
+  const handleApprove = (id: number) => {
+    console.log(`Approving quote ${id}`);
+  };
+
+  const handleDelete = (id: number) => {
+    console.log(`Deleting quote ${id}`);
+    setSortedDataState((prev) => prev.filter((quote) => quote.id !== id));
+  };
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
   const sortOptionsDropdown = [
     { value: 'newest', label: 'Newest To Oldest' },
     { value: 'oldest', label: 'Oldest To Newest' },
-   
   ];
 
   return (
     <div className="min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Quotes</h1>
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-              {quotesCards.map((card) => (
-                <div
-                  key={card.id}
-                  className="bg-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#1a2a3a] rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                      <div className="w-6 h-6 relative">
-                        <Image
-                          src={card.icon}
-                          alt={`${card.title} icon`}
-                          fill
-                          className="object-contain filter brightness-0 invert"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                        {card.title}
-                      </h2>
-                      <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-                    </div>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        {quotesCards.map((card) => (
+          <div
+            key={card.id}
+            className="bg-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-[#1a2a3a] rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                <div className="w-6 h-6 relative">
+                  <Image
+                    src={card.icon}
+                    alt={`${card.title} icon`}
+                    fill
+                    className="object-contain filter brightness-0 invert"
+                  />
                 </div>
-              ))}
+              </div>
+              <div className="flex-1">
+                <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                  {card.title}
+                </h2>
+                <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+              </div>
             </div>
+          </div>
+        ))}
+      </div>
 
       <div className="flex items-center justify-between mb-6 mt-10">
         <Search
@@ -101,19 +118,23 @@ const AdminQuotes: React.FC = () => {
           onSearch={handleSearch}
           variant="primary"
         />
-                <Button
-          type="button"
-          variant="ternary"
-          className="max-w-[140px] rounded-lg  text-sm font-semibold !bg-gray-200 border-none"
-        >
-          Add Quote        </Button>
-        <SortDropdown
-          options={sortOptionsDropdown}
-          value={internalSort}
-          onChange={handleSortChange}
-          showLabel={true}
-          labelText="Sort:"
-        />
+        <div className="flex items-center gap-6">
+          <Button
+            type="button"
+            variant="ternary"
+            className="max-w-[140px] rounded-lg text-sm font-semibold !bg-gray-200 border-none"
+            onClick={handleOpenModal}
+          >
+            Add Quote
+          </Button>
+          <SortDropdown
+            options={sortOptionsDropdown}
+            value={internalSort}
+            onChange={handleSortChange}
+            showLabel={true}
+            labelText="Sort:"
+          />
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -144,22 +165,39 @@ const AdminQuotes: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-6">
                 <span className="text-black px-3 py-1 rounded-md text-sm font-semibold bg-gray-200">
                   {quote.label}
                 </span>
-                <button
-                  onClick={() => viewQuote(quote.id)}
-                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
-                  title="View Quote"
-                >
-                  <Eye size={22} />
-                </button>
+                <div className="flex gap-2">
+                     <button
+                    className="px-4 py-4 text-xs rounded-full bg-gray-200 cursor-pointer"
+                    onClick={() => handleDelete(quote.id)}
+                  >
+                  <Image src="/images/dashboard/delete.svg" alt="Close" width={30} height={30} />
+                  </button>
+                  <button
+                    onClick={() => viewQuote(quote.id)}
+                    className="px-4 py-4 text-xs rounded-full bg-gray-200 cursor-pointer"
+                  >
+                  <Image src="/images/dashboard/view-icon.svg" alt="Close" width={40} height={40} />
+                  </button>
+                  <Button
+                    variant="primary"
+                    className="px-3 py-1 text-xs rounded-full max-w-[140px"
+                    onClick={() => handleApprove(quote.id)}
+                  >
+                    Approve Quote
+                  </Button>
+                 
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {isModalOpen && <AddQuoteModal onClose={handleCloseModal} />}
     </div>
   );
 };
