@@ -69,6 +69,11 @@ const AIGenerator: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+  if (historyStack.length) {
+    // console.debug("History stack updated:", historyStack);
+  }
+}, [historyStack]);
 
 
   const handleProvideImageClick = () => {
@@ -163,13 +168,8 @@ const AIGenerator: React.FC = () => {
   const handleSaveAsDraft = async () => {
     console.log("Saving as draft...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const draftData = {
-      frontImage: "/images/home/front-side.png",
-      backImage: "/images/home/front-side.png",
-      savedAt: new Date().toISOString(),
-      status: "draft",
-    };
-    alert("Saved as draft successfully!");
+    
+    // alert("Saved as draft successfully!");
   };
 
   const handleContinueRender = async () => {
@@ -191,20 +191,6 @@ const handleEdit = () => {
   setHistoryStack((prev) => [...prev, "qaPrompts"]);
   window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
 };
-
-  const handleBackToThreeDRender = () => {
-    setState((prev) => ({
-      ...prev,
-      showUpload: false,
-      showGuide: false,
-      showDesignInterface: false,
-      showQAPrompts: false,
-      showThreeDRender: true,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "threeDRender"]);
-    window.history.pushState({ screen: "threeDRender" }, "", window.location.href);
-  };
 
   if (state.showDesignInterface) {
     return <CoinDesignInterface onContinue={handleContinue} />;

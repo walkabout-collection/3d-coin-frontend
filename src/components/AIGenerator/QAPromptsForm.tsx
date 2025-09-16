@@ -5,7 +5,6 @@ import {
   coinStylesOptions,
   detailLevelOptions,
   referenceImageImpactOptions,
-  coinShapeOptions,
   placeholderTexts,
   exampleTexts,
 } from './data';

@@ -2,13 +2,19 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
-import { useRouter } from "next/navigation";
 import { bottomButtons } from "@/src/containers/design-summary/data";
 
+interface QAFormData {
+  coinStyles: string;
+  metalFinishes: string;
+  coinShape: string;
+  detailLevel: string;
+  frontTextInsideArtwork: string;
+}
+
 const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
-  const router = useRouter();
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
-  const [data, setData] = useState<any>(null);
+const [data, setData] = useState<QAFormData | null>(null);
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
