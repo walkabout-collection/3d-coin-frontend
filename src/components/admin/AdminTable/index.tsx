@@ -1,13 +1,11 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { TableProps, TableColumn } from './types';
-import StatusBadge from '../../common/StatusBadge';
 import Search from '../../common/search';
 import SortDropdown from '../../common/SortDropdown';
+import StatusBadge from '../StatusBadge';
 
-
-function AdminTable<T extends { date?: string; order?: string }>({
+function AdminTable<T extends { date?: string; order?: string; status?: string; userId?: string | number }>({
   columns,
   data,
   className = '',
@@ -76,7 +74,18 @@ function AdminTable<T extends { date?: string; order?: string }>({
     }
 
     if (String(column.key).toLowerCase().includes('status')) {
-      return <StatusBadge status={String(value)} />;
+      return (
+        <StatusBadge
+          status={String(value)} 
+          editable={true} 
+          onStatusChange={(newStatus) => {
+            const updatedData = [...sortedDataState];
+            updatedData[index] = { ...updatedData[index], status: newStatus };
+            setSortedDataState(updatedData);
+          }} 
+          userId={row.userId}
+        />
+      );
     }
 
     if (String(column.key).toLowerCase().includes('packaging')) {
@@ -205,7 +214,7 @@ function AdminTable<T extends { date?: string; order?: string }>({
           </tbody>
         </table>
       </div>
-       {pagination && (
+      {pagination && (
         <div className="flex items-center justify-between mt-6 pt-4 mb-10">
           <div className="text-sm text-gray-500">
             Showing {((pagination.currentPage - 1) * pagination.entriesPerPage) + 1} to {Math.min(pagination.currentPage * pagination.entriesPerPage, pagination.totalEntries)} of {pagination.totalEntries} entries
