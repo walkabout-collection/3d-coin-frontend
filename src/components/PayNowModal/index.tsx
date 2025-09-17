@@ -45,7 +45,7 @@ const PayNowModal: React.FC<ModalProps> = ({ isOpen, onClose, trackingNo, price,
         <p className="mb-2"><strong>Routing Number:</strong> {adminAccountDetails.routingNumber}</p>
         <p className="mb-4"><strong>Account Holder:</strong> {adminAccountDetails.accountHolder}</p>
         <p className="mb-4 text-sm text-gray-600">
-          Please make the payment to the above account and click "Confirm Payment" to notify the admin.
+          Please make the payment to the above account and click Confirm Payment to notify the admin.
         </p>
         <div className="flex justify-end gap-4">
           <Button

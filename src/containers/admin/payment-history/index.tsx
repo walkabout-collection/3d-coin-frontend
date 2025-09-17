@@ -1,4 +1,3 @@
-import Table from '@/src/components/common/Table';
 import { TableColumn } from '@/src/components/common/Table/types';
 import { paymentData } from './data';
 import { PaymentDataItem } from './types';
