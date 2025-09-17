@@ -1,4 +1,11 @@
-import { Step } from './types';
+export interface Step {
+  id: string;
+  title: string;
+  icon: string;
+  completed: boolean;
+  active: boolean;
+  path: string;
+}
 
 export const initialSteps: Step[] = [
   {
@@ -7,7 +14,7 @@ export const initialSteps: Step[] = [
     icon: 'ruler',
     completed: false,
     active: true,
-    path: '/standard-builder' 
+    path: '/standard-builder'
   },
   {
     id: 'material',
@@ -15,7 +22,7 @@ export const initialSteps: Step[] = [
     icon: 'layers',
     completed: false,
     active: false,
-    path: '/standard-builder/material' 
+    path: '/standard-builder/material'
   },
   {
     id: 'edge-type',
@@ -31,7 +38,7 @@ export const initialSteps: Step[] = [
     icon: 'type',
     completed: false,
     active: false,
-    path: '/standard-builder/text-rings' 
+    path: '/standard-builder/text-rings'
   },
   {
     id: 'artwork',
@@ -43,22 +50,38 @@ export const initialSteps: Step[] = [
   }
 ];
 
-export const updateStepStatus = (stepId: string, completed: boolean = true): Step[] => {
-  return initialSteps.map((step, index) => {
-    if (step.id === stepId) {
-      return { ...step, completed, active: false };
+export const updateStepsBasedOnPath = (currentPath: string, allSteps: Step[]): Step[] => {
+  const currentStepIndex = allSteps.findIndex(step => step.path === currentPath);
+  
+  if (currentStepIndex === -1) return allSteps;
+  
+  return allSteps.map((step, index) => {
+    if (index < currentStepIndex) {
+      return { ...step, completed: true, active: false };
     }
     
-    const currentIndex = initialSteps.findIndex(s => s.id === stepId);
-    
-    if (completed && index === currentIndex + 1) {
-      return { ...step, active: true };
+    if (index === currentStepIndex) {
+      return { ...step, active: true, completed: false };
     }
     
-    if (step.id !== stepId && index !== currentIndex + 1) {
-      return { ...step, active: false };
-    }
-    
-    return step;
+    return { ...step, active: false, completed: false };
   });
 };
+
+
+
+export const coinDiameterOptions = [
+  { value: '1.75"', label: '1.75"' },
+  { value: '25mm', label: '25mm' },
+  { value: '30mm', label: '30mm' },
+  { value: '35mm', label: '35mm' },
+  { value: '40mm', label: '40mm' },
+];
+
+export const coinThicknessOptions = [
+  { value: '1.75"', label: '1.75"' },
+  { value: '2mm', label: '2mm' },
+  { value: '3mm', label: '3mm' },
+  { value: '4mm', label: '4mm' },
+  { value: '5mm', label: '5mm' },
+];

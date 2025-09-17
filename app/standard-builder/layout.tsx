@@ -10,7 +10,7 @@ import {
   Check 
 } from 'lucide-react';
 import { Step } from '@/src/containers/standard-builder/dimensions/types';
-import { initialSteps, updateStepStatus } from '@/src/containers/standard-builder/dimensions/data';
+import { initialSteps, updateStepsBasedOnPath } from '@/src/containers/standard-builder/dimensions/data';
 
 const iconMap = {
   ruler: Ruler,
@@ -24,35 +24,14 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({ childr
   const [steps, setSteps] = useState<Step[]>(initialSteps);
   const router = useRouter();
   const pathname = usePathname();
-  useEffect(() => {
-  const currentStep = initialSteps.find((step) => step.path === pathname);
-  if (currentStep) {
-    const updatedSteps = initialSteps.map((step) =>
-      step.id === currentStep.id ? { ...step, active: true } : { ...step, active: false }
-    );
-    setSteps(updatedSteps);
-  } else {
-    const firstStep = initialSteps.find((step) => step.active);
-    if (firstStep) {
-      router.push(firstStep.path);
-    }
-  }
-}, [pathname, router]);
 
+  useEffect(() => {
+    const updatedSteps = updateStepsBasedOnPath(pathname, initialSteps);
+    setSteps(updatedSteps);
+  }, [pathname]);
 
   const handleStepClick = (stepId: string, path: string) => {
-    const currentIndex = steps.findIndex((step) => step.id === stepId);
-    if (currentIndex !== -1) {
-      const updatedSteps = updateStepStatus(stepId);
-      setSteps(updatedSteps);
-      const nextIndex = currentIndex + 1;
-      if (nextIndex < steps.length && updatedSteps[currentIndex].completed) {
-        const nextStep = updatedSteps[nextIndex];
-        router.push(nextStep.path);
-      } else {
-        router.push(path);
-      }
-    }
+    router.push(path); 
   };
 
   const getStepClasses = (step: Step) => {
@@ -77,7 +56,7 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex   px-4">
+      <div className="flex px-4">
         <div className="flex py-10 border-b border-gray-200 w-full">
           <div className="flex w-full justify-around items-start">
             {steps.map((step) => {
