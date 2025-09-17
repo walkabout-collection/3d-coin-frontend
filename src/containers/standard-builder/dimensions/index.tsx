@@ -219,7 +219,10 @@ const Dimensions = () => {
         </Button>
       </div>
     </div>
+
   );
 };
+
+export default Dimensions;
 
 export default Dimensions;
