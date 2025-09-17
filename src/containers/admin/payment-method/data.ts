@@ -3,12 +3,12 @@ import { PaymentOption } from "./types";
 export const paymentOptions: PaymentOption[] = [
   {
     id: "quickbooks",
-    name: " Quickbooks",
+    name: "",
     logo: "/images/dashboard/quickbooks.svg",
   },
   {
     id: "stripe",
-    name: " Stripe",
+    name: "",
     logo: "/images/dashboard/stripe.svg",
   },
   {

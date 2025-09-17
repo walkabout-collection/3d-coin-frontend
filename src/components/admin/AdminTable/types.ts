@@ -1,14 +1,4 @@
-import { SortOption } from "../SortDropdown/types";
-
-export interface OrderDataItem {
-  trackingNo: string;
-  packaging: string;
-  order: string;
-  date: string;
-  paymentMethod: 'MANUAL' | 'QUICKBOOKS' | 'PAYPAL';
-  status: 'PENDING' | 'APPROVED' | 'CANCEL';
-  price: number;
-}
+import { SortOption } from "../../common/SortDropdown/types";
 
 export interface TableColumn<T> {
   key: keyof T;
@@ -27,9 +17,9 @@ export interface TableProps<T extends { date?: string; order?: string }> {
   showActions?: boolean;
   actions?: {
     label: string;
-    onClick?: (row: T) => void;
+    onClick: (row: T) => void;
     icon?: string;
-    variant?: 'primary' | 'secondary' | 'danger' | 'success';
+    variant?: 'primary' | 'secondary' | 'danger';
     show?: (row: T) => boolean;
   }[];
   pagination?: {

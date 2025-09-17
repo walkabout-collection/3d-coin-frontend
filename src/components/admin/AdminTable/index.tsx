@@ -1,18 +1,20 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { TableProps, TableColumn } from './types';
-import Search from '../search';
+import Search from '../../common/search';
+import SortDropdown from '../../common/SortDropdown';
 import StatusBadge from '../StatusBadge';
-import SortDropdown from '../SortDropdown';
+import Image from 'next/image';
+import PackagingModal from '../PackagingOrderModal.tsx';
 
-function Table<T extends { date?: string; order?: string }>({
+function AdminTable<T extends { date?: string; order?: string; status?: string; userId?: string | number; packaging?: string; packagingDescription?: string; backText?: string }>({
   columns,
   data,
   className = '',
   alternatingRows = true,
   showActions = false,
   actions = [],
+  pagination,
   sortable = false,
   sortOptions = [
     { value: 'newest', label: 'Newest To Oldest' },
@@ -34,6 +36,8 @@ function Table<T extends { date?: string; order?: string }>({
   const [internalSort, setInternalSort] = useState(currentSort || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortedDataState, setSortedDataState] = useState<T[]>(data);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<T | null>(null);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
@@ -43,6 +47,13 @@ function Table<T extends { date?: string; order?: string }>({
       )
     );
   }, [sortedDataState, searchTerm]);
+
+  const paginatedData = useMemo(() => {
+    if (!pagination) return filteredData;
+    const startIndex = (pagination.currentPage - 1) * pagination.entriesPerPage;
+    const endIndex = startIndex + pagination.entriesPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, pagination]);
 
   const handleSortChange = (sort: string) => {
     setInternalSort(sort);
@@ -62,6 +73,16 @@ function Table<T extends { date?: string; order?: string }>({
     setSortedDataState(sortedData);
   };
 
+  const openModal = (row: T) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedRow(null);
+  };
+
   const renderCellContent = (
     column: TableColumn<T>,
     value: T[keyof T],
@@ -71,17 +92,67 @@ function Table<T extends { date?: string; order?: string }>({
     if (column.render) {
       return column.render(value, row, index);
     }
+
     if (String(column.key).toLowerCase().includes('status')) {
-      return <StatusBadge status={String(value)} />;
+      return (
+        <StatusBadge
+          status={String(value)}
+          editable={true}
+          onStatusChange={(newStatus) => {
+            const updatedData = [...sortedDataState];
+            updatedData[index] = { ...updatedData[index], status: newStatus };
+            setSortedDataState(updatedData);
+          }}
+          userId={row.userId}
+        />
+      );
     }
+
     if (String(column.key).toLowerCase().includes('packaging')) {
-      return <span className="text-sm">{String(value)}</span>;
+      const packagingValue = String(value);
+      return packagingValue === 'YES' ? (
+        <div className="flex items-center">
+          <span className="text-sm mr-2">{packagingValue}</span>
+          <Image
+            src="/images/dashboard/up-right.svg"
+            alt="View Packaging"
+            width={14}
+            height={14}
+            className="cursor-pointer"
+            onClick={() => openModal(row)}
+          />
+        </div>
+      ) : (
+        <span className="text-sm">{packagingValue}</span>
+      );
     }
+
     return value as React.ReactNode;
   };
 
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+    const totalPages = pagination.totalPages;
+    const currentPage = pagination.currentPage;
+    const maxPagesToShow = 5;
+    const pageNumbers: number[] = [];
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
+  };
+
+  const isAdmin = true; 
   return (
-    <div className={`w-full min-h-screen ${className}`}>
+    <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           {searchable && (
@@ -113,9 +184,7 @@ function Table<T extends { date?: string; order?: string }>({
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${
-                    column.width || ''
-                  }`}
+                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${column.width || ''}`}
                   style={{ textAlign: column.align || 'left' }}
                 >
                   {column.label}
@@ -138,7 +207,7 @@ function Table<T extends { date?: string; order?: string }>({
                   Loading...
                 </td>
               </tr>
-            ) : filteredData.length === 0 ? (
+            ) : paginatedData.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length + (showActions ? 1 : 0)}
@@ -148,13 +217,11 @@ function Table<T extends { date?: string; order?: string }>({
                 </td>
               </tr>
             ) : (
-              filteredData.map((row, index) => (
+              paginatedData.map((row, index) => (
                 <tr
                   key={index}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    alternatingRows && index % 2 === 1
-                      ? 'bg-gray-100'
-                      : 'bg-white'
+                    alternatingRows && index % 2 === 1 ? 'bg-gray-100' : 'bg-white'
                   } ${rowClassName}`}
                 >
                   {columns.map((column) => (
@@ -174,19 +241,8 @@ function Table<T extends { date?: string; order?: string }>({
                           return (
                             <button
                               key={actionIndex}
-                              onClick={() => action.onClick && action.onClick(row)}
-                              className={`max-w-lg rounded-full py-2 px-6 font-base text-sm ${
-                                action.variant === 'primary'
-                                  ? 'bg-[#1a2a3a] text-white'
-                                  : action.variant === 'success'
-                                  ? 'text-green-600 font-bold text-lg'
-                                  : action.variant === 'secondary'
-                                  ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                                  : action.variant === 'danger'
-                                  ? 'bg-red-600 text-white hover:bg-red-700'
-                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                              } ${!action.onClick ? 'cursor-default' : ''}`}
-                              disabled={!action.onClick}
+                              onClick={() => action.onClick(row)}
+                              className="px-3 py-1 text-xs font-medium rounded-md"
                             >
                               {action.icon && (
                                 <Image
@@ -210,8 +266,53 @@ function Table<T extends { date?: string; order?: string }>({
           </tbody>
         </table>
       </div>
+      {pagination && (
+        <div className="flex items-center justify-between mt-6 pt-4 mb-10">
+          <div className="text-sm text-gray-500">
+            Showing {(pagination.currentPage - 1) * pagination.entriesPerPage + 1} to{' '}
+            {Math.min(pagination.currentPage * pagination.entriesPerPage, pagination.totalEntries)}{' '}
+            of {pagination.totalEntries} entries
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 1}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            {getPageNumbers().map((pageNumber) => (
+              <button
+                key={pageNumber}
+                onClick={() => pagination.onPageChange(pageNumber)}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  pageNumber === pagination.currentPage
+                    ? 'bg-primary text-white'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+            <button
+              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage === pagination.totalPages}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+      {isAdmin && isModalOpen && selectedRow && (
+        <PackagingModal
+          packagingDescription={selectedRow.packagingDescription || 'No description available'}
+          backText={selectedRow.backText || 'No back text available'}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }
 
-export default Table;
+export default AdminTable;
