@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
+import Input from "@/src/components/common/input";
 
 interface QAFormData {
   coinStyles: string;
@@ -15,6 +16,7 @@ interface QAFormData {
 const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [data, setData] = useState<QAFormData | null>(null);
+  const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
@@ -22,8 +24,10 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       setData(JSON.parse(qaFormData));
     }
   }, []);
+
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
+    if (selectedButton !== id) setFeedback("");
   };
 
   const dynamicOptions = data
@@ -113,24 +117,22 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
         ))}
       </div>
       <div className="flex justify-center mb-12 relative">
-        {" "}
         <div className="flex flex-col items-center">
-          {" "}
           <Image
             src="/images/home/coin-design.png"
             alt="Coin"
             width={335}
             height={335}
             className="z-10"
-          />{" "}
+          />
           <Image
             src="/images/home/frame.png"
             alt="Coin Base"
             width={494}
             height={143}
             className="mt-[-50px] z-0"
-          />{" "}
-        </div>{" "}
+          />
+        </div>
       </div>
 
       <div className="flex justify-center gap-4 mb-8">
@@ -150,6 +152,26 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
           </Button>
         ))}
       </div>
+
+      {selectedButton === 2 && (
+        <div className=" mx-auto mb-8">
+          <label htmlFor="feedback" className="block text-md font-semibold text-gray-700 mb-2">
+            Feedback for Designer
+          </label>
+         
+
+           <Input
+              textarea
+              rows={3}
+              placeholder="Enter your feedback here"
+              inputSize="md"
+              className="border-none py-3 px-6 rounded-xl"
+              bg="bg-gray-100"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            />
+        </div>
+      )}
 
       <div className="flex justify-center gap-4">
         <Button
