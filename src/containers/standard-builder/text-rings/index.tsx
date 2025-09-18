@@ -13,7 +13,7 @@ const TextRings = () => {
   const [backBottomText, setBackBottomText] = useState("");
   const [frontNoText, setFrontNoText] = useState(false);
   const [backNoText, setBackNoText] = useState(false);
-  
+
   const router = useRouter();
 
   const handleContinue = () => {
@@ -28,13 +28,13 @@ const TextRings = () => {
           front: {
             top: frontNoText ? "" : frontTopText,
             bottom: frontNoText ? "" : frontBottomText,
-            noText: frontNoText
+            noText: frontNoText,
           },
           back: {
             top: backNoText ? "" : backTopText,
             bottom: backNoText ? "" : backBottomText,
-            noText: backNoText
-          }
+            noText: backNoText,
+          },
         },
       },
     };
@@ -68,7 +68,14 @@ const TextRings = () => {
   };
 
   const canContinue = () => {
-    return frontNoText || frontTopText || frontBottomText || backNoText || backTopText || backBottomText;
+    return (
+      frontNoText ||
+      frontTopText ||
+      frontBottomText ||
+      backNoText ||
+      backTopText ||
+      backBottomText
+    );
   };
 
   return (
@@ -106,9 +113,11 @@ const TextRings = () => {
               onClick={() => setActiveTab("front")}
               className={`
                 py-3 px-6 text-sm font-semibold uppercase tracking-wide transition-colors duration-200
-                ${activeTab === "front" 
-                  ? "text-black border-b-2 border-black" 
-                  : "text-gray-500 hover:text-gray-700"}
+                ${
+                  activeTab === "front"
+                    ? "text-black border-b-2 border-black"
+                    : "text-gray-500 hover:text-gray-700"
+                }
               `}
             >
               Front Text
@@ -117,9 +126,11 @@ const TextRings = () => {
               onClick={() => setActiveTab("back")}
               className={`
                 py-3 px-6 text-sm font-semibold uppercase tracking-wide transition-colors duration-200
-                ${activeTab === "back" 
-                  ? "text-black border-b-2 border-black" 
-                  : "text-gray-500 hover:text-gray-700"}
+                ${
+                  activeTab === "back"
+                    ? "text-black border-b-2 border-black"
+                    : "text-gray-500 hover:text-gray-700"
+                }
               `}
             >
               Back Text
@@ -134,7 +145,6 @@ const TextRings = () => {
                   Top
                 </label>
                 <Input
-                  
                   placeholder="Type Your Text Here..."
                   inputSize="md"
                   className="border-none py-3 px-6 rounded-xl"
@@ -150,7 +160,6 @@ const TextRings = () => {
                   Bottom
                 </label>
                 <Input
-               
                   placeholder="Type Your Text Here..."
                   inputSize="md"
                   className="border-none py-3 px-6 rounded-xl"
@@ -162,13 +171,17 @@ const TextRings = () => {
               </div>
 
               {/* Front Checkbox */}
-              <div className="mb-6">
+              <div className="mb-2">
                 <label className="flex items-start space-x-3">
                   <input
                     type="checkbox"
                     checked={frontNoText}
-                    onChange={(e) => handleFrontNoTextChange(e.target.checked)}
-                    disabled={!!frontTopText.trim() || !!frontBottomText.trim()}
+                    onChange={(e) =>
+                      handleFrontNoTextChange(e.target.checked)
+                    }
+                    disabled={
+                      !!frontTopText.trim() || !!frontBottomText.trim()
+                    }
                     className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
@@ -176,6 +189,18 @@ const TextRings = () => {
                   </span>
                 </label>
               </div>
+
+              {/* Validation Message */}
+              {(!!frontTopText.trim() || !!frontBottomText.trim()) && (
+                <p className="text-xs text-blue-800 mb-4">
+                  You can either enter text OR select "Only Image", not both.
+                </p>
+              )}
+              {frontNoText && (
+                <p className="text-xs text-blue-800 mb-4">
+                  "Only Image" selected — text inputs are disabled.
+                </p>
+              )}
             </div>
           )}
 
@@ -187,7 +212,6 @@ const TextRings = () => {
                   Top
                 </label>
                 <Input
-                 
                   placeholder="Type Your Text Here..."
                   inputSize="md"
                   className="border-none py-3 px-6 rounded-xl"
@@ -203,7 +227,6 @@ const TextRings = () => {
                   Bottom
                 </label>
                 <Input
-                
                   placeholder="Type Your Text Here..."
                   inputSize="md"
                   className="border-none py-3 px-6 rounded-xl"
@@ -215,7 +238,7 @@ const TextRings = () => {
               </div>
 
               {/* Back Checkbox */}
-              <div className="mb-6">
+              <div className="mb-2">
                 <label className="flex items-start space-x-3">
                   <input
                     type="checkbox"
@@ -229,6 +252,18 @@ const TextRings = () => {
                   </span>
                 </label>
               </div>
+
+              {/* Validation Message */}
+              {(!!backTopText.trim() || !!backBottomText.trim()) && (
+                <p className="text-xs text-blue-800 mb-4">
+                  You can either enter text OR select "Only Image", not both.
+                </p>
+              )}
+              {backNoText && (
+                <p className="text-xs text-blue-800 mb-4">
+                  "Only Image" selected — text inputs are disabled.
+                </p>
+              )}
             </div>
           )}
 
