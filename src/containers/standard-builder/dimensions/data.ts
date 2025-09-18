@@ -69,19 +69,27 @@ export const updateStepsBasedOnPath = (currentPath: string, allSteps: Step[]): S
 };
 
 
-
+// Static options
 export const coinDiameterOptions = [
-  { value: '1.75"', label: '1.75"' },
+  { value: '17mm', label: '17mm' },
+  { value: '20mm', label: '20mm' },
   { value: '25mm', label: '25mm' },
-  { value: '30mm', label: '30mm' },
-  { value: '35mm', label: '35mm' },
-  { value: '40mm', label: '40mm' },
 ];
 
 export const coinThicknessOptions = [
-  { value: '1.75"', label: '1.75"' },
-  { value: '2mm', label: '2mm' },
-  { value: '3mm', label: '3mm' },
-  { value: '4mm', label: '4mm' },
-  { value: '5mm', label: '5mm' },
+  { value: '1.5mm', label: '1.5mm' },
+  { value: '2.0mm', label: '2.0mm' },
+  { value: '2.5mm', label: '2.5mm' },
 ];
+
+// Mock API fetch
+export const fetchDimensionOptions = async () => {
+  await new Promise((r) => setTimeout(r, 500));
+  return { coinDiameters: coinDiameterOptions, coinThicknesses: coinThicknessOptions };
+};
+
+// Mock API save
+export const saveDimensions = async (data: { coinDiameter: string; coinThickness: string }) => {
+  await new Promise((r) => setTimeout(r, 500));
+  return data;
+};
