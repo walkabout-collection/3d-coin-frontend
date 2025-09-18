@@ -51,6 +51,14 @@ export const initialSteps: Step[] = [
 ];
 
 export const updateStepsBasedOnPath = (currentPath: string, allSteps: Step[]): Step[] => {
+  if (currentPath === "/standard-builder/confirm-packaging" || currentPath === "/standard-builder/packaging") {
+    return allSteps.map(step => ({
+      ...step,
+      completed: true,
+      active: false,
+    }));
+  }
+
   const currentStepIndex = allSteps.findIndex(step => step.path === currentPath);
   
   if (currentStepIndex === -1) return allSteps;
@@ -67,6 +75,7 @@ export const updateStepsBasedOnPath = (currentPath: string, allSteps: Step[]): S
     return { ...step, active: false, completed: false };
   });
 };
+
 
 
 
