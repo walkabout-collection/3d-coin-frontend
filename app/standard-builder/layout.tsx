@@ -54,12 +54,32 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const getProgressLineWidth = () => {
+    const activeIndex = steps.findIndex(step => step.active);
+    const completedCount = steps.filter(step => step.completed).length;
+    
+    if (activeIndex === -1) return 0;
+    
+    const totalSteps = steps.length;
+    const stepWidth = 100 / (totalSteps - 1); 
+    if (steps[activeIndex] && !steps[activeIndex].completed) {
+      return (completedCount * stepWidth) + (stepWidth / 2);
+    }
+    
+    return completedCount * stepWidth;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex px-4">
-        <div className="flex py-10 border-b border-gray-200 w-full">
+        <div className="flex py-6 border-b border-gray-200 w-full relative">
+          {/* Progress Line */}
+          <div className="absolute bottom-0 left-0 h-0.5 bg-gray-700 transition-all duration-500 ease-out"
+               style={{ width: `${getProgressLineWidth()}%` }}>
+          </div>
+          
           <div className="flex w-full justify-around items-start">
-            {steps.map((step) => {
+            {steps.map((step, index) => {
               const IconComponent = step.completed ? Check : iconMap[step.icon as keyof typeof iconMap];
               
               return (
@@ -67,7 +87,7 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({ childr
                   <button
                     onClick={() => handleStepClick(step.id, step.path)}
                     className={`
-                      w-24 h-24 rounded-full flex items-center justify-center
+                      w-16 h-16 rounded-full flex items-center justify-center
                       transition-all duration-300 ease-in-out
                       hover:scale-105 focus:outline-none 
                       ${getStepClasses(step)}
@@ -75,7 +95,7 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({ childr
                     disabled={!step.active && !step.completed}
                   >
                     <IconComponent 
-                      size={35} 
+                      size={32} 
                       className={`${getIconColor(step)} transition-colors duration-300`}
                     />
                   </button>
