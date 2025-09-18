@@ -16,7 +16,7 @@ export const cardsData: CardsData = [
     title: "Standard",
     description: "Build A Classic Round Coin In 3D With Real-Time Previews.",
     buttonText: "Build Now",
-    buttonHref: "/standard",
+    buttonHref: "/standard-builder",
     height: 570,
     width: 400,
     className: "-mt-10",
