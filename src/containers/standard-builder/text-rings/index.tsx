@@ -176,12 +176,8 @@ const TextRings = () => {
                   <input
                     type="checkbox"
                     checked={frontNoText}
-                    onChange={(e) =>
-                      handleFrontNoTextChange(e.target.checked)
-                    }
-                    disabled={
-                      !!frontTopText.trim() || !!frontBottomText.trim()
-                    }
+                    onChange={(e) => handleFrontNoTextChange(e.target.checked)}
+                    disabled={!!frontTopText.trim() || !!frontBottomText.trim()}
                     className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
@@ -193,12 +189,13 @@ const TextRings = () => {
               {/* Validation Message */}
               {(!!frontTopText.trim() || !!frontBottomText.trim()) && (
                 <p className="text-xs text-blue-800 mb-4">
-                  You can either enter text OR select "Only Image", not both.
+                  You can either enter text OR select &quot;Only Image&quot;,
+                  not both.
                 </p>
               )}
               {frontNoText && (
                 <p className="text-xs text-blue-800 mb-4">
-                  "Only Image" selected — text inputs are disabled.
+                  &quot;Only Image&quot; selected — text inputs are disabled.
                 </p>
               )}
             </div>
@@ -256,12 +253,13 @@ const TextRings = () => {
               {/* Validation Message */}
               {(!!backTopText.trim() || !!backBottomText.trim()) && (
                 <p className="text-xs text-blue-800 mb-4">
-                  You can either enter text OR select "Only Image", not both.
+                  You can either enter text OR select &quot;Only Image&quot;,
+                  not both.
                 </p>
               )}
               {backNoText && (
                 <p className="text-xs text-blue-800 mb-4">
-                  "Only Image" selected — text inputs are disabled.
+                  &quot;Only Image&quot; selected — text inputs are disabled.
                 </p>
               )}
             </div>
