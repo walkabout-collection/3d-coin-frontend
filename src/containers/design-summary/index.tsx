@@ -171,6 +171,26 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
         ))}
       </div>
 
+      {selectedButton === 2 && (
+        <div className=" mx-auto mb-8">
+          <label htmlFor="feedback" className="block text-md font-semibold text-gray-700 mb-2">
+            Feedback for Designer
+          </label>
+         
+
+           <Input
+              textarea
+              rows={3}
+              placeholder="Enter your feedback here"
+              inputSize="md"
+              className="border-none py-3 px-6 rounded-xl"
+              bg="bg-gray-100"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            />
+        </div>
+      )}
+
       <div className="flex justify-center gap-4">
          {/* <Button
           type="button"
