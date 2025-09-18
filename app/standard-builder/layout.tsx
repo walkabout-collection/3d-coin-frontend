@@ -79,7 +79,7 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({ childr
           </div>
           
           <div className="flex w-full justify-around items-start">
-            {steps.map((step, index) => {
+            {steps.map((step) => {
               const IconComponent = step.completed ? Check : iconMap[step.icon as keyof typeof iconMap];
               
               return (

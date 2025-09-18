@@ -16,7 +16,7 @@ const Material = () => {
   const handleContinue = () => {
     if (selectedMaterial) {
       const existingData = localStorage.getItem("standard-builder-data");
-      let builderData = existingData ? JSON.parse(existingData) : {};
+      const builderData = existingData ? JSON.parse(existingData) : {};
 
       const materialData = {
         ...builderData,
