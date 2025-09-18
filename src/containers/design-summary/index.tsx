@@ -14,7 +14,7 @@ interface QAFormData {
 
 const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
-const [data, setData] = useState<QAFormData | null>(null);
+  const [data, setData] = useState<QAFormData | null>(null);
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
@@ -25,7 +25,6 @@ const [data, setData] = useState<QAFormData | null>(null);
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
   };
- 
 
   const dynamicOptions = data
     ? [
@@ -113,7 +112,26 @@ const [data, setData] = useState<QAFormData | null>(null);
           </div>
         ))}
       </div>
-      <div className="flex justify-center mb-12 relative"> <div className="flex flex-col items-center"> <Image src="/images/home/coin-design.png" alt="Coin" width={335} height={335} className="z-10" /> <Image src="/images/home/frame.png" alt="Coin Base" width={494} height={143} className="mt-[-50px] z-0" /> </div> </div>
+      <div className="flex justify-center mb-12 relative">
+        {" "}
+        <div className="flex flex-col items-center">
+          {" "}
+          <Image
+            src="/images/home/coin-design.png"
+            alt="Coin"
+            width={335}
+            height={335}
+            className="z-10"
+          />{" "}
+          <Image
+            src="/images/home/frame.png"
+            alt="Coin Base"
+            width={494}
+            height={143}
+            className="mt-[-50px] z-0"
+          />{" "}
+        </div>{" "}
+      </div>
 
       <div className="flex justify-center gap-4 mb-8">
         {bottomButtons.map((btn) => (
