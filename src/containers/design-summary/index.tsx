@@ -20,6 +20,7 @@ const DesignSummarySection = () => {
   const [feedback, setFeedback] = useState("");
   const router = useRouter();
   const isLoggedIn = false;
+
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
     if (qaFormData) {
@@ -30,6 +31,52 @@ const DesignSummarySection = () => {
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
     if (selectedButton !== id) setFeedback("");
+  };
+
+  const handleSubmitForQuote = async () => {
+    const existingData = localStorage.getItem("standard-builder-data");
+    const builderData = existingData ? JSON.parse(existingData) : {};
+
+    const updatedData = {
+      ...builderData,
+      "standard-builder": {
+        ...builderData["standard-builder"],
+        feedback_for_designer: feedback.trim(),
+      },
+    };
+
+    localStorage.setItem("standard-builder-data", JSON.stringify(updatedData));
+    console.log("Updated standard-builder-data:", JSON.stringify(updatedData, null, 2));
+
+    try {
+      console.log("Submitting data for quote:", updatedData);
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      alert("Failed to submit design. Please try again.");
+    }
+  };
+
+  const handleFirstButtonAction = async () => {
+    //  dummy API call
+    try {
+      const response = await fetch("https://dummyapi.example.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          standardBuilderData: JSON.parse(localStorage.getItem("standard-builder-data") || "{}"),
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Dummy API call successful");
+      } else {
+        throw new Error("Dummy API call failed");
+      }
+    } catch (error) {
+      console.error("Error in dummy API call:", error);
+    }
   };
 
   const dynamicOptions = data
@@ -150,8 +197,9 @@ const DesignSummarySection = () => {
             variant="ternary"
             onClick={() => {
               handleButtonClick(btn.id);
-
-              if (index === 2) {
+              if (index === 0) {
+                handleFirstButtonAction();
+              } else if (index === 2) {
                 router.push("/design-team");
               }
             }}
@@ -167,14 +215,13 @@ const DesignSummarySection = () => {
       </div>
 
       {selectedButton === 2 && (
-        <div className=" mx-auto mb-8">
+        <div className="mx-auto mb-8">
           <label
             htmlFor="feedback"
             className="block text-md font-semibold text-gray-700 mb-2"
           >
             Feedback for Designer
           </label>
-
           <Input
             textarea
             rows={3}
@@ -202,6 +249,7 @@ const DesignSummarySection = () => {
           type="button"
           variant="primary"
           className="max-w-[280px] w-full text-lg font-medium"
+          onClick={handleSubmitForQuote}
         >
           SUBMIT FOR QUOTE
         </Button>
