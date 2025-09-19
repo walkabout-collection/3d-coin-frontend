@@ -9,18 +9,18 @@ export const navLinks = [
     title: routes.CONTACT_US.title,
     href: routes.CONTACT_US.path,
   },
-  {
-    title: routes.SERVICES.title,
-    href: routes.SERVICES.path,
-  },
+  // {
+  //   title: routes.SERVICES.title,
+  //   href: routes.SERVICES.path,
+  // },
   // {
   //   title: routes.BLOGS.title,
   //   href: routes.BLOGS.path,
   // },
-  // {
-  //   title: routes.PRICING.title,
-  //   href: routes.PRICING.path,
-  // },
+  {
+    title: routes.PRICING.title,
+    href: routes.PRICING.path,
+  },
 ];
 
 export const navLinksAuth = [
