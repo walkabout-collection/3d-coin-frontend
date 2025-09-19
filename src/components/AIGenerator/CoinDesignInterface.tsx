@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Paperclip } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
+import { z } from "zod";
 
 interface UIState {
   previewImage: string | null;
@@ -14,14 +15,17 @@ interface ImageData {
   file: File | null;
 }
 
+interface CoinDesignInterfaceProps {
+  onContinue: () => void;
+}
+
 const initialUIState: UIState = {
   previewImage: null,
   selectedThumbnail: null,
   isLoggedIn: true,
 };
-interface CoinDesignInterfaceProps {
-  onContinue: () => void;
-}
+
+const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   onContinue,
@@ -29,7 +33,10 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const [state, setState] = useState<UIState>(initialUIState);
   const [imageData, setImageData] = useState<ImageData>({ file: null });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [prompt, setPrompt] = useState<string>(""); 
+  const [error, setError] = useState<{ message: string } | undefined>(undefined);
   const isLoggedIn = false;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -37,7 +44,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
       setUploadedImages((prev) => {
         const newImages = [...prev, imageUrl];
-        return newImages.slice(-4);
+        return newImages.slice(-4); 
       });
 
       setState((prev) => ({
@@ -47,6 +54,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
       }));
 
       setImageData({ file });
+      setError(undefined); 
     }
   };
 
@@ -59,28 +67,32 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   };
 
   const handleRegenerate = () => {
-    if (imageData.file) {
-      alert("Regenerating design with uploaded image!");
+    const validation = imageSchema.safeParse(imageData.file);
+    if (prompt.trim().length > 0 || (validation.success && imageData.file)) {
+      setError(undefined);
     } else {
-      alert("Please attach an image first!");
+      setError({
+        message: "Please provide a prompt or upload an image to regenerate.",
+      });
     }
   };
 
   const handleSaveDraft = () => {
-    alert("Design saved as draft!");
   };
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       <div className="p-6 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Left Section - Input Area */}
           <div className="flex flex-col">
             <div className="relative mb-8">
               <textarea
-                className="w-full  p-6 border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500  text-lg"
+                className="w-full p-6 border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500 text-lg"
                 placeholder="Ask anything…"
                 rows={10}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)} 
               />
 
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
@@ -111,6 +123,13 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                 </Button>
               </div>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mt-1 text-red-500 text-sm" aria-live="polite">
+                <span>{error.message}</span>
+              </div>
+            )}
 
             {/* Thumbnail Images Section */}
             <div className="space-y-4">
