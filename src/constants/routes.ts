@@ -142,3 +142,58 @@ export const routes = {
   },
 
 } as const;
+
+export const adminRoutes = {
+  DASHBOARD: {
+    title: "Dashboard",
+    path: "/admin/dashboard",
+    metaTitle: "Legacy Forge | Dashboard",
+    description:
+      "Access your account dashboard to manage your custom coin designs and orders.",
+  },
+  ORDERS: {
+    title: "Orders",
+    path: "/admin/orders",
+    metaTitle: "Legacy Forge | Orders",
+    description:
+      "Review and manage your custom coin orders with Legacy Forge.",
+  },
+  QUOTES: {
+    title: "Quotes",
+    path: "/admin/quotes",
+    metaTitle: "Legacy Forge | Quotes",
+    description:
+      "Review and manage your custom coin quotes with Legacy Forge.",
+  },
+  PAYMENT_METHOD: {
+    title: "Payment Method",
+    path: "/admin/payment-method",
+    metaTitle: "Legacy Forge | Payment Method",
+    description:
+      "Manage your payment methods with Legacy Forge.",
+  },
+  PAYMENT_HISTORY: {
+    title: "Payment History",
+    path: "/admin/payment-history",
+    metaTitle: "Legacy Forge | Payment History",
+    description:
+      "Review your payment history with Legacy Forge.",
+  },
+  ACCOUNT_SETTING: {
+    title: "Account Setting",
+    path: "/admin/account-setting",
+    metaTitle: "Legacy Forge | Account Setting",
+    description:
+      "Manage your account settings with Legacy Forge.",
+  },
+  TRACKING: {
+    title: "Tracking",
+    path: "/admin/tracking",
+    metaTitle: "Legacy Forge | Tracking",
+    description:
+      "Track your custom coin orders with Legacy Forge.",
+  },
+} as const;
+
+
+
