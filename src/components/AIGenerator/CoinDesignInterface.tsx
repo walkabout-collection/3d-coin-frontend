@@ -29,7 +29,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const [state, setState] = useState<UIState>(initialUIState);
   const [imageData, setImageData] = useState<ImageData>({ file: null });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-
+  const isLoggedIn = false;
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -174,14 +174,16 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
             {/* Action Buttons */}
             <div className="flex justify-between gap-6 mt-8">
-              <Button
-                type="button"
-                variant="ternary"
-                onClick={handleSaveDraft}
-                className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
-              >
-                SAVE AS DRAFT
-              </Button>
+              {isLoggedIn && (
+                <Button
+                  type="button"
+                  variant="ternary"
+                  onClick={handleSaveDraft}
+                  className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
+                >
+                  SAVE AS DRAFT
+                </Button>
+              )}
 
               <Button
                 onClick={onContinue}
