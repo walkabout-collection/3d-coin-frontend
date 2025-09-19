@@ -6,3 +6,8 @@ export interface Step {
   active: boolean;
   path: string; 
 }
+
+export interface DimensionData {
+  coinDiameter: string;
+  coinThickness: string;
+}
