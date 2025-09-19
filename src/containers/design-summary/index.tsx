@@ -24,6 +24,9 @@ const DesignSummarySection = () => {
     null
   );
   const [feedback, setFeedback] = useState<string>("");
+  const isLoggedIn = false;
+
+  const router = useRouter();
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
@@ -209,6 +212,15 @@ const DesignSummarySection = () => {
       )}
 
       <div className="flex justify-center gap-4">
+        {isLoggedIn && (
+          <Button
+            type="button"
+            variant="ternary"
+            className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
+          >
+            SAVE AS DRAFT
+          </Button>
+        )}
         {/* <Button
           type="button"
           variant="ternary"
