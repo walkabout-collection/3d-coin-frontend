@@ -19,7 +19,7 @@ const DesignSummarySection = () => {
   const [data, setData] = useState<QAFormData | null>(null);
   const [feedback, setFeedback] = useState("");
   const router = useRouter();
-
+  const isLoggedIn = false;
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
     if (qaFormData) {
@@ -189,13 +189,15 @@ const DesignSummarySection = () => {
       )}
 
       <div className="flex justify-center gap-4">
-        <Button
-          type="button"
-          variant="ternary"
-          className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
-        >
-          SAVE AS DRAFT
-        </Button>
+        {isLoggedIn && (
+          <Button
+            type="button"
+            variant="ternary"
+            className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
+          >
+            SAVE AS DRAFT
+          </Button>
+        )}
         <Button
           type="button"
           variant="primary"
