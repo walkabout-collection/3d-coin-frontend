@@ -227,9 +227,7 @@ const handleEdit = () => {
     );
   }
 
-  if (state.showDesignSummary) {
-    return <DesignSummarySection onEdit={handleEdit}  />;
-  }
+  
 
   return (
     <div className="min-h-screen">
