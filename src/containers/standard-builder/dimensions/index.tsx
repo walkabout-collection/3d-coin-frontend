@@ -117,53 +117,22 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Input from "@/src/components/common/input";
 import Button from "@/src/components/common/button/Button";
-import { fetchDimensionOptions, saveDimensions } from "./data";
+import { useDimensionOptions, useSaveDimensions } from "@/src/hooks/useQueries";
 
 const Dimensions = () => {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
   const [coinDiameter, setCoinDiameter] = useState("");
   const [coinThickness, setCoinThickness] = useState("");
 
-  const {
-    data: options,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["dimensionOptions"],
-    queryFn: fetchDimensionOptions,
+  const { data: options, isLoading, error } = useDimensionOptions();
+
+  const mutation = useSaveDimensions({
+    onSuccess: () => {
+      router.push("/standard-builder/material");
+    },
   });
-
-const mutation = useMutation({
-  mutationFn: saveDimensions,
-  onSuccess: (data) => {
-    const dimensionsData = {
-      "standard-builder": {
-        dimensions: {
-          "coin-diameter": data.coinDiameter,
-          "coin-thickness": data.coinThickness,
-        },
-      },
-    };
-
-    console.log(JSON.stringify(dimensionsData, null, 2));
-
-    const existingData = JSON.parse(localStorage.getItem("standard-builder-data") || "{}");
-    localStorage.setItem(
-      "standard-builder-data",
-      JSON.stringify({
-        ...existingData,
-        ...dimensionsData,
-      })
-    );
-
-    router.push("/standard-builder/material");
-  },
-});
 
   const handleContinue = () => {
     if (coinDiameter && coinThickness) {
@@ -176,6 +145,7 @@ const mutation = useMutation({
 
   return (
     <div className="min-h-screen flex flex-row items-start justify-center py-10 ">
+      {/* Left Side */}
       <div className="flex justify-between mb-12 relative w-full max-w-2xl mr-8">
         <div className="flex flex-col items-center">
           <Image
@@ -195,9 +165,9 @@ const mutation = useMutation({
         </div>
       </div>
 
-      {/* Right Side - Form Container */}
+      {/* Right Side */}
       <div className="flex flex-col">
-        <h1 className="text-xl font-semibold text-gray-900  mb-6">
+        <h1 className="text-xl font-semibold text-gray-900 mb-6">
           Select Your Coin Dimensions
         </h1>
         <div className="w-full max-w-md p-6 rounded-lg shadow-md">

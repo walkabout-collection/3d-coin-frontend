@@ -70,26 +70,15 @@ export const updateStepsBasedOnPath = (currentPath: string, allSteps: Step[]): S
 
 
 // Static options
-export const coinDiameterOptions = [
+export const coinDiameters = [
   { value: '17mm', label: '17mm' },
   { value: '20mm', label: '20mm' },
   { value: '25mm', label: '25mm' },
 ];
 
-export const coinThicknessOptions = [
+export const coinThicknesses = [
   { value: '1.5mm', label: '1.5mm' },
   { value: '2.0mm', label: '2.0mm' },
   { value: '2.5mm', label: '2.5mm' },
 ];
 
-// Mock API fetch
-export const fetchDimensionOptions = async () => {
-  await new Promise((r) => setTimeout(r, 500));
-  return { coinDiameters: coinDiameterOptions, coinThicknesses: coinThicknessOptions };
-};
-
-// Mock API save
-export const saveDimensions = async (data: { coinDiameter: string; coinThickness: string }) => {
-  await new Promise((r) => setTimeout(r, 500));
-  return data;
-};
