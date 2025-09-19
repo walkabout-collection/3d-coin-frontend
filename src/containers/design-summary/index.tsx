@@ -55,6 +55,30 @@ const DesignSummarySection = () => {
     setShowPaymentModal(false);
   };
 
+
+  const handleFirstButtonAction = async () => {
+    //  dummy API call
+    try {
+      const response = await fetch("https://dummyapi.example.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          standardBuilderData: JSON.parse(localStorage.getItem("standard-builder-data") || "{}"),
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Dummy API call successful");
+      } else {
+        throw new Error("Dummy API call failed");
+      }
+    } catch (error) {
+      console.error("Error in dummy API call:", error);
+    }
+  };
+
   const dynamicOptions = data
     ? [
         {
@@ -173,8 +197,9 @@ const DesignSummarySection = () => {
             variant="ternary"
             onClick={() => {
               handleButtonClick(btn.id);
-
-              if (index === 2) {
+              if (index === 0) {
+                handleFirstButtonAction();
+              } else if (index === 2) {
                 router.push("/design-team");
               }
             }}
@@ -190,14 +215,13 @@ const DesignSummarySection = () => {
       </div>
 
       {selectedButton === 2 && (
-        <div className=" mx-auto mb-8">
+        <div className="mx-auto mb-8">
           <label
             htmlFor="feedback"
             className="block text-md font-semibold text-gray-700 mb-2"
           >
             Feedback for Designer
           </label>
-
           <Input
             textarea
             rows={3}
