@@ -38,7 +38,7 @@ export const sidebarItems: SidebarItem[] = [
   },
   { 
     name: "Log Out", 
-    href: "/logout", 
+    href: "", 
     icon: "/images/dashboard/log-out.svg" 
   },
 ];
