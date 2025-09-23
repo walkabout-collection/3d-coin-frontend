@@ -1,11 +1,29 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { coinDiameters, coinThicknesses } from "../containers/standard-builder/dimensions/data";
+import {
+  useQuery,
+  useMutation,
+  UseMutationOptions,
+} from "@tanstack/react-query";
+import { login, refreshToken, signup } from "@/src/services/apiServices";
+import { Api, User } from "../services/api/apiTypes";
+import {
+  coinDiameters,
+  coinThicknesses,
+} from "../containers/standard-builder/dimensions/data";
 import { DimensionData } from "../containers/standard-builder/dimensions/types";
-// import { materials } from "../containers/standard-builder/materials/data";
+
+const api = new Api();
 
 // Dimensions
+// export const useDimensionOptions = () =>
+//   useQuery<Dimension[]>({ queryKey: ["dimensionOptions"], queryFn: getDimensionOptions });
+
+// export const useSaveDimensions = (options?: any) =>
+//   useMutation<Dimension, Error, Dimension>({
+//     mutationFn: saveDimensions,
+//     ...options,
+//   });
 const fetchDimensionOptions = async () => {
-  await new Promise((r) => setTimeout(r, 500)); 
+  await new Promise((r) => setTimeout(r, 500));
   return {
     coinDiameters,
     coinThicknesses,
@@ -23,7 +41,6 @@ const saveDimensions = async (data: DimensionData) => {
 export const useDimensionOptions = () =>
   useQuery({ queryKey: ["dimensionOptions"], queryFn: fetchDimensionOptions });
 
-
 export const useSaveDimensions = (options?: any) =>
   useMutation<
     { "coin-diameter": string; "coin-thickness": string },
@@ -33,46 +50,6 @@ export const useSaveDimensions = (options?: any) =>
     mutationFn: saveDimensions,
     ...options,
   });
-
-// Materials
-const fetchMaterialOptions = async () => {
-  await new Promise((r) => setTimeout(r, 500));
-//   return materials;
-};
-
-const saveMaterial = async (materialId: string) => {
-  await new Promise((r) => setTimeout(r, 500));
-  return { materialId };
-};
-
-export const useMaterialOptions = () =>
-  useQuery({ queryKey: ["materialOptions"], queryFn: fetchMaterialOptions });
-
-export const useSaveMaterial = (options?: any) =>
-  useMutation({ mutationFn: saveMaterial, ...options });
-
-
-
-
-// import { useQuery, useMutation } from "@tanstack/react-query";
-// import {
-//   getDimensionOptions,
-//   saveDimensions,
-//   getMaterialOptions,
-//   saveMaterial,
-//   getUsers,
-// } from "@/src/services/apiServices";
-// import { Dimension, Material, User } from "@/src/services/apiTypes";
-
-// // Dimensions
-// export const useDimensionOptions = () =>
-//   useQuery<Dimension[]>({ queryKey: ["dimensionOptions"], queryFn: getDimensionOptions });
-
-// export const useSaveDimensions = (options?: any) =>
-//   useMutation<Dimension, Error, Dimension>({
-//     mutationFn: saveDimensions,
-//     ...options,
-//   });
 
 // //  Materials
 // export const useMaterialOptions = () =>
@@ -84,6 +61,54 @@ export const useSaveMaterial = (options?: any) =>
 //     ...options,
 //   });
 
-// Users
-// export const useUsers = () =>
-//   useQuery<User[]>({ queryKey: ["users"], queryFn: getUsers });
+// Signup
+export const useSignup = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.auth.signupCreate>>["data"],
+    Error,
+    Parameters<typeof api.auth.signupCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.auth.signupCreate>>["data"],
+    Error,
+    Parameters<typeof api.auth.signupCreate>[0]
+  >({
+    mutationFn: signup,
+    ...options,
+  });
+
+// Login
+export const useLogin = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.auth.loginCreate>>["data"], 
+    Error,
+    Parameters<typeof api.auth.loginCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.auth.loginCreate>>["data"], 
+    Error,
+    Parameters<typeof api.auth.loginCreate>[0]
+  >({
+    mutationFn: login,
+    ...options,
+  });
+
+// Refresh token
+export const useRefreshToken = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.auth.refreshTokenCreate>>["data"],
+    Error,
+    Parameters<typeof api.auth.refreshTokenCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.auth.refreshTokenCreate>>["data"],
+    Error,
+    Parameters<typeof api.auth.refreshTokenCreate>[0]
+  >({
+    mutationFn: refreshToken,
+    ...options,
+  });
+

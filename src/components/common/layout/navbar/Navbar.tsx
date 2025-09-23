@@ -6,6 +6,14 @@ import { usePathname } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps, User } from "./types";
 
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
+
 const Navbar: React.FC<NavbarProps> = ({
   transparent = false,
   className = "",
@@ -13,6 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const [userData, setUserData] = useState<User | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const updateUserData = () => {
     const storedData = localStorage.getItem("user");
@@ -28,6 +37,17 @@ const Navbar: React.FC<NavbarProps> = ({
       setUserData(null);
     }
   };
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = getCookie("token");
+      setIsLoggedIn(!!token);
+    };
+
+    checkAuth();
+    window.addEventListener("authChanged", checkAuth);
+
+    return () => window.removeEventListener("authChanged", checkAuth);
+  }, []);
 
   useEffect(() => {
     updateUserData();
@@ -102,7 +122,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* User Authentication Section */}
-          {userData ? (
+          {isLoggedIn ? (
             <div className="flex items-center space-x-6">
               <button className="text-white hover:text-amber-400 transition-colors">
                 <Image
@@ -112,14 +132,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   height={25}
                 />
               </button>
-              <button className="relative text-white hover:text-amber-400 transition-colors">
-                <Image
-                  src="/images/navbar/notification.svg"
-                  alt="Notifications"
-                  width={25}
-                  height={25}
-                />
-              </button>
+
               <button className="w-12 h-12 rounded-full">
                 <Image
                   src="/images/navbar/profile.svg"
