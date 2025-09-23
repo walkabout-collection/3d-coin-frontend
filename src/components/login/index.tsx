@@ -52,7 +52,7 @@ const Login = () => {
     //   router.push("/dashboard");
     // },
     onSuccess: (response) => {
-      const { user, accessToken, refreshToken } = response;
+      const {  accessToken, refreshToken } = response;
 
       document.cookie = `token=${accessToken}; path=/; max-age=86400`; // 1 day
       document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800`; // 7 days
