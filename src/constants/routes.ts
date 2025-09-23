@@ -49,13 +49,6 @@ export const routes = {
     description:
       "Work directly with Legacy Forge’s expert designers to create 100% custom coins tailored to your vision.",
   },
-  STANDARD: {
-    title: "Standard Builder",
-    path: "/standard-builder",
-    metaTitle: "Legacy Forge | Standard 3D Coin Builder",
-    description:
-      "Build a classic round coin with Legacy Forge’s Standard 3D Builder and real-time previews.",
-  },
   CUSTOM_SHAPES: {
     title: "Custom Shapes",
     path: "/custom-shapes",
@@ -140,6 +133,64 @@ export const routes = {
     description:
       "Track your custom coin orders with Legacy Forge.",
   },
+    STANDARD: {
+    title: "Standard Builder",
+    path: "/standard-builder",
+    metaTitle: "Legacy Forge | Standard 3D Coin Builder",
+    description:
+      "Build a classic round coin with Legacy Forge’s Standard 3D Builder and real-time previews.",
+    },
+      DIMENSIONS: {
+        title: "Dimensions",
+        path: "/standard-builder/dimensions",
+        metaTitle: "Legacy Forge | Coin Dimensions",
+        description:
+          "Choose coin diameter and thickness for your custom coin design.",
+      },
+      MATERIAL: {
+        title: "Material",
+        path: "/standard-builder/material",
+        metaTitle: "Legacy Forge | Coin Materials",
+        description:
+          "Select from premium materials to craft your custom coin.",
+      },
+      EDGE_TYPE: {
+        title: "Edge Type",
+        path: "/standard-builder/edge-type",
+        metaTitle: "Legacy Forge | Coin Edge Types",
+        description:
+          "Pick the perfect edge style to enhance your coin’s design.",
+      },
+      TEXT_RINGS: {
+        title: "Text Rings",
+        path: "/standard-builder/text-rings",
+        metaTitle: "Legacy Forge | Coin Text Rings",
+        description:
+          "Add custom text rings around your coin for personalization.",
+      },
+      ARTWORK: {
+        title: "Artwork",
+        path: "/standard-builder/artwork",
+        metaTitle: "Legacy Forge | Coin Artwork",
+        description:
+          "Upload or choose artwork to be engraved on your coin.",
+      },
+      CONFIRM_PACKAGING: {
+        title: "Confirm Packaging",
+        path: "/standard-builder/confirm-packaging",
+        metaTitle: "Legacy Forge | Confirm Packaging",
+        description:
+          "Review and confirm the packaging details for your custom coin.",
+      },
+      PACKAGING: {
+        title: "Packaging",
+        path: "/standard-builder/packaging",
+        metaTitle: "Legacy Forge | Packaging",
+        description:
+          "Choose packaging options for your custom coin.",
+      },
+     
+  
 
 } as const;
 
