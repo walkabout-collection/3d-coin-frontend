@@ -10,6 +10,7 @@ import { SignupProps } from "./types";
 import Link from "next/link";
 import Button from "../common/button/Button";
 import { useRouter } from "next/navigation";
+import { useSignup } from "@/src/hooks/useQueries";
 
 const signupSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -28,13 +29,9 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 const SignUp = ({}: SignupProps) => {
   const router = useRouter();
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<SignupFormData>({
+  const { register, handleSubmit, formState } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       first_name: "",
@@ -44,9 +41,23 @@ const SignUp = ({}: SignupProps) => {
     },
   });
 
+  const signupMutation = useSignup({
+    onSuccess: (res: any) => {
+      console.log("Signup success:", res);
+      router.push("/dashboard");
+    },
+    onError: (err: any) => {
+      setError(err.message || "Signup failed. Please try again.");
+    },
+  });
+
   const onSubmit = (data: SignupFormData) => {
-    console.log("Signup Data:", data);
-    router.push("/dashboard");
+    signupMutation.mutate({
+      firstName: data.first_name,
+      lastName: data.last_name,
+      email: data.email,
+      password: data.password,
+    });
   };
 
   return (
@@ -64,58 +75,54 @@ const SignUp = ({}: SignupProps) => {
               onSubmit={handleSubmit(onSubmit)}
               className="space-y-10 mt-10"
             >
-              <div className="relative">
-                <Input
-                  label="FIRST NAME"
-                  placeholder="WRITE YOUR FIRST NAME"
-                  variant="primary"
-                  inputSize="md"
-                  rounded={true}
-                  {...register("first_name")}
-                  error={errors.first_name?.message}
-                  bg="bg-white"
-                />
-              </div>
-              <div className="relative">
-                <Input
-                  label="LAST NAME"
-                  placeholder="WRITE YOUR LAST NAME"
-                  variant="primary"
-                  inputSize="md"
-                  rounded={true}
-                  {...register("last_name")}
-                  error={errors.last_name?.message}
-                  bg="bg-white"
-                />
-              </div>
-              <div className="relative">
-                <Input
-                  label="EMAIL"
-                  placeholder="ENTER YOUR EMAIL"
-                  variant="primary"
-                  inputSize="md"
-                  rounded={true}
-                  {...register("email")}
-                  error={errors.email?.message}
-                  bg="bg-white"
-                />
-              </div>
-              <div className="relative">
-                <Input
-                  label="PASSWORD"
-                  placeholder="ENTER YOUR PASSWORD"
-                  variant="primary"
-                  inputSize="md"
-                  type={"password"}
-                  rounded={true}
-                  {...register("password")}
-                  error={errors.password?.message}
-                  bg="bg-white"
-                />
-              </div>
+              <Input
+                label="FIRST NAME"
+                placeholder="WRITE YOUR FIRST NAME"
+                variant="primary"
+                inputSize="md"
+                rounded
+                {...register("first_name")}
+                error={formState.errors.first_name?.message}
+                bg="bg-white"
+              />
+              <Input
+                label="LAST NAME"
+                placeholder="WRITE YOUR LAST NAME"
+                variant="primary"
+                inputSize="md"
+                rounded
+                {...register("last_name")}
+                error={formState.errors.last_name?.message}
+                bg="bg-white"
+              />
+              <Input
+                label="EMAIL"
+                placeholder="ENTER YOUR EMAIL"
+                variant="primary"
+                inputSize="md"
+                rounded
+                {...register("email")}
+                error={formState.errors.email?.message}
+                bg="bg-white"
+              />
+              <Input
+                label="PASSWORD"
+                placeholder="ENTER YOUR PASSWORD"
+                variant="primary"
+                inputSize="md"
+                type="password"
+                rounded
+                {...register("password")}
+                error={formState.errors.password?.message}
+                bg="bg-white"
+              />
 
-              <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? "Logging In..." : "Continue"}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={signupMutation.isPending}
+              >
+                {signupMutation.isPending ? "Signing up..." : "Continue"}
               </Button>
             </form>
 

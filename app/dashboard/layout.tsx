@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { UserProfilesLayoutProps } from "@/src/containers/dashboard/types";
 import { sidebarItems } from "@/src/containers/dashboard/data";
 
-export default function UserProfilesLayout({ children }: UserProfilesLayoutProps) {
+export default function UserProfilesLayout({
+  children,
+}: UserProfilesLayoutProps) {
   const pathname = usePathname();
 
   const mainItems = sidebarItems.filter(
@@ -28,7 +30,11 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-4 rounded-lg font-semibold transition-all duration-200
                   hover:bg-[#e3e7ee] 
-                  ${isActive ? "bg-[#1a2a3a] text-white" : "text-gray-700 hover:text-primary"}
+                  ${
+                    isActive
+                      ? "bg-[#1a2a3a] text-white"
+                      : "text-gray-700 hover:text-primary"
+                  }
                 `}
               >
                 <div className="w-5 h-5 relative flex-shrink-0">
@@ -36,7 +42,9 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                     src={item.icon}
                     alt={`${item.name} icon`}
                     fill
-                    className={`object-contain ${isActive ? "filter brightness-0 invert" : ""}`}
+                    className={`object-contain ${
+                      isActive ? "filter brightness-0 invert" : ""
+                    }`}
                   />
                 </div>
                 <span className="text-sm">{item.name}</span>
@@ -55,7 +63,11 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-200
                   hover:bg-[#e3e7ee] 
-                  ${isActive ? "bg-[#1a2a3a] text-white" : "text-gray-700 hover:text-gray-900"}
+                  ${
+                    isActive
+                      ? "bg-[#1a2a3a] text-white"
+                      : "text-gray-700 hover:text-gray-900"
+                  }
                 `}
               >
                 <div className="w-5 h-5 relative flex-shrink-0">
@@ -63,7 +75,9 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
                     src={item.icon}
                     alt={`${item.name} icon`}
                     fill
-                    className={`object-contain ${isActive ? "filter brightness-0 invert" : ""}`}
+                    className={`object-contain ${
+                      isActive ? "filter brightness-0 invert" : ""
+                    }`}
                   />
                 </div>
                 <span className="text-sm">{item.name}</span>
@@ -77,3 +91,4 @@ export default function UserProfilesLayout({ children }: UserProfilesLayoutProps
     </div>
   );
 }
+
