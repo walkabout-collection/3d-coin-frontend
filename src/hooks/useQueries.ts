@@ -3,7 +3,7 @@ import {
   useMutation,
   UseMutationOptions,
 } from "@tanstack/react-query";
-import { login, refreshToken, signup } from "@/src/services/apiServices";
+import { login, logout, refreshToken, signup } from "@/src/services/apiServices";
 import { Api, User } from "../services/api/apiTypes";
 import {
   coinDiameters,
@@ -112,3 +112,11 @@ export const useRefreshToken = (
     ...options,
   });
 
+// logout
+export const useLogout = (
+  options?: UseMutationOptions<{ message: string }, Error, void>
+) =>
+  useMutation<{ message: string }, Error, void>({
+    mutationFn: logout,
+    ...options,
+  });
