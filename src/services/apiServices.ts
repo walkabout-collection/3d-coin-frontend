@@ -1,4 +1,4 @@
-import { Api, User } from "./api/apiTypes";
+import { Api } from "./api/apiTypes";
 import apiClient from "./axiosInstance";
 
 const api = new Api();
