@@ -292,6 +292,316 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
+  ai = {
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name UploadImageCreate
+     * @summary Upload an image to generate coin design variants
+     * @request POST:/ai/upload-image
+     * @secure
+     */
+    uploadImageCreate: (
+      data: {
+        /** @format binary */
+        image: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /**
+           * URLs of generated coin design variants
+           * @minItems 5
+           */
+          variants?: string[];
+        },
+        void
+      >({
+        path: `/ai/upload-image`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name GenerateFromPromptCreate
+     * @summary Generate coin design variants from text prompt and optional image URL
+     * @request POST:/ai/generate-from-prompt
+     * @secure
+     */
+    generateFromPromptCreate: (
+      data: {
+        /**
+         * Text prompt for coin design
+         * @minLength 1
+         */
+        prompt: string;
+        /**
+         * Optional reference image URL
+         * @format uri
+         */
+        imageUrl?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /**
+           * URLs of generated coin design variants
+           * @minItems 5
+           */
+          variants?: string[];
+        },
+        void
+      >({
+        path: `/ai/generate-from-prompt`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name RegenerateCreate
+     * @summary Regenerate coin design variants
+     * @request POST:/ai/regenerate
+     * @secure
+     */
+    regenerateCreate: (
+      data: {
+        /**
+         * ID of the design to regenerate
+         * @format uuid
+         */
+        designId: string;
+        /** Optional updates for regeneration */
+        updates?: object;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /**
+           * URLs of regenerated coin design variants
+           * @minItems 5
+           */
+          variants?: string[];
+        },
+        void
+      >({
+        path: `/ai/regenerate`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name CoinSpecificationCreate
+     * @summary Save coin specifications (front/back details)
+     * @request POST:/ai/coin-specification
+     * @secure
+     */
+    coinSpecificationCreate: (
+      data: {
+        /**
+         * Name of the coin design
+         * @minLength 1
+         */
+        name: string;
+        /**
+         * URL of front image
+         * @format uri
+         */
+        frontImage?: string;
+        /** Description of front side */
+        frontDescription?: string;
+        /**
+         * URL of back image
+         * @format uri
+         */
+        backImage?: string;
+        /** Description of back side */
+        backDescription?: string;
+        /** Material and finish type */
+        materialFinish?: string;
+        /** Shape of the coin */
+        coinShape?: string;
+        /** Contrast style */
+        contrastStyle?: string;
+        /** Level of detail */
+        detailLevel?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /**
+           * URL of generated front design
+           * @format uri
+           */
+          frontImage?: string;
+          /**
+           * URL of generated back design
+           * @format uri
+           */
+          backImage?: string;
+        },
+        void
+      >({
+        path: `/ai/coin-specification`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name PreviewList
+     * @summary Preview front and back coin designs
+     * @request GET:/ai/preview
+     * @secure
+     */
+    previewList: (
+      query: {
+        /**
+         * ID of the design to preview
+         * @format uuid
+         */
+        designId: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /**
+           * URL of front design
+           * @format uri
+           */
+          frontImage?: string;
+          /**
+           * URL of back design
+           * @format uri
+           */
+          backImage?: string;
+        },
+        void
+      >({
+        path: `/ai/preview`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name SaveDesignCreate
+     * @summary Save the final coin design
+     * @request POST:/ai/save-design
+     * @secure
+     */
+    saveDesignCreate: (
+      data: {
+        /**
+         * ID of the design to save
+         * @format uuid
+         */
+        designId: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** ID of the saved design */
+          designId?: string;
+          /**
+           * URL of front design
+           * @format uri
+           */
+          frontImage?: string;
+          /**
+           * URL of back design
+           * @format uri
+           */
+          backImage?: string;
+        },
+        void
+      >({
+        path: `/ai/save-design`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name SendToDesignerCreate
+     * @summary Send coin design to designer with instructions
+     * @request POST:/ai/send-to-designer
+     * @secure
+     */
+    sendToDesignerCreate: (
+      data: {
+        /**
+         * ID of the design to send
+         * @format uuid
+         */
+        designId: string;
+        /** Instructions for the designer */
+        instructions?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** ID of the sent design */
+          designId?: string;
+          /** Status of the submission (e.g., pending) */
+          status?: string;
+        },
+        void
+      >({
+        path: `/ai/send-to-designer`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+  };
   auth = {
     /**
      * No description

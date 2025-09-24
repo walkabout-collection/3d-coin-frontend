@@ -16,6 +16,7 @@ import Input from '../common/input';
 import ImageUpload from '../common/imageUpload';
 import Button from '../common/button/Button';
 
+import { useCoinSpecification } from '@/src/hooks/useQueries'; 
 const formSchema = z.object({
   coinShape: z.string().min(1, 'Coin shape is required'),
   subject: z.string().min(1, 'Subject is required'),
@@ -69,11 +70,38 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
 
   const formData = watch();
 
+  const coinSpecMutation = useCoinSpecification({
+    onSuccess: (data) => {
+      console.log('Coin specification submitted:', data);
+      onSubmit && onSubmit(formData);
+    },
+    onError: (err: any) => {
+      console.error('Failed to submit coin specification:', err);
+    },
+  });
+
   const handleImageChange = (field: 'frontReferenceImage' | 'backReferenceImage', file: File | null) => {
-    // console.log(`handleImageChange for ${field}:`, file);
     if (file) {
       setValue(field, file, { shouldValidate: true });
     }
+  };
+
+  const submitHandler = (data: QAFormData) => {
+    // Prepare payload according to API request body
+    const payload = {
+      name: data.subject,
+      frontImage: data.frontReferenceImage,
+      frontDescription: data.frontDescription,
+      backImage: data.backReferenceImage,
+      backDescription: data.backDescription,
+      materialFinish: data.metalFinishes,
+      coinShape: data.coinShape,
+      contrastStyle: data.coinStyles,
+      detailLevel: data.detailLevel,
+    };
+
+    // Call API mutation
+    coinSpecMutation.mutate(payload);
   };
 
   return (
@@ -83,7 +111,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
         <h2 className="text-3xl font-semibold text-primary">PROMPTS</h2>
       </div>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-8">
+      <form onSubmit={handleSubmit(submitHandler)} className="space-y-8">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">1. COIN SHAPE:</h3>

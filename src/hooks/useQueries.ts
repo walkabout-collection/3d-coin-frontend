@@ -3,8 +3,8 @@ import {
   useMutation,
   UseMutationOptions,
 } from "@tanstack/react-query";
-import { login, logout, refreshToken, signup } from "@/src/services/apiServices";
-import { Api } from "../services/api/apiTypes";
+import { coinSpecification, generateFromPrompt, login, logout, previewList, refreshToken, regenerate, saveDesign, sendToDesigner, signup, uploadImage, verifyEmail } from "@/src/services/apiServices";
+import { Api, User } from "../services/api/apiTypes";
 import {
   coinDiameters,
   coinThicknesses,
@@ -67,6 +67,7 @@ export const useSaveDimensions = (
 //     ...options,
 //   });
 
+// --- Auth ---
 // Signup
 export const useSignup = (
   options?: UseMutationOptions<
@@ -124,5 +125,125 @@ export const useLogout = (
 ) =>
   useMutation<{ message: string }, Error, void>({
     mutationFn: logout,
+    ...options,
+  });
+// verify email
+export const useVerifyEmail = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.auth.verifyEmailCreate>>["data"],
+    Error,
+    Parameters<typeof api.auth.verifyEmailCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.auth.verifyEmailCreate>>["data"],
+    Error,
+    Parameters<typeof api.auth.verifyEmailCreate>[0]
+  >({
+    mutationFn: verifyEmail,
+    ...options,
+  });
+
+// --- Ai ---
+
+// upload image
+  export const useUploadImage = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.ai.uploadImageCreate>>,
+    Error,
+    File
+  >
+) =>
+  useMutation<Awaited<ReturnType<typeof api.ai.uploadImageCreate>>, Error, File>({
+    mutationFn: uploadImage,
+    ...options,
+  });
+// generate from prompt
+export const useGenerateFromPrompt = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.ai.generateFromPromptCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.generateFromPromptCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.ai.generateFromPromptCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.generateFromPromptCreate>[0]
+  >({
+    mutationFn: generateFromPrompt,
+    ...options,
+  });
+export const useRegenerate = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.ai.regenerateCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.regenerateCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.ai.regenerateCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.regenerateCreate>[0]
+  >({
+    mutationFn: regenerate,
+    ...options,
+  });
+// Coin Specification
+export const useCoinSpecification = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.ai.coinSpecificationCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.coinSpecificationCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.ai.coinSpecificationCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.coinSpecificationCreate>[0]
+  >({
+    mutationFn: coinSpecification,
+    ...options,
+  });
+// ai preview
+  export const usePreviewList = (designId: string) =>
+   useQuery<
+    Awaited<ReturnType<typeof api.ai.previewList>>["data"],
+    Error
+  >({
+    queryKey: ["previewList", designId],
+    queryFn: () => previewList({ designId }),
+    enabled: !!designId, 
+  })
+// save design
+export const useSaveDesign = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.ai.saveDesignCreate>>["data"], 
+    Error,
+    Parameters<typeof api.ai.saveDesignCreate>[0] 
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.ai.saveDesignCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.saveDesignCreate>[0]
+  >({
+    mutationFn: saveDesign,
+    ...options,
+  });
+// send to designer
+export const useSendToDesigner = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.ai.sendToDesignerCreate>>["data"], 
+    Error,
+    Parameters<typeof api.ai.sendToDesignerCreate>[0] 
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.ai.sendToDesignerCreate>>["data"],
+    Error,
+    Parameters<typeof api.ai.sendToDesignerCreate>[0]
+  >({
+    mutationFn: sendToDesigner,
     ...options,
   });
