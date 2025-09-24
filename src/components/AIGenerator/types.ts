@@ -9,6 +9,7 @@ export interface GeneratorState {
 
 export interface UploadData {
   image: File | null;
+  variant: string [];
 }
 
 export interface UIState {

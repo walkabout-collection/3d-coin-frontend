@@ -3,13 +3,18 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Button from "../common/button/Button";
 import { initialGeneratorState } from "./data";
-import { GeneratorState, QAFormData, UploadData } from "./types";
+import { GeneratorState, QAFormData } from "./types";
 import CoinUploadScreen from "./CoinUpload";
 import CoinDesignInterface from "./CoinDesignInterface";
 import CoinPromptBox from "./CoinPromptBox";
 import QAPromptsForm from "./QAPromptsForm";
 import { ThreeDRender } from "./ThreeDRender";
 import DesignSummarySection from "@/src/containers/design-summary";
+
+interface UploadData {
+  image: File | null;
+  variants?: string[]; 
+}
 
 const AIGenerator: React.FC = () => {
   const router = useRouter();
@@ -70,11 +75,9 @@ const AIGenerator: React.FC = () => {
   }, []);
 
   useEffect(() => {
-  if (historyStack.length) {
-    // console.debug("History stack updated:", historyStack);
-  }
-}, [historyStack]);
-
+    if (historyStack.length) {
+    }
+  }, [historyStack]);
 
   const handleProvideImageClick = () => {
     setState((prev) => ({
@@ -105,10 +108,11 @@ const AIGenerator: React.FC = () => {
   };
 
   const handleFileChange = (file: File | null) => {
-    setUploadData({ image: file });
+    setUploadData({ image: file, variants: undefined });
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = (variants?: string[]) => {
+    setUploadData((prev) => ({ ...prev, variants }));
     setState((prev) => ({
       ...prev,
       showUpload: false,
@@ -122,7 +126,8 @@ const AIGenerator: React.FC = () => {
     window.history.pushState({ screen: "design" }, "", window.location.href);
   };
 
-  const handlePromptGenerate = () => {
+  const handlePromptGenerate = (variants?: string[]) => {
+    setUploadData((prev) => ({ ...prev, variants })); 
     setState((prev) => ({
       ...prev,
       showGuide: false,
@@ -168,32 +173,31 @@ const AIGenerator: React.FC = () => {
   const handleSaveAsDraft = async () => {
     console.log("Saving as draft...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    
     // alert("Saved as draft successfully!");
   };
 
   const handleContinueRender = async () => {
     console.log("Continuing to next step...");
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    router.push("/design-summary"); 
+    router.push("/design-summary");
   };
 
-const handleEdit = () => {
-  setState((prev) => ({
-    ...prev,
-    showUpload: false,
-    showGuide: false,
-    showDesignInterface: false,
-    showQAPrompts: true,  
-    showThreeDRender: false,
-    showDesignSummary: false,
-  }));
-  setHistoryStack((prev) => [...prev, "qaPrompts"]);
-  window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
-};
+  const handleEdit = () => {
+    setState((prev) => ({
+      ...prev,
+      showUpload: false,
+      showGuide: false,
+      showDesignInterface: false,
+      showQAPrompts: true,
+      showThreeDRender: false,
+      showDesignSummary: false,
+    }));
+    setHistoryStack((prev) => [...prev, "qaPrompts"]);
+    window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
+  };
 
   if (state.showDesignInterface) {
-    return <CoinDesignInterface onContinue={handleContinue} />;
+    return <CoinDesignInterface onContinue={handleContinue} variants={uploadData.variants} />; 
   }
 
   if (state.showUpload) {
@@ -217,8 +221,8 @@ const handleEdit = () => {
   if (state.showThreeDRender) {
     return (
       <ThreeDRender
-        frontImage="/images/home/front-side.png"
-        backImage="/images/home/front-side.png"
+        frontImage={uploadData.variants?.[0] || "/images/home/front-side.png"} // Use first variant or fallback
+        backImage={uploadData.variants?.[1] || "/images/home/front-side.png"} // Use second variant or fallback
         title="AI Generated 3D Render"
         onSaveAsDraft={handleSaveAsDraft}
         onContinue={handleContinueRender}
@@ -228,7 +232,7 @@ const handleEdit = () => {
   }
 
   if (state.showDesignSummary) {
-    return <DesignSummarySection onEdit={handleEdit}  />;
+    return <DesignSummarySection onEdit={handleEdit} />;
   }
 
   return (
