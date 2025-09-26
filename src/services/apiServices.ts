@@ -61,6 +61,13 @@ export const verifyEmail = async (
   const res = await apiClient.post("/auth/verify-email", data);
   return res.data;
 };
+// forgot password
+export const forgotPassword = async (
+  data: Parameters<typeof api.auth.forgotPasswordCreate>[0]
+): Promise<Awaited<ReturnType<typeof api.auth.forgotPasswordCreate>>["data"]> => {
+  const res = await apiClient.post("/auth/forgot-password", data);
+  return res.data;
+};
 
 // --- AI ---
 // upload image

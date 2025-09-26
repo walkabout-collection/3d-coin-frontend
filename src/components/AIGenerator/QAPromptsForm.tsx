@@ -16,7 +16,7 @@ import Input from '../common/input';
 import ImageUpload from '../common/imageUpload';
 import Button from '../common/button/Button';
 
-import { useCoinSpecification } from '@/src/hooks/useQueries'; 
+import { useCoinSpecification, useUploadImage } from '@/src/hooks/useQueries'; 
 const formSchema = z.object({
   coinShape: z.string().min(1, 'Coin shape is required'),
   subject: z.string().min(1, 'Subject is required'),
@@ -86,13 +86,40 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
     }
   };
 
-  const submitHandler = (data: QAFormData) => {
-    // Prepare payload according to API request body
+  // const submitHandler = (data: QAFormData) => {
+  //   const payload = {
+  //     name: data.subject,
+  //     frontImage: data.frontReferenceImage,
+  //     frontDescription: data.frontDescription,
+  //     backImage: data.backReferenceImage,
+  //     backDescription: data.backDescription,
+  //     materialFinish: data.metalFinishes,
+  //     coinShape: data.coinShape,
+  //     contrastStyle: data.coinStyles,
+  //     detailLevel: data.detailLevel,
+  //   };
+
+  //   // Call API mutation
+  //   coinSpecMutation.mutate(payload);
+  // };
+
+  const { mutateAsync: uploadImageMutation } = useUploadImage();
+
+const submitHandler = async (data: QAFormData) => {
+  try {
+    const frontImageUrl = data.frontReferenceImage
+      ? (await uploadImageMutation(data.frontReferenceImage)).url
+      : "";
+
+    const backImageUrl = data.backReferenceImage
+      ? (await uploadImageMutation(data.backReferenceImage)).url
+      : "";
+
     const payload = {
       name: data.subject,
-      frontImage: data.frontReferenceImage,
+      frontImage: frontImageUrl,
       frontDescription: data.frontDescription,
-      backImage: data.backReferenceImage,
+      backImage: backImageUrl,
       backDescription: data.backDescription,
       materialFinish: data.metalFinishes,
       coinShape: data.coinShape,
@@ -100,9 +127,13 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
       detailLevel: data.detailLevel,
     };
 
-    // Call API mutation
-    coinSpecMutation.mutate(payload);
-  };
+    await coinSpecMutation.mutateAsync(payload);
+    console.log("Coin specification submitted successfully:", payload);
+  } catch (err) {
+    console.error("Failed to submit coin specification:", err);
+  }
+};
+
 
   return (
     <div className="max-w-4xl mx-auto p-6">

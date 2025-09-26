@@ -10,7 +10,8 @@ import { toast } from "react-toastify";
 import { useGenerateFromPrompt } from "@/src/hooks/useQueries";
 
 interface CoinPromptBoxProps {
-onGenerate: (variants?: string[]) => void}
+  onGenerate: (variants?: string[]) => void;
+}
 
 interface ChatbotState {
   isDrawerOpen: boolean;
@@ -21,20 +22,27 @@ const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [chatbotState, setChatbotState] = useState<ChatbotState>(initialChatbotState);
-  const [error, setError] = useState<{ message: string } | undefined>(undefined);
+  const [chatbotState, setChatbotState] =
+    useState<ChatbotState>(initialChatbotState);
+  const [error, setError] = useState<{ message: string } | undefined>(
+    undefined
+  );
   const [prompt, setPrompt] = useState("");
 
-  const { mutate: generateFromPromptMutate, isPending: isGenerating } = useGenerateFromPrompt({
-    onSuccess: (data) => {
-      toast.success("Generated successfully!");
-      setError(undefined);
-onGenerate(data.variants)    },
-    onError: () => {
-      setError({ message: "Failed to generate from prompt. Please try again." });
-      toast.error("Failed to generate from prompt.");
-    },
-  });
+  const { mutate: generateFromPromptMutate, isPending: isGenerating } =
+    useGenerateFromPrompt({
+      onSuccess: (data) => {
+        toast.success("Generated successfully!");
+        setError(undefined);
+        onGenerate(data.variants);
+      },
+      onError: () => {
+        setError({
+          message: "Failed to generate from prompt. Please try again.",
+        });
+        toast.error("Failed to generate from prompt.");
+      },
+    });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,7 +75,7 @@ onGenerate(data.variants)    },
 
       generateFromPromptMutate({
         prompt,
-        imageUrl: previewImage || "", 
+        imageUrl: previewImage || "",
       });
     } else {
       setError({

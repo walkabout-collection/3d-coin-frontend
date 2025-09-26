@@ -4,7 +4,7 @@ import {
   UseMutationOptions,
 } from "@tanstack/react-query";
 import { coinSpecification, generateFromPrompt, login, logout, previewList, refreshToken, regenerate, saveDesign, sendToDesigner, signup, uploadImage, verifyEmail } from "@/src/services/apiServices";
-import { Api, User } from "../services/api/apiTypes";
+import { Api } from "../services/api/apiTypes";
 import {
   coinDiameters,
   coinThicknesses,
