@@ -9,7 +9,7 @@ const OrdersHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 10;
 
- const orderColumns: TableColumn<OrderDataItem>[] = [
+  const orderColumns: TableColumn<OrderDataItem>[] = [
     { key: 'trackingNo', label: 'Order No.', width: 'w-32' },
     { key: 'packaging', label: 'Packaging', width: 'w-24' },
     { key: 'order', label: 'Order', width: 'w-20' },

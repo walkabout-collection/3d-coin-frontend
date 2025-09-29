@@ -9,6 +9,9 @@ export const orderData: OrderDataItem[] = [
     date: '12/06/2020',
     payment: 'QUICKBOOKS',
     status: 'PENDING',
+    packagingDescription: 'Description for Order 001 Packaging',
+    backText: 'Back text for Order 001',
+    
   },
   {
     trackingNo: '#PKG5678',
@@ -17,6 +20,8 @@ export const orderData: OrderDataItem[] = [
     date: '16/08/2013',
     payment: 'QUICKBOOKS',
     status: 'APPROVED',
+    packagingDescription: 'Description for Order 002 Packaging',
+    backText: 'Back text for Order 002',
   },
   {
     trackingNo: '#BOX9012',
@@ -25,6 +30,8 @@ export const orderData: OrderDataItem[] = [
     date: '15/08/2017',
     payment: 'QUICKBOOKS',
     status: 'CANCEL',
+    packagingDescription: 'Description for Order 003 Packaging',
+    backText: 'Back text for Order 003',
   },
   {
     trackingNo: '#SHIP3456',
@@ -33,6 +40,8 @@ export const orderData: OrderDataItem[] = [
     date: '28/10/2012',
     payment: 'PAYPAL',
     status: 'PENDING',
+    packagingDescription: 'Description for Order 004 Packaging',
+    backText: 'Back text for Order 004',
   },
   {
     trackingNo: '#ORD7890',
