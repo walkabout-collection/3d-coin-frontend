@@ -14,4 +14,4 @@ export const metadata: Metadata = {
   },
 };
 
-export { default } from "@/src/containers/standard-builder";
+export { default } from "@/src/containers/standard-builder/dimensions";
