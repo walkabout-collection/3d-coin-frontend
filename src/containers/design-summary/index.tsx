@@ -8,7 +8,6 @@ import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import Input from "@/src/components/common/input";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 import { useRouter } from "next/navigation";
-import path from "path";
 
 const DesignSummarySection = () => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
@@ -24,7 +23,7 @@ const DesignSummarySection = () => {
   const { dimensions, material, edgeType, artwork, packaging } =
     useStandardBuilderStore();
 
-    console.table({dimensions, material, edgeType, artwork, packaging});
+    // console.table({dimensions, material, edgeType, artwork, packaging});
 
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
@@ -69,6 +68,7 @@ const DesignSummarySection = () => {
       console.error("Error in dummy API call:", error);
     }
   };
+ 
 
   const summaryOptions = [
     {
@@ -85,6 +85,8 @@ const DesignSummarySection = () => {
       value: material,
       type: "material",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/material",
+
     },
     {
       id: 3,
@@ -92,6 +94,8 @@ const DesignSummarySection = () => {
       value: edgeType,
       type: "edge",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/edge-type",
+
     },
     {
       id: 4,
@@ -101,6 +105,7 @@ const DesignSummarySection = () => {
       }`,
       type: "artwork",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/artwork",
     },
     {
       id: 5,
@@ -108,6 +113,7 @@ const DesignSummarySection = () => {
       value: `Preferences: ${packaging.preferences}, Back Text: ${packaging.backText}`,
       type: "packaging",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/packaging",
     },
   ];
 
@@ -185,7 +191,7 @@ const DesignSummarySection = () => {
             key={btn.id}
             type="button"
             variant="ternary"
-            onClick={() => {
+             onClick={() => {
               handleButtonClick(btn.id);
               if (index === 0) {
                 handleFirstButtonAction();
@@ -236,13 +242,6 @@ const DesignSummarySection = () => {
             SAVE AS DRAFT
           </Button>
         )}
-        {/* <Button
-          type="button"
-          variant="ternary"
-          className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
-        >
-          SAVE AS DRAFT
-        </Button> */}
         <Button
           type="button"
           variant="primary"

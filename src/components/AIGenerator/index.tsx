@@ -131,7 +131,6 @@ const AIGenerator: React.FC = () => {
   }
 
 
-  // main entry screen
   return (
     <div className="min-h-screen">
       <div className="py-16">
