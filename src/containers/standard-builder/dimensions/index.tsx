@@ -224,5 +224,3 @@ const Dimensions = () => {
 };
 
 export default Dimensions;
-
-export default Dimensions;
