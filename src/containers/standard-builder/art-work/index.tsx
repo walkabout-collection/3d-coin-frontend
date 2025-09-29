@@ -6,86 +6,41 @@ import Button from "@/src/components/common/button/Button";
 import { Paperclip } from "lucide-react";
 import { z } from "zod";
 import ImageUpload from "@/src/components/common/imageUpload";
+import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 
 const ArtWork = () => {
- const [activeTab, setActiveTab] = useState<"front" | "back">("front");
-   const [frontPrompt, setFrontPrompt] = useState("");
-  const [backPrompt, setBackPrompt] = useState("");
-  const [frontAttachedImage, setFrontAttachedImage] = useState<File | null>(null);
-  const [backAttachedImage, setBackAttachedImage] = useState<File | null>(null);
-  const [frontUploadedImage, setFrontUploadedImage] = useState<File | null>(null);
-  const [backUploadedImage, setBackUploadedImage] = useState<File | null>(null);  
-  const [frontPreviewImage, setFrontPreviewImage] = useState<string | null>(null);
-  const [backPreviewImage, setBackPreviewImage] = useState<string | null>(null);
+  const router = useRouter();
+  const { artwork, updateArtworkSide } = useStandardBuilderStore();
+  const [activeTab, setActiveTab] = useState<"front" | "back">("front");
   const [error, setError] = useState<{ message: string } | undefined>(undefined);
 
-  const router = useRouter();
-
+  const { front, back } = artwork;
   const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
     const file = e.target.files?.[0];
     if (file) {
-      if (side === "front") {
-        setFrontAttachedImage(file);
-        const imageUrl = URL.createObjectURL(file);
-        setFrontPreviewImage(imageUrl);
-      } else {
-        setBackAttachedImage(file);
-        const imageUrl = URL.createObjectURL(file);
-        setBackPreviewImage(imageUrl);
-      }
+      const imageUrl = URL.createObjectURL(file);
+      updateArtworkSide(side, { attachedImage: file, previewImage: imageUrl });
       setError(undefined);
     } else {
-      if (side === "front") {
-        setFrontAttachedImage(null);
-        setFrontPreviewImage(null);
-      } else {
-        setBackAttachedImage(null);
-        setBackPreviewImage(null);
-      }
+      updateArtworkSide(side, { attachedImage: null, previewImage: null });
     }
   };
 
   const handleGenerateClick = (side: "front" | "back") => {
-    const currentPrompt = side === "front" ? frontPrompt : backPrompt;
-    const currentAttachedImage = side === "front" ? frontAttachedImage : backAttachedImage;
-    const validation = imageSchema.safeParse(currentAttachedImage);
-    if (currentPrompt.trim().length > 0 || (validation.success && currentAttachedImage)) {
+    const current = artwork[side];
+    const validation = imageSchema.safeParse(current.attachedImage);
+
+    if (current.prompt.trim().length > 0 || (validation.success && current.attachedImage)) {
       setError(undefined);
     } else {
-      setError({
-        message: "Please provide a prompt or upload an image to generate.",
-      });
+      setError({ message: "Please provide a prompt or upload an image to generate." });
     }
   };
 
   const handleContinue = () => {
-    const existingData = localStorage.getItem("standard-builder-data");
-    const builderData = existingData ? JSON.parse(existingData) : {};
-
-    const artworkData = {
-      ...builderData,
-      "standard-builder": {
-        ...builderData["standard-builder"],
-        artwork: {
-          front: {
-            prompt: frontPrompt.trim(),
-            image: frontAttachedImage ? frontAttachedImage.name : (frontUploadedImage ? frontUploadedImage.name : null),
-          },
-          back: {
-            prompt: backPrompt.trim(),
-            image: backAttachedImage ? backAttachedImage.name : (backUploadedImage ? backUploadedImage.name : null),
-          },
-        },
-      },
-    };
-
-    console.log(JSON.stringify(artworkData, null, 2));
-    localStorage.setItem(
-      "standard-builder-data",
-      JSON.stringify(artworkData)
-    );
+    console.log("Artwork Saved:", artwork);
     router.push("/standard-builder/confirm-packaging");
   };
 
@@ -95,12 +50,12 @@ const ArtWork = () => {
 
   const canContinue = () => {
     return (
-      frontPrompt.trim().length > 0 ||
-      frontAttachedImage !== null ||
-      frontUploadedImage !== null ||
-      backPrompt.trim().length > 0 ||
-      backAttachedImage !== null ||
-      backUploadedImage !== null
+      front.prompt.trim().length > 0 ||
+      front.attachedImage !== null ||
+      front.uploadedImage !== null ||
+      back.prompt.trim().length > 0 ||
+      back.attachedImage !== null ||
+      back.uploadedImage !== null
     );
   };
 
@@ -109,20 +64,8 @@ const ArtWork = () => {
       {/* Left Side - Coin Image */}
       <div className="flex justify-between mb-12 relative w-full max-w-2xl mr-8">
         <div className="flex flex-col items-center">
-          <Image
-            src="/images/home/coin-design.png"
-            alt="Coin"
-            width={335}
-            height={335}
-            className="z-10"
-          />
-          <Image
-            src="/images/home/frame.png"
-            alt="Coin Base"
-            width={494}
-            height={143}
-            className="mt-[-50px] z-0"
-          />
+          <Image src="/images/home/coin-design.png" alt="Coin" width={335} height={335} className="z-10" />
+          <Image src="/images/home/frame.png" alt="Coin Base" width={494} height={143} className="mt-[-50px] z-0" />
         </div>
       </div>
 
@@ -133,60 +76,52 @@ const ArtWork = () => {
         </h1>
 
         <div className="w-full max-w-lg px-6 rounded-lg shadow-md">
+          {/* Tabs */}
           <div className="flex mb-6 border-b border-gray-200">
             <button
               onClick={() => setActiveTab("front")}
-              className={`
-                py-3 px-6 text-sm font-semibold uppercase tracking-wide transition-colors duration-200
-                ${
-                  activeTab === "front"
-                    ? "text-black border-b-2 border-black"
-                    : "text-gray-500 hover:text-gray-700"
-                }
-              `}
+              className={`py-3 px-6 text-sm font-semibold uppercase ${
+                activeTab === "front" ? "text-black border-b-2 border-black" : "text-gray-500 hover:text-gray-700"
+              }`}
             >
               Front
             </button>
             <button
               onClick={() => setActiveTab("back")}
-              className={`
-                py-3 px-6 text-sm font-semibold uppercase tracking-wide transition-colors duration-200
-                ${
-                  activeTab === "back"
-                    ? "text-black border-b-2 border-black"
-                    : "text-gray-500 hover:text-gray-700"
-                }
-              `}
+              className={`py-3 px-6 text-sm font-semibold uppercase ${
+                activeTab === "back" ? "text-black border-b-2 border-black" : "text-gray-500 hover:text-gray-700"
+              }`}
             >
               Back
             </button>
           </div>
+
+          {/* Prompt + Image Upload */}
           <div className="relative">
             <div className="text-center max-w-6xl mx-auto">
               <div className="flex flex-col">
                 <div className="relative mb-8">
-                  <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
-                    {(activeTab === "front" && frontPreviewImage) || (activeTab === "back" && backPreviewImage) ? (
+                  <div className="w-full border-2 border-yellow-500 rounded-xl p-4 text-left">
+                    {((activeTab === "front" && front.previewImage) ||
+                      (activeTab === "back" && back.previewImage)) && (
                       <div className="mb-3">
                         <Image
-                          src={(activeTab === "front" ? frontPreviewImage : backPreviewImage) || "/placeholder.png"}
+                          src={(activeTab === "front" ? front.previewImage : back.previewImage) || "/placeholder.png"}
                           alt="Attached Preview"
                           width={64}
                           height={64}
                           className="object-cover rounded-md border border-gray-300 shadow"
                         />
                       </div>
-                    ) : null}
+                    )}
 
                     <textarea
                       className="w-full bg-transparent outline-none resize-none text-sm placeholder-gray-400"
                       placeholder="Ask anything…"
                       rows={4}
-                      value={activeTab === "front" ? frontPrompt : backPrompt}
+                      value={activeTab === "front" ? front.prompt : back.prompt}
                       onChange={(e) =>
-                        activeTab === "front"
-                          ? setFrontPrompt(e.target.value)
-                          : setBackPrompt(e.target.value)
+                        updateArtworkSide(activeTab, { prompt: e.target.value })
                       }
                     />
                   </div>
@@ -194,7 +129,7 @@ const ArtWork = () => {
                   {/* Actions */}
                   <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                     <button
-                      className="mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
+                      className="mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 px-4 py-2 rounded-full"
                       onClick={() =>
                         document.getElementById(`image-upload-prompt-${activeTab}`)?.click()
                       }
@@ -215,7 +150,7 @@ const ArtWork = () => {
                         onClick={() => handleGenerateClick(activeTab)}
                         type="button"
                         variant="primary"
-                        className="mt-5 max-w-[90px] w-full text-[10px] font-base items-center justify-center flex mx-auto"
+                        className="mt-5 max-w-[90px] w-full text-[10px]"
                       >
                         GENERATE
                       </Button>
@@ -224,7 +159,7 @@ const ArtWork = () => {
                 </div>
 
                 {error && (
-                  <div className="mt-1 text-red-500 text-sm" aria-live="polite">
+                  <div className="mt-1 text-red-500 text-sm">
                     <span>{error.message}</span>
                   </div>
                 )}
@@ -232,45 +167,31 @@ const ArtWork = () => {
             </div>
           </div>
 
+          {/* OR Upload */}
           <div className="flex justify-center mb-1 items-center">
             <div className="border-t border-gray-400 w-full"></div>
-            <div className="px-4 text-sm text-center font-medium text-gray-700 bg-white">
-              OR
-            </div>
+            <div className="px-4 text-sm text-gray-700 bg-white">OR</div>
             <div className="border-t border-gray-400 w-full"></div>
           </div>
 
           <ImageUpload
-            onChange={(file) =>
-              activeTab === "front" ? setFrontUploadedImage(file) : setBackUploadedImage(file)
-            }
-            value={activeTab === "front" ? frontUploadedImage : backUploadedImage}
-            error={error?.message ? error.message : undefined}
-            className=""
+            onChange={(file) => updateArtworkSide(activeTab, { uploadedImage: file })}
+            value={activeTab === "front" ? front.uploadedImage : back.uploadedImage}
+            error={error?.message}
             id={`image-upload-artwork-${activeTab}`}
           />
 
           <p className="text-gray-600 mb-6 mt-4">
-            Our 3D Builder may have limitations that our design team can address
-            after submission. All designs can be submitted to design team for
-            rework/revisions.
+            Our 3D Builder may have limitations that our design team can address after submission.
           </p>
         </div>
 
+        {/* Buttons */}
         <div className="flex gap-4 mt-8 justify-between">
-          <Button
-            variant="ternary"
-            onClick={handleGoBack}
-            className="max-w-[120px] text-md font-medium border-none !bg-gray-200 text-gray-900 hover:bg-gray-50"
-          >
+          <Button variant="ternary" onClick={handleGoBack}>
             Go Back
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleContinue}
-            className="w-full max-w-[120px] text-md font-medium shadow-md hover:shadow-lg transition-shadow"
-            disabled={!canContinue()}
-          >
+          <Button variant="primary" onClick={handleContinue} disabled={!canContinue()}>
             Continue
           </Button>
         </div>
