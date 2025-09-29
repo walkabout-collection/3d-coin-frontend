@@ -315,7 +315,10 @@ export class Api<
            * URLs of generated coin design variants
            * @minItems 5
            */
-          variants?: string[];
+         buffer: {
+          type: string;
+          data: number[]; // Array of numbers representing buffer
+        };
         },
         void
       >({
