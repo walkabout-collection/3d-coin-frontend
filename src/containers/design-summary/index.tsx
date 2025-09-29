@@ -5,19 +5,45 @@ import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
 import Input from "@/src/components/common/input";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
+import { useRouter } from "next/navigation";
+
 
 const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
+  const router = useRouter();
+  const isLoggedIn = false;
 
   const { dimensions, material, edgeType, artwork, packaging } =
     useStandardBuilderStore();
 
-    console.table({dimensions, material, edgeType, artwork, packaging});
+    // console.table({dimensions, material, edgeType, artwork, packaging});
 
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
     if (selectedButton !== id) setFeedback("");
+  };
+    const handleFirstButtonAction = async () => {
+    //  dummy API call
+    try {
+      const response = await fetch("https://dummyapi.example.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          standardBuilderData: JSON.parse(localStorage.getItem("standard-builder-data") || "{}"),
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Dummy API call successful");
+      } else {
+        throw new Error("Dummy API call failed");
+      }
+    } catch (error) {
+      console.error("Error in dummy API call:", error);
+    }
   };
 
   const summaryOptions = [
@@ -27,6 +53,8 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       value: `Diameter: ${dimensions.coinDiameter}, Thickness: ${dimensions.coinThickness}`,
       type: "size",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder",
+
     },
     {
       id: 2,
@@ -34,6 +62,8 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       value: material,
       type: "material",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/material",
+
     },
     {
       id: 3,
@@ -41,6 +71,8 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       value: edgeType,
       type: "edge",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/edge-type",
+
     },
     {
       id: 4,
@@ -50,6 +82,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       }`,
       type: "artwork",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/artwork",
     },
     {
       id: 5,
@@ -57,6 +90,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       value: `Preferences: ${packaging.preferences}, Back Text: ${packaging.backText}`,
       type: "packaging",
       image: "/images/home/dimensions.png",
+      path: "/standard-builder/packaging",
     },
   ];
 
@@ -93,7 +127,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
             </div>
             <div
               className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
-              onClick={onEdit}
+              onClick={() => router.push(option.path)}
             >
               <Image
                 src="/images/home/edit-icon.svg"
@@ -129,12 +163,19 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
 
       {/* Bottom Buttons */}
       <div className="flex justify-center gap-4 mb-8">
-        {bottomButtons.map((btn) => (
+        {bottomButtons.map((btn, index) => (
           <Button
             key={btn.id}
             type="button"
             variant="ternary"
-            onClick={() => handleButtonClick(btn.id)}
+             onClick={() => {
+              handleButtonClick(btn.id);
+              if (index === 0) {
+                handleFirstButtonAction();
+              } else if (index === 2) {
+                router.push("/design-team");
+              }
+            }}
             className={`py-6 px-6 rounded-lg text-sm font-medium transition-all duration-200 ${
               selectedButton === btn.id
                 ? "border-2 border-yellow-500 bg-yellow-50 text-yellow-700"
@@ -169,13 +210,15 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
 
       {/* Action Buttons */}
       <div className="flex justify-center gap-4">
-        <Button
-          type="button"
-          variant="ternary"
-          className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
-        >
-          SAVE AS DRAFT
-        </Button>
+        {isLoggedIn && (
+          <Button
+            type="button"
+            variant="ternary"
+            className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
+          >
+            SAVE AS DRAFT
+          </Button>
+        )}
         <Button
           type="button"
           variant="primary"
