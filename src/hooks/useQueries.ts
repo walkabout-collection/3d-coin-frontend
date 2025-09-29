@@ -4,7 +4,7 @@ import {
   UseMutationOptions,
 } from "@tanstack/react-query";
 import { login, refreshToken, signup } from "@/src/services/apiServices";
-import { Api, User } from "../services/api/apiTypes";
+import { Api } from "../services/api/apiTypes";
 import {
   coinDiameters,
   coinThicknesses,
@@ -41,7 +41,13 @@ const saveDimensions = async (data: DimensionData) => {
 export const useDimensionOptions = () =>
   useQuery({ queryKey: ["dimensionOptions"], queryFn: fetchDimensionOptions });
 
-export const useSaveDimensions = (options?: any) =>
+export const useSaveDimensions = (
+  options?: UseMutationOptions<
+    { "coin-diameter": string; "coin-thickness": string }, 
+    Error,                                               
+    DimensionData                                         
+  >
+) =>
   useMutation<
     { "coin-diameter": string; "coin-thickness": string },
     Error,

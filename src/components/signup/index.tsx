@@ -42,11 +42,11 @@ const SignUp = ({}: SignupProps) => {
   });
 
   const signupMutation = useSignup({
-    onSuccess: (res: any) => {
+    onSuccess: (res) => {
       console.log("Signup success:", res);
       router.push("/dashboard");
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       setError(err.message || "Signup failed. Please try again.");
     },
   });
