@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
+import { PaymentOption } from "@/src/containers/payment-method/types";
+import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 
 interface QAFormData {
   coinStyles: string;
@@ -14,7 +16,9 @@ interface QAFormData {
 
 const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
-const [data, setData] = useState<QAFormData | null>(null);
+  const [data, setData] = useState<QAFormData | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(null);
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
@@ -22,10 +26,27 @@ const [data, setData] = useState<QAFormData | null>(null);
       setData(JSON.parse(qaFormData));
     }
   }, []);
+
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
   };
- 
+
+  const handleSubmitForQuote = () => {
+    if (!selectedPayment) {
+      setShowPaymentModal(true);
+      return;
+    }
+    console.log("Submitting quote with payment method:", selectedPayment);
+  
+  };
+
+  const handlePaymentSelect = (option: PaymentOption) => {
+    setSelectedPayment(option);
+  };
+
+  const handleModalClose = () => {
+    setShowPaymentModal(false);
+  };
 
   const dynamicOptions = data
     ? [
@@ -113,7 +134,24 @@ const [data, setData] = useState<QAFormData | null>(null);
           </div>
         ))}
       </div>
-      <div className="flex justify-center mb-12 relative"> <div className="flex flex-col items-center"> <Image src="/images/home/coin-design.png" alt="Coin" width={335} height={335} className="z-10" /> <Image src="/images/home/frame.png" alt="Coin Base" width={494} height={143} className="mt-[-50px] z-0" /> </div> </div>
+      <div className="flex justify-center mb-12 relative">
+        <div className="flex flex-col items-center">
+          <Image
+            src="/images/home/coin-design.png"
+            alt="Coin"
+            width={335}
+            height={335}
+            className="z-10"
+          />
+          <Image
+            src="/images/home/frame.png"
+            alt="Coin Base"
+            width={494}
+            height={143}
+            className="mt-[-50px] z-0"
+          />
+        </div>
+      </div>
 
       <div className="flex justify-center gap-4 mb-8">
         {bottomButtons.map((btn) => (
@@ -134,21 +172,29 @@ const [data, setData] = useState<QAFormData | null>(null);
       </div>
 
       <div className="flex justify-center gap-4">
-        <Button
+         {/* <Button
           type="button"
           variant="ternary"
           className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
         >
           SAVE AS DRAFT
-        </Button>
+        </Button> */}
         <Button
           type="button"
           variant="primary"
+          onClick={handleSubmitForQuote}
           className="max-w-[280px] w-full text-lg font-medium"
         >
           SUBMIT FOR QUOTE
         </Button>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={handleModalClose}
+        onPaymentSelect={handlePaymentSelect}
+      />
     </div>
   );
 };

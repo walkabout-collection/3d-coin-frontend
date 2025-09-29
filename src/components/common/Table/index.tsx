@@ -37,7 +37,6 @@ function Table<T extends { date?: string; order?: string }>({
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
-
     return sortedDataState.filter((row) =>
       Object.values(row as object).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
@@ -72,15 +71,12 @@ function Table<T extends { date?: string; order?: string }>({
     if (column.render) {
       return column.render(value, row, index);
     }
-
     if (String(column.key).toLowerCase().includes('status')) {
       return <StatusBadge status={String(value)} />;
     }
-
     if (String(column.key).toLowerCase().includes('packaging')) {
       return <span className="text-sm">{String(value)}</span>;
     }
-
     return value as React.ReactNode;
   };
 
@@ -178,8 +174,19 @@ function Table<T extends { date?: string; order?: string }>({
                           return (
                             <button
                               key={actionIndex}
-                              onClick={() => action.onClick(row)}
-                              className="px-3 py-1 text-xs font-medium rounded-md"
+                              onClick={() => action.onClick && action.onClick(row)}
+                              className={`max-w-lg rounded-full py-2 px-6 font-base text-sm ${
+                                action.variant === 'primary'
+                                  ? 'bg-[#1a2a3a] text-white'
+                                  : action.variant === 'success'
+                                  ? 'text-green-600 font-bold text-lg'
+                                  : action.variant === 'secondary'
+                                  ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                                  : action.variant === 'danger'
+                                  ? 'bg-red-600 text-white hover:bg-red-700'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                              } ${!action.onClick ? 'cursor-default' : ''}`}
+                              disabled={!action.onClick}
                             >
                               {action.icon && (
                                 <Image

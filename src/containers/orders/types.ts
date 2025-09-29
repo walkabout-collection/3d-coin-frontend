@@ -3,6 +3,7 @@ export interface OrderDataItem {
   packaging: string;
   order: string;
   date: string;
-  payment: string;
-  status: string;
+  paymentMethod: 'MANUAL' | 'QUICKBOOKS' | 'PAYPAL';
+  status: 'PENDING' | 'APPROVED' | 'CANCEL';
+  price: number; 
 }

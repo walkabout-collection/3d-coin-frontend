@@ -7,12 +7,15 @@ import SortDropdown from '@/src/components/common/SortDropdown';
 import Image from 'next/image';
 import Button from '@/src/components/common/button/Button';
 import AddQuoteModal from '@/src/components/admin/AddQuoteModal';
+import ApproveQuoteModal from '@/src/components/admin/ApproveQuoteModal'; 
 
 const AdminQuotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [internalSort, setInternalSort] = useState('newest');
   const [sortedDataState, setSortedDataState] = useState<Quote[]>(quotesData);
   const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort.length) return dataToSort;
@@ -60,7 +63,11 @@ const AdminQuotes: React.FC = () => {
   };
 
   const handleApprove = (id: number) => {
-    console.log(`Approving quote ${id}`);
+    const quote = filteredData.find((q) => q.id === id);
+    if (quote) {
+      setSelectedQuote(quote);
+      setIsApproveModalOpen(true);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -74,6 +81,23 @@ const AdminQuotes: React.FC = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+  };
+
+  const handleApproveClose = () => {
+    setIsApproveModalOpen(false);
+    setSelectedQuote(null);
+  };
+
+  const handleApproveConfirm = (price: number) => {
+    if (selectedQuote) {
+      console.log(`Approved quote ${selectedQuote.id} with total price ${price}`);
+      setSortedDataState((prev) =>
+        prev.map((q) =>
+          q.id === selectedQuote.id ? { ...q, label: 'Approved' } : q
+        )
+      );
+    }
+    handleApproveClose();
   };
 
   const sortOptionsDropdown = [
@@ -170,26 +194,25 @@ const AdminQuotes: React.FC = () => {
                   {quote.label}
                 </span>
                 <div className="flex gap-2">
-                     <button
-                    className="px-4 py-4 text-xs rounded-full bg-gray-200 cursor-pointer"
+                  <button
+                    className="p-2 text-xs rounded-full bg-gray-200 cursor-pointer"
                     onClick={() => handleDelete(quote.id)}
                   >
-                  <Image src="/images/dashboard/delete.svg" alt="Close" width={30} height={30} />
+                    <Image src="/images/dashboard/delete.svg" alt="Delete" width={20} height={20} />
                   </button>
                   <button
                     onClick={() => viewQuote(quote.id)}
-                    className="px-4 py-4 text-xs rounded-full bg-gray-200 cursor-pointer"
+                    className="px-3 py-2 text-xs rounded-full bg-gray-200 cursor-pointer"
                   >
-                  <Image src="/images/dashboard/view-icon.svg" alt="Close" width={40} height={40} />
+                    <Image src="/images/dashboard/view-icon.svg" alt="View" width={20} height={20} />
                   </button>
                   <Button
                     variant="primary"
-                    className="px-3 py-1 text-xs rounded-full max-w-[140px"
+                    className="px-3 py-1 text-xs rounded-full max-w-[140px]"
                     onClick={() => handleApprove(quote.id)}
                   >
-                    Approve Quote
+                    Add to Order
                   </Button>
-                 
                 </div>
               </div>
             </div>
@@ -198,6 +221,13 @@ const AdminQuotes: React.FC = () => {
       </div>
 
       {isModalOpen && <AddQuoteModal onClose={handleCloseModal} />}
+      {isApproveModalOpen && selectedQuote && (
+        <ApproveQuoteModal
+          quote={selectedQuote}
+          onClose={handleApproveClose}
+          onApprove={handleApproveConfirm}
+        />
+      )}
     </div>
   );
 };

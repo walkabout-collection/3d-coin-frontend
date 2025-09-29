@@ -92,6 +92,6 @@ export const exampleTexts = {
 
 export const buttonTexts = {
   saveAsDraft: 'Save As Draft',
-  continue: 'Continue',
+  continue: 'Submit',
   loading: 'Processing...',
 };
