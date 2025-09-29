@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/src/components/common/layout/navbar/Navbar";
 import Footer from "@/src/components/common/layout/Footer";
+import ReactQueryProvider from "@/src/providers/ReactQueryProvider"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 
 const cinzel = Cinzel({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"], // choose weights you need
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-cinzel",
 });
 
@@ -36,11 +37,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
       >
-        <div className="mb-20">
-          <Navbar />
-        </div>
-        {children}
-        <Footer />
+        <ReactQueryProvider>
+          <div className="mb-20">
+            <Navbar />
+          </div>
+          {children}
+          <Footer />
+        </ReactQueryProvider>
       </body>
     </html>
   );

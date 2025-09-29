@@ -5,6 +5,7 @@ import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
+import Input from "@/src/components/common/input";
 
 interface QAFormData {
   coinStyles: string;
@@ -18,7 +19,10 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [data, setData] = useState<QAFormData | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(
+    null
+  );
+  const [feedback, setFeedback] = useState<string>("");
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
@@ -37,7 +41,6 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       return;
     }
     console.log("Submitting quote with payment method:", selectedPayment);
-  
   };
 
   const handlePaymentSelect = (option: PaymentOption) => {
@@ -171,8 +174,30 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
         ))}
       </div>
 
+      {selectedButton === 2 && (
+        <div className=" mx-auto mb-8">
+          <label
+            htmlFor="feedback"
+            className="block text-md font-semibold text-gray-700 mb-2"
+          >
+            Feedback for Designer
+          </label>
+
+          <Input
+            textarea
+            rows={3}
+            placeholder="Enter your feedback here"
+            inputSize="md"
+            className="border-none py-3 px-6 rounded-xl"
+            bg="bg-gray-100"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+          />
+        </div>
+      )}
+
       <div className="flex justify-center gap-4">
-         {/* <Button
+        {/* <Button
           type="button"
           variant="ternary"
           className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"

@@ -175,6 +175,21 @@ export const routes = {
         description:
           "Upload or choose artwork to be engraved on your coin.",
       },
+      CONFIRM_PACKAGING: {
+        title: "Confirm Packaging",
+        path: "/standard-builder/confirm-packaging",
+        metaTitle: "Legacy Forge | Confirm Packaging",
+        description:
+          "Review and confirm the packaging details for your custom coin.",
+      },
+      PACKAGING: {
+        title: "Packaging",
+        path: "/standard-builder/packaging",
+        metaTitle: "Legacy Forge | Packaging",
+        description:
+          "Choose packaging options for your custom coin.",
+      },
+     
   
 
 } as const;

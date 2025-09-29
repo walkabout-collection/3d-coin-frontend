@@ -9,6 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Input from "../common/input";
 import Button from "../common/button/Button";
+import { useLogin } from "@/src/hooks/useQueries";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -19,12 +20,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const router = useRouter();
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -33,9 +34,40 @@ const Login = () => {
     },
   });
 
+  const { mutate: login, isPending } = useLogin({
+    // onSuccess: (response) => {
+    //   console.log("Full response:", response);
+
+    //   const { user, accessToken, refreshToken } = response;
+
+    //   console.log("Logged in user:", user);
+    //   console.log("Access Token:", accessToken);
+    //   console.log("Refresh Token:", refreshToken);
+
+    //   // store token for future requests
+    //   localStorage.setItem("accessToken", accessToken as string);
+    //   localStorage.setItem("refreshToken", refreshToken as string);
+
+    //   // redirect
+    //   router.push("/dashboard");
+    // },
+    onSuccess: (response) => {
+      const {  accessToken, refreshToken } = response;
+
+      document.cookie = `token=${accessToken}; path=/; max-age=86400`; // 1 day
+      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800`; // 7 days
+      window.dispatchEvent(new Event("authChanged"));
+
+      router.push("/dashboard");
+    },
+
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
   const onSubmit = (data: LoginFormData) => {
-    console.log("Login Data:", data);
-    router.push("/dashboard");
+    login(data);
   };
 
   return (
@@ -83,8 +115,8 @@ const Login = () => {
                 />
               </div>
 
-              <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? "Logging In..." : "Continue"}
+              <Button type="submit" variant="primary" disabled={isPending}>
+                {isPending ? "Logging In..." : "Continue"}
               </Button>
             </form>
 
