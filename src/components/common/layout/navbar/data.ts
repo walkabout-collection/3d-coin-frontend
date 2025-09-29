@@ -1,18 +1,18 @@
 import { routes } from "@/src/constants/routes";
 
 export const navLinks = [
-  {
-    title: routes.ABOUT_US.title,
-    href: routes.ABOUT_US.path,
-  },
+  // {
+  //   title: routes.ABOUT_US.title,
+  //   href: routes.ABOUT_US.path,
+  // },
   {
     title: routes.CONTACT_US.title,
     href: routes.CONTACT_US.path,
   },
-  {
-    title: routes.SERVICES.title,
-    href: routes.SERVICES.path,
-  },
+  // {
+  //   title: routes.SERVICES.title,
+  //   href: routes.SERVICES.path,
+  // },
   // {
   //   title: routes.BLOGS.title,
   //   href: routes.BLOGS.path,

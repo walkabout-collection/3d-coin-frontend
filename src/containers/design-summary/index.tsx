@@ -6,6 +6,7 @@ import { bottomButtons } from "@/src/containers/design-summary/data";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import Input from "@/src/components/common/input";
+import { useRouter } from "next/navigation";
 
 interface QAFormData {
   coinStyles: string;
@@ -15,7 +16,7 @@ interface QAFormData {
   frontTextInsideArtwork: string;
 }
 
-const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
+const DesignSummarySection = () => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [data, setData] = useState<QAFormData | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -23,6 +24,9 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
     null
   );
   const [feedback, setFeedback] = useState<string>("");
+  const isLoggedIn = false;
+
+  const router = useRouter();
 
   useEffect(() => {
     const qaFormData = localStorage.getItem("qaFormData");
@@ -51,6 +55,30 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
     setShowPaymentModal(false);
   };
 
+
+  const handleFirstButtonAction = async () => {
+    //  dummy API call
+    try {
+      const response = await fetch("https://dummyapi.example.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          standardBuilderData: JSON.parse(localStorage.getItem("standard-builder-data") || "{}"),
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Dummy API call successful");
+      } else {
+        throw new Error("Dummy API call failed");
+      }
+    } catch (error) {
+      console.error("Error in dummy API call:", error);
+    }
+  };
+
   const dynamicOptions = data
     ? [
         {
@@ -59,6 +87,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
           value: data.coinStyles,
           type: "size",
           image: "/images/home/dimensions.png",
+          path: "/standard-builder",
         },
         {
           id: 2,
@@ -66,6 +95,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
           value: data.metalFinishes,
           type: "material",
           image: "/images/home/dimensions.png",
+          path: "/standard-builder/material",
         },
         {
           id: 3,
@@ -73,6 +103,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
           value: data.coinShape,
           type: "edge",
           image: "/images/home/dimensions.png",
+          path: "/standard-builder/edge-type",
         },
         {
           id: 4,
@@ -80,6 +111,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
           value: data.detailLevel,
           type: "text",
           image: "/images/home/dimensions.png",
+          path: "/standard-builder/text-rings",
         },
         {
           id: 5,
@@ -87,6 +119,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
           value: data.frontTextInsideArtwork,
           type: "artwork",
           image: "/images/home/dimensions.png",
+          path: "/standard-builder/artwork",
         },
       ]
     : [];
@@ -124,7 +157,7 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
             </div>
             <div
               className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
-              onClick={onEdit}
+              onClick={() => router.push(option.path)}
             >
               <Image
                 src="/images/home/edit-icon.svg"
@@ -157,16 +190,23 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       </div>
 
       <div className="flex justify-center gap-4 mb-8">
-        {bottomButtons.map((btn) => (
+        {bottomButtons.map((btn, index) => (
           <Button
             key={btn.id}
             type="button"
             variant="ternary"
-            onClick={() => handleButtonClick(btn.id)}
+            onClick={() => {
+              handleButtonClick(btn.id);
+              if (index === 0) {
+                handleFirstButtonAction();
+              } else if (index === 2) {
+                router.push("/design-team");
+              }
+            }}
             className={`py-6 px-6 rounded-lg text-sm font-medium transition-all duration-200 ${
               selectedButton === btn.id
-                ? "border-2 border-yellow-500 bg-yellow-50 text-yellow-700"
-                : "border-2 border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                ? "bg-white border drop-shadow-2xl shadow-yellow-400 border-yellow-400 text-black"
+                : "bg-gray-200 text-gray-900 hover:border-gray-400"
             }`}
           >
             {btn.label}
@@ -175,14 +215,13 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       </div>
 
       {selectedButton === 2 && (
-        <div className=" mx-auto mb-8">
+        <div className="mx-auto mb-8">
           <label
             htmlFor="feedback"
             className="block text-md font-semibold text-gray-700 mb-2"
           >
             Feedback for Designer
           </label>
-
           <Input
             textarea
             rows={3}
@@ -197,6 +236,15 @@ const DesignSummarySection = ({ onEdit }: { onEdit: () => void }) => {
       )}
 
       <div className="flex justify-center gap-4">
+        {isLoggedIn && (
+          <Button
+            type="button"
+            variant="ternary"
+            className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
+          >
+            SAVE AS DRAFT
+          </Button>
+        )}
         {/* <Button
           type="button"
           variant="ternary"
