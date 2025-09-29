@@ -75,7 +75,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
       console.log('Coin specification submitted:', data);
       onSubmit && onSubmit(formData);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       console.error('Failed to submit coin specification:', err);
     },
   });
