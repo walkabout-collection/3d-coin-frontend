@@ -6,6 +6,7 @@ import Image from "next/image";
 import { toast } from "react-toastify";
 import { useGenerateFromPrompt } from "@/src/hooks/useQueries";
 import { z } from "zod";
+import { useCoinStore } from "@/src/store/useCoinStore";
 
 interface UIState {
   previewImage: string | null;
@@ -39,8 +40,11 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const [uploadedImages, setUploadedImages] = useState<string[]>(variants);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<{ message: string } | undefined>(undefined);
+   const { aiImages } = useCoinStore();
+
 
   const { mutate: generateFromPromptMutate, isPending: isGenerating } = useGenerateFromPrompt({
+
     onSuccess: (data) => {
       toast.success("Generated successfully!");
       setError(undefined);
@@ -165,7 +169,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
             {/* Thumbnail Images Section */}
             <div className="space-y-4">
               <div className="grid grid-cols-4 gap-4">
-                {uploadedImages.map((imageUrl, index) => (
+                {aiImages?.map((imageUrl, index) => (
                   <div
                     key={index}
                     className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-105 ${

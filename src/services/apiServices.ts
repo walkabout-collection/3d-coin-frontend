@@ -75,7 +75,7 @@ export const uploadImage = async (file: File) => {
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await apiClient.post("/ai/upload-image", formData, {
+  const res = await apiClient.post("/ai-flow/upload-image", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -91,7 +91,7 @@ export const generateFromPrompt = async (
 ): Promise<
   Awaited<ReturnType<typeof api.ai.generateFromPromptCreate>>["data"]
 > => {
-  const res = await apiClient.post("/ai/generate-from-prompt", data);
+  const res = await apiClient.post("/ai-flow/generate-from-prompt", data);
   return res.data;
 };
 // regenerate
@@ -100,7 +100,7 @@ export const regenerate = async (
 ): Promise<
   Awaited<ReturnType<typeof api.ai.regenerateCreate>>["data"]
 > => {
-  const res = await apiClient.post("/ai/regenerate", data);
+  const res = await apiClient.post("/ai-flow/regenerate", data);
   return res.data;
 };
 // coin specification
@@ -109,7 +109,7 @@ export const coinSpecification = async (
 ): Promise<
   Awaited<ReturnType<typeof api.ai.coinSpecificationCreate>>["data"]
 > => {
-  const res = await apiClient.post("/ai/coin-specification", data);
+  const res = await apiClient.post("/ai-flow/coin-specification", data);
   return res.data;
 };
 // ai preview
@@ -118,7 +118,7 @@ export const previewList = async (
 ): Promise<
   Awaited<ReturnType<typeof api.ai.previewList>>["data"]
 > => {
-  const res = await apiClient.get("/ai/preview", { params: data });
+  const res = await apiClient.get("/ai-flow/preview", { params: data });
   return res.data;
 };
 
@@ -126,7 +126,7 @@ export const previewList = async (
 export const saveDesign = async (
   data: Parameters<typeof api.ai.saveDesignCreate>[0]
 ): Promise<Awaited<ReturnType<typeof api.ai.saveDesignCreate>>["data"]> => {
-  const res = await apiClient.post("/ai/save-design", data);
+  const res = await apiClient.post("/ai-flow/save-design", data);
   return res.data;
 };
 
@@ -134,6 +134,6 @@ export const saveDesign = async (
 export const sendToDesigner = async (
   data: Parameters<typeof api.ai.sendToDesignerCreate>[0] 
 ): Promise<Awaited<ReturnType<typeof api.ai.sendToDesignerCreate>>["data"]> => {
-  const res = await apiClient.post("/ai/send-to-designer", data);
+  const res = await apiClient.post("/ai-flow/send-to-designer", data);
   return res.data;
 };
