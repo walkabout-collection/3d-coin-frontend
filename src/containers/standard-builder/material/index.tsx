@@ -1,42 +1,27 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
 import { materialOptions } from "./data";
+import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 
 const Material = () => {
-  const [selectedMaterial, setSelectedMaterial] = useState("");
   const router = useRouter();
+  const { material, setMaterial } = useStandardBuilderStore();
 
   const handleMaterialSelect = (materialId: string) => {
-    setSelectedMaterial(materialId);
+    setMaterial(materialId);
   };
 
   const handleContinue = () => {
-    if (selectedMaterial) {
-      const existingData = localStorage.getItem("standard-builder-data");
-      const builderData = existingData ? JSON.parse(existingData) : {};
-
-      const materialData = {
-        ...builderData,
-        "standard-builder": {
-          ...builderData["standard-builder"],
-          material: selectedMaterial,
-        },
-      };
-
-      console.log(JSON.stringify(materialData, null, 2));
-      localStorage.setItem(
-        "standard-builder-data",
-        JSON.stringify(materialData)
-      );
+    if (material) {
       router.push("/standard-builder/edge-type");
     }
   };
 
   const handleGoBack = () => {
-    router.push("/standard-builder");
+    router.push("/standard-builder"); 
   };
 
   return (
@@ -73,30 +58,27 @@ const Material = () => {
           </h3>
 
           <div className="grid grid-cols-3 gap-6 mb-6">
-            {materialOptions.map((material) => (
-              <div key={material.id} className="flex flex-col items-center">
+            {materialOptions.map((m) => (
+              <div key={m.id} className="flex flex-col items-center">
                 <div
-                  onClick={() => handleMaterialSelect(material.id)}
-                  className={`
-    relative cursor-pointer rounded-lg w-[120px] h-[100px] flex items-center justify-center border transition-all duration-300
-    ${
-      selectedMaterial === material.id
-        ? "border-blue-900 bg-blue-50 shadow-lg"
-        : "border-gray-400 hover:border-gray-300 hover:shadow-md"
-    }
-  `}
+                  onClick={() => handleMaterialSelect(m.id)}
+                  className={`relative cursor-pointer rounded-lg w-[120px] h-[100px] flex items-center justify-center border transition-all duration-300
+                    ${
+                      material === m.id
+                        ? "border-blue-900 bg-blue-50 shadow-lg"
+                        : "border-gray-400 hover:border-gray-300 hover:shadow-md"
+                    }`}
                 >
                   <Image
-                    src={material.image}
-                    alt={material.name}
+                    src={m.image}
+                    alt={m.name}
                     width={78}
                     height={78}
                     className="object-contain"
                   />
                 </div>
-
                 <span className="mt-2 text-xs font-semibold text-black text-center uppercase tracking-wide">
-                  {material.name}
+                  {m.name}
                 </span>
               </div>
             ))}
@@ -121,7 +103,7 @@ const Material = () => {
             variant="primary"
             onClick={handleContinue}
             className="w-full max-w-[140px] text-lg font-medium shadow-md hover:shadow-lg transition-shadow"
-            disabled={!selectedMaterial}
+            disabled={!material}
           >
             Continue
           </Button>
