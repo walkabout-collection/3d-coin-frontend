@@ -1,16 +1,16 @@
 import { create } from "zustand";
 
 interface CoinStore {
-  aiImages: string[]; 
-  setAIImages: (images: string[]) => void;
-  addAIImage: (image: string) => void;
-  clearAIImages: () => void;
+  coinImages: string[];
+  setCoinImages: (images: string[]) => void;
+  addCoinImage: (image: string) => void;
+  clearCoinImages: () => void;
 }
 
 export const useCoinStore = create<CoinStore>((set) => ({
-  aiImages: [],
-  setAIImages: (images) => set({ aiImages: images }),
-  addAIImage: (image) =>
-    set((state) => ({ aiImages: [...state.aiImages, image] })),
-  clearAIImages: () => set({ aiImages: [] }),
+  coinImages: [],
+  setCoinImages: (images) => set({ coinImages: images }),
+  addCoinImage: (image) =>
+    set((state) => ({ coinImages: [...state.coinImages, image] })),
+  clearCoinImages: () => set({ coinImages: [] }),
 }));

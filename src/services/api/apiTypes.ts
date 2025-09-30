@@ -306,6 +306,7 @@ export class Api<
       data: {
         /** @format binary */
         image: File;
+        prompt?: string;
       },
       params: RequestParams = {},
     ) =>

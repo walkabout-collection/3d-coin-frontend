@@ -4,7 +4,7 @@ import { Paperclip } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { useGenerateFromPrompt } from "@/src/hooks/useQueries";
+import { useGenerateFromPrompt, useUploadImage } from "@/src/hooks/useQueries";
 import { z } from "zod";
 import { useCoinStore } from "@/src/store/useCoinStore";
 
@@ -40,29 +40,40 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const [uploadedImages, setUploadedImages] = useState<string[]>(variants);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<{ message: string } | undefined>(undefined);
-   const { aiImages } = useCoinStore();
+   const { coinImages,addCoinImage } = useCoinStore();
 
 
-  const { mutate: generateFromPromptMutate, isPending: isGenerating } = useGenerateFromPrompt({
+  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage({
+  onSuccess: (data) => {
+    toast.success("Generated successfully!");
+    setError(undefined);
 
-    onSuccess: (data) => {
-      toast.success("Generated successfully!");
-      setError(undefined);
+    const bufferArray = data?.data?.buffer?.data;
+    if (bufferArray) {
+      const base64 = Buffer.from(bufferArray).toString("base64");
+      const imageUrl = `data:image/png;base64,${base64}`;
+
+      // Save in Zustand
+      addCoinImage(imageUrl);
+
       setUploadedImages((prev) => {
-        const newImages = [...prev, ...(data.variants || [])];
-        return newImages.slice(-4); 
+        const newImages = [...prev, imageUrl];
+        return newImages.slice(-4);
       });
+
       setState((prev) => ({
         ...prev,
-        previewImage: data.variants?.[0] || prev.previewImage,
-        selectedThumbnail: data.variants?.length ? uploadedImages.length : prev.selectedThumbnail,
+        previewImage: imageUrl,
+        selectedThumbnail: uploadedImages.length,
       }));
-    },
-    onError: () => {
-      setError({ message: "Failed to generate from prompt. Please try again." });
-      toast.error("Failed to generate from prompt.");
-    },
-  });
+    }
+  },
+  onError: () => {
+    setError({ message: "Failed to generate from prompt. Please try again." });
+    toast.error("Failed to generate from prompt.");
+  },
+});
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,21 +101,45 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     }));
   };
 
-  const handleGenerate = () => {
-    const validation = imageSchema.safeParse(imageData.file);
-    if (prompt.trim().length > 0 || validation.success) {
-      setError(undefined);
-      generateFromPromptMutate({
-        prompt,
-        imageUrl: imageData.file ? URL.createObjectURL(imageData.file) : undefined,
-      });
-    } else {
-      setError({
-        message: "Please provide a prompt or upload an image to generate.",
-      });
-      toast.error("Please provide a prompt or upload an image.");
-    }
-  };
+ const base64ToFile = (base64String: string, fileName: string): File => {
+  // Check if it is a data URL
+  const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
+  if (!matches) {
+    throw new Error("Invalid base64 string");
+  }
+
+  const mime = matches[1];      // e.g., "image/png"
+  const data = matches[2];      // actual base64 content
+
+  const byteString = atob(data);
+  const n = byteString.length;
+  const u8arr = new Uint8Array(n);
+
+  for (let i = 0; i < n; i++) {
+    u8arr[i] = byteString.charCodeAt(i);
+  }
+
+  return new File([u8arr], fileName, { type: mime });
+};
+
+
+const handleGenerate = () => {
+  if (!state.previewImage) {
+    setError({ message: "Please upload or select an image." });
+    toast.error("Please upload or select an image.");
+    return;
+  }
+
+  // Convert preview image (base64) back to File
+  const fileToSend = base64ToFile(state.previewImage, "preview.png");
+  console.log(fileToSend);
+
+  uploadImageMutate({
+    image: fileToSend,
+    prompt,
+  });
+};
+
 
   const handleSaveDraft = () => {
     alert("Design saved as draft!");
@@ -161,7 +196,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                   variant="primary"
                   disabled={isGenerating}
                 >
-                  {isGenerating ? "Processing..." : "GENERATE"}
+                  {isGenerating ? "Processing..." : "REGENERATE"}
                 </Button>
               </div>
             </div>
@@ -169,7 +204,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
             {/* Thumbnail Images Section */}
             <div className="space-y-4">
               <div className="grid grid-cols-4 gap-4">
-                {aiImages?.map((imageUrl, index) => (
+                {coinImages?.map((imageUrl, index) => (
                   <div
                     key={index}
                     className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-105 ${

@@ -11,9 +11,8 @@
 
 
 import axios from "axios";
-
 const refreshAccessToken = async () => {
-  const refreshToken = getCookie("refreshToken"); 
+  const refreshToken = getCookie("refreshToken");
   if (!refreshToken) throw new Error("No refresh token found");
 
   const res = await axios.post(
@@ -21,7 +20,9 @@ const refreshAccessToken = async () => {
     { refreshToken }
   );
 
+
   const { accessToken, refreshToken: newRefreshToken } = res.data;
+
   console.log("Refreshed access token:", accessToken);
   console.log("Refreshed refresh token:", newRefreshToken);
   console.log("Refreshed token response:", res.data);
@@ -30,12 +31,13 @@ const refreshAccessToken = async () => {
     throw new Error("Failed to refresh access token");
   }
 
-  // Update cookies
+
   document.cookie = `token=${accessToken}; path=/; max-age=86400`;
   document.cookie = `refreshToken=${newRefreshToken}; path=/; max-age=604800`;
 
   return accessToken;
 };
+
 
 // Helper: cookie parser
 const getCookie = (name: string): string | null => {
