@@ -88,17 +88,22 @@ export const useVerifyEmail = (
 // --- Ai ---
 
 // upload image
-  export const useUploadImage = (
+export const useUploadImage = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.uploadImageCreate>>,
+    Awaited<ReturnType<typeof api.ai.uploadImageCreate>>, // return type
     Error,
-    File
+    Parameters<typeof api.ai.uploadImageCreate>[0] // input type matches { image: File; prompt?: string }
   >
 ) =>
-  useMutation<Awaited<ReturnType<typeof api.ai.uploadImageCreate>>, Error, File>({
+  useMutation<
+    Awaited<ReturnType<typeof api.ai.uploadImageCreate>>,
+    Error,
+    Parameters<typeof api.ai.uploadImageCreate>[0]
+  >({
     mutationFn: uploadImage,
     ...options,
   });
+
 // generate from prompt
 export const useGenerateFromPrompt = (
   options?: UseMutationOptions<

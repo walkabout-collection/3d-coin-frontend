@@ -48,9 +48,14 @@ export const forgotPassword = async (
 
 // --- AI ---
 // upload image
-export const uploadImage = async (file: File) => {
+export const uploadImage = async (data: { image: File; prompt?: string }) => {
   const formData = new FormData();
-  formData.append("image", file);
+  formData.append("image", data.image);
+  
+  // Only append prompt if it exists
+  if (data.prompt) {
+    formData.append("prompt", data.prompt);
+  }
 
   const res = await apiClient.post("/ai-flow/upload-image", formData, {
     headers: {
@@ -60,6 +65,7 @@ export const uploadImage = async (file: File) => {
 
   return res.data;
 };
+
 
 
 // generate from prompt

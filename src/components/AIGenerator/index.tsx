@@ -24,6 +24,7 @@ const AIGenerator: React.FC = () => {
   }, [goBack]);
 
 
+
   const handleProvideImageClick = () => {
     goTo("upload");
     window.history.pushState({ screen: "upload" }, "", window.location.href);

@@ -99,6 +99,7 @@ import Button from "../common/button/Button";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import { useUploadImage } from "@/src/hooks/useQueries";
+import { useCoinStore } from "@/src/store/useCoinStore";
 
 interface CoinUploadScreenProps {
   onFileChange: (file: File | null) => void;
@@ -114,11 +115,21 @@ const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({
   onGenerate,
 }) => {
   const [error, setError] = useState<string | undefined>(undefined);
+  const {addCoinImage} = useCoinStore()
 
   const { mutate: uploadImageMutate, isPending} = useUploadImage({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Image uploaded successfully!");
       setError(undefined);
+       const bufferArray = data?.data?.buffer?.data;
+        if (bufferArray) {
+          const base64 = Buffer.from(bufferArray).toString("base64");
+          const imageUrl = `data:image/png;base64,${base64}`;
+
+          // Add to Zustand
+          addCoinImage(imageUrl);
+        }
+        setError(undefined);
       onGenerate();
     },
     onError: () => {
@@ -130,7 +141,7 @@ const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({
   const handleGenerateClick = () => {
     const validation = imageSchema.safeParse(image);
     if (validation.success && image) {
-      uploadImageMutate(image);
+      uploadImageMutate({image});
     } else {
       setError(validation.error?.issues[0].message);
     }
