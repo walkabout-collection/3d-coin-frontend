@@ -267,7 +267,7 @@ const handleGenerate = () => {
 
             {/* Action Buttons */}
             <div className="flex justify-between gap-6 mt-8">
-              {isLoggedIn && (
+              {/* {isLoggedIn && ( */}
                 <Button
                   type="button"
                   variant="ternary"
@@ -276,7 +276,7 @@ const handleGenerate = () => {
                 >
                   SAVE AS DRAFT
                 </Button>
-              )}
+              {/* )} */}
 
               <Button
                 onClick={onContinue}

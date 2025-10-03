@@ -108,11 +108,11 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
 const submitHandler = async (data: QAFormData) => {
   try {
     const frontImageUrl = data.frontReferenceImage
-      ? (await uploadImageMutation(data.frontReferenceImage)).url
+      ? (await uploadImageMutation({image:data.frontReferenceImage})).url
       : "";
 
     const backImageUrl = data.backReferenceImage
-      ? (await uploadImageMutation(data.backReferenceImage)).url
+      ? (await uploadImageMutation({image:data.backReferenceImage})).url
       : "";
 
     const payload = {
