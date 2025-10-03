@@ -6,10 +6,13 @@ import Image from "next/image";
 import ChatbotDrawer from "./ChatbotDrawer";
 import { chatbotQuestions, initialChatbotState } from "./data";
 import { z } from "zod";
+import { toast } from "react-toastify";
+import { useGenerateFromPrompt } from "@/src/hooks/useQueries";
 
 interface CoinPromptBoxProps {
-  onGenerate: () => void;
+  onGenerate: (variants?: string[]) => void;
 }
+
 interface ChatbotState {
   isDrawerOpen: boolean;
 }
@@ -26,18 +29,37 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   );
   const [prompt, setPrompt] = useState("");
 
+  const { mutate: generateFromPromptMutate, isPending: isGenerating } =
+    useGenerateFromPrompt({
+      onSuccess: (data) => {
+        toast.success("Generated successfully!");
+        setError(undefined);
+        onGenerate(data.variants);
+      },
+      onError: () => {
+        setError({
+          message: "Failed to generate from prompt. Please try again.",
+        });
+        toast.error("Failed to generate from prompt.");
+      },
+    });
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadedImage(file);
+
       const imageUrl = URL.createObjectURL(file);
       setPreviewImage(imageUrl);
+
       setError(undefined);
     } else {
       setUploadedImage(null);
       setPreviewImage(null);
     }
   };
+
+  // Toggle chatbot drawer
   const handleChatbotClick = () => {
     setChatbotState((prev) => ({
       ...prev,
@@ -47,9 +69,14 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
 
   const handleGenerateClick = () => {
     const validation = imageSchema.safeParse(uploadedImage);
-    if (prompt.trim().length > 0 || (validation.success && uploadedImage)) {
+
+    if (prompt.trim().length > 0 || validation.success) {
       setError(undefined);
-      onGenerate();
+
+      generateFromPromptMutate({
+        prompt,
+        imageUrl: previewImage || "",
+      });
     } else {
       setError({
         message: "Please provide a prompt or upload an image to generate.",
@@ -57,6 +84,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
     }
   };
 
+  // Handle question insertion from chatbot drawer
   const handleQuestionInsert = (question: string) => {
     setPrompt(question);
     setChatbotState({ ...chatbotState, isDrawerOpen: false });
@@ -77,8 +105,8 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
                   <Image
                     src={previewImage || "/placeholder.png"}
                     alt="Attached Preview"
-                    width={64} 
-                    height={64} 
+                    width={64}
+                    height={64}
                     className="object-cover rounded-md border border-gray-300 shadow"
                   />
                 </div>
@@ -131,8 +159,9 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
                   type="button"
                   variant="primary"
                   className="mt-5 max-w-[120px] w-full text-sm font-base items-center justify-center flex mx-auto"
+                  disabled={isGenerating}
                 >
-                  GENERATE
+                  {isGenerating ? "Processing..." : "GENERATE"}
                 </Button>
               </div>
             </div>

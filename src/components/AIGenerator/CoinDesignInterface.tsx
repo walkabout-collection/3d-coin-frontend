@@ -3,7 +3,10 @@ import React, { useState } from "react";
 import { Paperclip } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
+import { toast } from "react-toastify";
+import { useGenerateFromPrompt, useUploadImage } from "@/src/hooks/useQueries";
 import { z } from "zod";
+import { useCoinStore } from "@/src/store/useCoinStore";
 
 interface UIState {
   previewImage: string | null;
@@ -17,6 +20,7 @@ interface ImageData {
 
 interface CoinDesignInterfaceProps {
   onContinue: () => void;
+  variants?: string[]; 
 }
 
 const initialUIState: UIState = {
@@ -29,22 +33,32 @@ const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   onContinue,
+  variants = [], 
 }) => {
   const [state, setState] = useState<UIState>(initialUIState);
   const [imageData, setImageData] = useState<ImageData>({ file: null });
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [prompt, setPrompt] = useState<string>(""); 
+  const [uploadedImages, setUploadedImages] = useState<string[]>(variants);
+  const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<{ message: string } | undefined>(undefined);
-  const isLoggedIn = false;
+   const { coinImages,addCoinImage } = useCoinStore();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
+
+  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage({
+  onSuccess: (data) => {
+    toast.success("Generated successfully!");
+    setError(undefined);
+
+    const bufferArray = data?.data?.buffer?.data;
+    if (bufferArray) {
+      const base64 = Buffer.from(bufferArray).toString("base64");
+      const imageUrl = `data:image/png;base64,${base64}`;
+
+      // Save in Zustand
+      addCoinImage(imageUrl);
 
       setUploadedImages((prev) => {
         const newImages = [...prev, imageUrl];
-        return newImages.slice(-4); 
+        return newImages.slice(-4);
       });
 
       setState((prev) => ({
@@ -52,9 +66,30 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
         previewImage: imageUrl,
         selectedThumbnail: uploadedImages.length,
       }));
+    }
+  },
+  onError: () => {
+    setError({ message: "Failed to generate from prompt. Please try again." });
+    toast.error("Failed to generate from prompt.");
+  },
+});
 
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setUploadedImages((prev) => {
+        const newImages = [...prev, imageUrl];
+        return newImages.slice(-4); 
+      });
+      setState((prev) => ({
+        ...prev,
+        previewImage: imageUrl,
+        selectedThumbnail: uploadedImages.length,
+      }));
       setImageData({ file });
-      setError(undefined); 
+      setError(undefined);
     }
   };
 
@@ -66,16 +101,45 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     }));
   };
 
-  const handleRegenerate = () => {
-    const validation = imageSchema.safeParse(imageData.file);
-    if (prompt.trim().length > 0 || (validation.success && imageData.file)) {
-      setError(undefined);
-    } else {
-      setError({
-        message: "Please provide a prompt or upload an image to regenerate.",
-      });
-    }
-  };
+ const base64ToFile = (base64String: string, fileName: string): File => {
+  // Check if it is a data URL
+  const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
+  if (!matches) {
+    throw new Error("Invalid base64 string");
+  }
+
+  const mime = matches[1];      // e.g., "image/png"
+  const data = matches[2];      // actual base64 content
+
+  const byteString = atob(data);
+  const n = byteString.length;
+  const u8arr = new Uint8Array(n);
+
+  for (let i = 0; i < n; i++) {
+    u8arr[i] = byteString.charCodeAt(i);
+  }
+
+  return new File([u8arr], fileName, { type: mime });
+};
+
+
+const handleGenerate = () => {
+  if (!state.previewImage) {
+    setError({ message: "Please upload or select an image." });
+    toast.error("Please upload or select an image.");
+    return;
+  }
+
+  // Convert preview image (base64) back to File
+  const fileToSend = base64ToFile(state.previewImage, "preview.png");
+  console.log(fileToSend);
+
+  uploadImageMutate({
+    image: fileToSend,
+    prompt,
+  });
+};
+
 
   const handleSaveDraft = () => {
   };
@@ -87,20 +151,31 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
           {/* Left Section - Input Area */}
           <div className="flex flex-col">
             <div className="relative mb-8">
-              <textarea
-                className="w-full p-6 border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500 text-lg"
-                placeholder="Ask anything…"
-                rows={10}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)} 
-              />
+              <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
+                {state.previewImage && (
+                  <div className="mb-3">
+                    <Image
+                      src={state.previewImage}
+                      alt="Attached Preview"
+                      width={64}
+                      height={64}
+                      className="object-cover rounded-md border border-gray-300 shadow"
+                    />
+                  </div>
+                )}
+                <textarea
+                  className="w-full bg-transparent outline-none resize-none text-lg placeholder-gray-400"
+                  placeholder="Ask anything…"
+                  rows={10}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                />
+              </div>
 
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                 <button
                   className="flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
-                  onClick={() =>
-                    document.getElementById("image-upload")?.click()
-                  }
+                  onClick={() => document.getElementById("image-upload")?.click()}
                 >
                   <Paperclip size={16} />
                   <span className="text-sm font-medium">Attach</span>
@@ -116,10 +191,11 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
                 <Button
                   className="px-6 py-2 text-sm max-w-[140px] text-white"
-                  onClick={handleRegenerate}
+                  onClick={handleGenerate}
                   variant="primary"
+                  disabled={isGenerating}
                 >
-                  Regenerate
+                  {isGenerating ? "Processing..." : "REGENERATE"}
                 </Button>
               </div>
             </div>
@@ -134,7 +210,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
             {/* Thumbnail Images Section */}
             <div className="space-y-4">
               <div className="grid grid-cols-4 gap-4">
-                {uploadedImages.map((imageUrl, index) => (
+                {coinImages?.map((imageUrl, index) => (
                   <div
                     key={index}
                     className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-105 ${
@@ -157,9 +233,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
               <div className="text-sm text-gray-500 leading-relaxed">
                 <p className="uppercase tracking-wide">
-                  Lorem ipsum is simply dummy text of the printing and
-                  typesetting industry. Lorem ipsum has been the industry
-                  standard
+                  Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry standard
                 </p>
               </div>
             </div>
@@ -193,7 +267,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
             {/* Action Buttons */}
             <div className="flex justify-between gap-6 mt-8">
-              {isLoggedIn && (
+              {/* {isLoggedIn && ( */}
                 <Button
                   type="button"
                   variant="ternary"
@@ -202,7 +276,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                 >
                   SAVE AS DRAFT
                 </Button>
-              )}
+              {/* )} */}
 
               <Button
                 onClick={onContinue}
@@ -216,6 +290,12 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="mt-1 text-red-500 text-sm text-center" aria-live="polite">
+          <span>{error.message}</span>
+        </div>
+      )}
     </div>
   );
 };

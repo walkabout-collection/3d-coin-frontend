@@ -16,6 +16,7 @@ import Input from '../common/input';
 import ImageUpload from '../common/imageUpload';
 import Button from '../common/button/Button';
 
+import { useCoinSpecification, useUploadImage } from '@/src/hooks/useQueries'; 
 const formSchema = z.object({
   coinShape: z.string().min(1, 'Coin shape is required'),
   subject: z.string().min(1, 'Subject is required'),
@@ -69,12 +70,70 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
 
   const formData = watch();
 
+  const coinSpecMutation = useCoinSpecification({
+    onSuccess: (data) => {
+      console.log('Coin specification submitted:', data);
+      onSubmit && onSubmit(formData);
+    },
+    onError: (err: Error) => {
+      console.error('Failed to submit coin specification:', err);
+    },
+  });
+
   const handleImageChange = (field: 'frontReferenceImage' | 'backReferenceImage', file: File | null) => {
-    // console.log(`handleImageChange for ${field}:`, file);
     if (file) {
       setValue(field, file, { shouldValidate: true });
     }
   };
+
+  // const submitHandler = (data: QAFormData) => {
+  //   const payload = {
+  //     name: data.subject,
+  //     frontImage: data.frontReferenceImage,
+  //     frontDescription: data.frontDescription,
+  //     backImage: data.backReferenceImage,
+  //     backDescription: data.backDescription,
+  //     materialFinish: data.metalFinishes,
+  //     coinShape: data.coinShape,
+  //     contrastStyle: data.coinStyles,
+  //     detailLevel: data.detailLevel,
+  //   };
+
+  //   // Call API mutation
+  //   coinSpecMutation.mutate(payload);
+  // };
+
+  const { mutateAsync: uploadImageMutation } = useUploadImage();
+
+const submitHandler = async (data: QAFormData) => {
+  try {
+    const frontImageUrl = data.frontReferenceImage
+      ? (await uploadImageMutation({image:data.frontReferenceImage})).url
+      : "";
+
+    const backImageUrl = data.backReferenceImage
+      ? (await uploadImageMutation({image:data.backReferenceImage})).url
+      : "";
+
+    const payload = {
+      name: data.subject,
+      frontImage: frontImageUrl,
+      frontDescription: data.frontDescription,
+      backImage: backImageUrl,
+      backDescription: data.backDescription,
+      materialFinish: data.metalFinishes,
+      coinShape: data.coinShape,
+      contrastStyle: data.coinStyles,
+      detailLevel: data.detailLevel,
+    };
+
+    await coinSpecMutation.mutateAsync(payload);
+    console.log("Coin specification submitted successfully:", payload);
+  } catch (err) {
+    console.error("Failed to submit coin specification:", err);
+  }
+};
+
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -83,7 +142,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
         <h2 className="text-3xl font-semibold text-primary">PROMPTS</h2>
       </div>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-8">
+      <form onSubmit={handleSubmit(submitHandler)} className="space-y-8">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">1. COIN SHAPE:</h3>

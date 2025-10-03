@@ -1,32 +1,17 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Input from "@/src/components/common/input";
 import Button from "@/src/components/common/button/Button";
+import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 
 const Packaging = () => {
-  const [packagingPreferences, setPackagingPreferences] = useState("");
-  const [backText, setBackText] = useState("");
   const router = useRouter();
+  const { packaging, setPackaging } = useStandardBuilderStore();
 
   const handleContinue = () => {
-    const existingData = localStorage.getItem("standard-builder-data");
-    const builderData = existingData ? JSON.parse(existingData) : {};
-
-    const packagingData = {
-      ...builderData,
-      "standard-builder": {
-        ...builderData["standard-builder"],
-        packaging: {
-          preferences: packagingPreferences.trim(),
-          backText: backText.trim(),
-        },
-      },
-    };
-
-    console.log(JSON.stringify(packagingData, null, 2));
-    localStorage.setItem("standard-builder-data", JSON.stringify(packagingData));
+    console.log("Packaging Data:", packaging);
     router.push("/design-summary");
   };
 
@@ -62,12 +47,15 @@ const Packaging = () => {
               inputSize="md"
               className="border-none py-3 px-6 rounded-xl"
               bg="bg-gray-100"
-              value={packagingPreferences}
-              onChange={(e) => setPackagingPreferences(e.target.value)}
+              value={packaging.preferences}
+              onChange={(e) =>
+                setPackaging({ ...packaging, preferences: e.target.value })
+              }
             />
           </div>
           <p className="text-gray-600 mb-6 mt-4 text-lg font-medium">
-           <span className="font-semibold text-black">Note:</span>  Write packaging insert design description - Design team will provide proof.
+            <span className="font-semibold text-black">Note:</span> Write
+            packaging insert design description - Design team will provide proof.
           </p>
 
           <div className="mt-6">
@@ -81,8 +69,10 @@ const Packaging = () => {
               inputSize="md"
               className="border-none py-3 px-6 rounded-xl"
               bg="bg-gray-100"
-              value={backText}
-              onChange={(e) => setBackText(e.target.value)}
+              value={packaging.backText}
+              onChange={(e) =>
+                setPackaging({ ...packaging, backText: e.target.value })
+              }
             />
           </div>
 
@@ -96,7 +86,7 @@ const Packaging = () => {
           variant="primary"
           onClick={handleContinue}
           className="mt-8 w-full max-w-[180px] text-lg font-medium shadow-md hover:shadow-lg transition-shadow mx-auto"
-          disabled={!packagingPreferences.trim() || !backText.trim()}
+          disabled={!packaging.preferences.trim() || !packaging.backText.trim()}
         >
           Continue
         </Button>

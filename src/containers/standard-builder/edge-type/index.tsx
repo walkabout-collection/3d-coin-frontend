@@ -1,36 +1,21 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
 import { edgeTypeOptions } from "./data";
+import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore"; 
 
 const EdgeType = () => {
-  const [selectedEdgeType, setSelectedEdgeType] = useState("");
   const router = useRouter();
+  const { edgeType, setEdgeType } = useStandardBuilderStore(); 
 
   const handleEdgeTypeSelect = (edgeTypeId: string) => {
-    setSelectedEdgeType(edgeTypeId);
+    setEdgeType(edgeTypeId);
   };
 
   const handleContinue = () => {
-    if (selectedEdgeType) {
-      const existingData = localStorage.getItem("standard-builder-data");
-      const builderData = existingData ? JSON.parse(existingData) : {};
-
-      const edgeTypeData = {
-        ...builderData,
-        "standard-builder": {
-          ...builderData["standard-builder"],
-          "edge-type": selectedEdgeType,
-        },
-      };
-
-      console.log(JSON.stringify(edgeTypeData, null, 2));
-      localStorage.setItem(
-        "standard-builder-data",
-        JSON.stringify(edgeTypeData)
-      );
+    if (edgeType) {
       router.push("/standard-builder/text-rings");
     }
   };
@@ -64,7 +49,8 @@ const EdgeType = () => {
       {/* Right Side - Edge Type Selection */}
       <div className="flex flex-col">
         <h1 className="text-xl font-semibold text-gray-900 mb-2">
-          Select Edge Type        </h1>
+          Select Edge Type
+        </h1>
 
         <div className="w-full max-w-md p-6 rounded-lg shadow-md">
           <h3 className="text-md font-bold text-gray-800 mb-4 uppercase tracking-wide">
@@ -72,22 +58,22 @@ const EdgeType = () => {
           </h3>
 
           <div className="grid grid-cols-3 gap-6 ">
-            {edgeTypeOptions.map((edgeType) => (
-              <div key={edgeType.id} className="flex flex-col items-center">
+            {edgeTypeOptions.map((et) => (
+              <div key={et.id} className="flex flex-col items-center">
                 <div
-                  onClick={() => handleEdgeTypeSelect(edgeType.id)}
+                  onClick={() => handleEdgeTypeSelect(et.id)}
                   className={`
                     relative cursor-pointer rounded-lg w-[90px] h-[70px] flex items-center justify-center border transition-all duration-300
                     ${
-                      selectedEdgeType === edgeType.id
+                      edgeType === et.id
                         ? "border-blue-900 bg-blue-50 shadow-lg"
                         : "border-gray-400 hover:border-gray-300 hover:shadow-md"
                     }
                   `}
                 >
                   <Image
-                    src={edgeType.image}
-                    alt={edgeType.name}
+                    src={et.image}
+                    alt={et.name}
                     width={78}
                     height={78}
                     className="object-contain"
@@ -95,7 +81,7 @@ const EdgeType = () => {
                 </div>
 
                 <span className="mt-2 text-xs font-semibold text-black text-center uppercase tracking-wide">
-                  {edgeType.name}
+                  {et.name}
                 </span>
               </div>
             ))}
@@ -120,7 +106,7 @@ const EdgeType = () => {
             variant="primary"
             onClick={handleContinue}
             className="w-full max-w-[140px] text-lg font-medium shadow-md hover:shadow-lg transition-shadow"
-            disabled={!selectedEdgeType}
+            disabled={!edgeType}
           >
             Continue
           </Button>

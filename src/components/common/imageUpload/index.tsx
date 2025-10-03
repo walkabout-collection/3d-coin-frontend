@@ -1,18 +1,28 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { ImageUploadProps } from './types';
+"use client";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import { ImageUploadProps } from "./types";
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, className, id }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({
+  onChange,
+  value,
+  error,
+  className,
+  id,
+}) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (value) {
-      const url = URL.createObjectURL(value);
-      setPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+      if (value instanceof File) {
+        const url = URL.createObjectURL(value);
+        setPreviewUrl(url);
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } else if (typeof value === "string") {
+        setPreviewUrl(value);
+      }
     } else {
       setPreviewUrl(null);
     }
@@ -62,11 +72,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onChange, value, error, class
             </div>
           )}
         </label>
-        {value && (
-          <p className="mt-2 text-sm text-green-600">
-            Image selected: {value.name}
-          </p>
-        )}
+        {value && <p className="mt-2 text-sm text-green-600">{value.name}</p>}
       </div>
       {error && (
         <div className="mt-1 text-red-500 text-sm">

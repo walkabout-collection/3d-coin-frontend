@@ -1,24 +1,16 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import Input from "@/src/components/common/input";
+import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 import { useRouter } from "next/navigation";
-
-interface QAFormData {
-  coinStyles: string;
-  metalFinishes: string;
-  coinShape: string;
-  detailLevel: string;
-  frontTextInsideArtwork: string;
-}
 
 const DesignSummarySection = () => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
-  const [data, setData] = useState<QAFormData | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(
     null
@@ -28,12 +20,10 @@ const DesignSummarySection = () => {
 
   const router = useRouter();
 
-  useEffect(() => {
-    const qaFormData = localStorage.getItem("qaFormData");
-    if (qaFormData) {
-      setData(JSON.parse(qaFormData));
-    }
-  }, []);
+  const { dimensions, material, edgeType, artwork, packaging } =
+    useStandardBuilderStore();
+
+    // console.table({dimensions, material, edgeType, artwork, packaging});
 
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
@@ -78,51 +68,54 @@ const DesignSummarySection = () => {
       console.error("Error in dummy API call:", error);
     }
   };
+ 
 
-  const dynamicOptions = data
-    ? [
-        {
-          id: 1,
-          label: "Dimensions",
-          value: data.coinStyles,
-          type: "size",
-          image: "/images/home/dimensions.png",
-          path: "/standard-builder",
-        },
-        {
-          id: 2,
-          label: "Material",
-          value: data.metalFinishes,
-          type: "material",
-          image: "/images/home/dimensions.png",
-          path: "/standard-builder/material",
-        },
-        {
-          id: 3,
-          label: "Edge Type",
-          value: data.coinShape,
-          type: "edge",
-          image: "/images/home/dimensions.png",
-          path: "/standard-builder/edge-type",
-        },
-        {
-          id: 4,
-          label: "Text Rings",
-          value: data.detailLevel,
-          type: "text",
-          image: "/images/home/dimensions.png",
-          path: "/standard-builder/text-rings",
-        },
-        {
-          id: 5,
-          label: "Artwork",
-          value: data.frontTextInsideArtwork,
-          type: "artwork",
-          image: "/images/home/dimensions.png",
-          path: "/standard-builder/artwork",
-        },
-      ]
-    : [];
+  const summaryOptions = [
+    {
+      id: 1,
+      label: "Dimensions",
+      value: `Diameter: ${dimensions.coinDiameter}, Thickness: ${dimensions.coinThickness}`,
+      type: "size",
+      image: "/images/home/dimensions.png",
+      path: "/standard-builder",
+    },
+    {
+      id: 2,
+      label: "Material",
+      value: material,
+      type: "material",
+      image: "/images/home/dimensions.png",
+      path: "/standard-builder/material",
+
+    },
+    {
+      id: 3,
+      label: "Edge Type",
+      value: edgeType,
+      type: "edge",
+      image: "/images/home/dimensions.png",
+      path: "/standard-builder/edge-type",
+
+    },
+    {
+      id: 4,
+      label: "Artwork",
+      value: `Front: ${artwork.front.prompt || artwork.front.previewImage|| "N/A"}, Back: ${
+        artwork.back.prompt || artwork.back.previewImage || "N/A"
+      }`,
+      type: "artwork",
+      image: "/images/home/dimensions.png",
+      path: "/standard-builder/artwork",
+    },
+    {
+      id: 5,
+      label: "Packaging",
+      value: `Preferences: ${packaging.preferences}, Back Text: ${packaging.backText}`,
+      type: "packaging",
+      image: "/images/home/dimensions.png",
+      path: "/standard-builder/packaging",
+    },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto py-14">
@@ -131,7 +124,7 @@ const DesignSummarySection = () => {
       </h2>
 
       <div className="space-y-4 mb-12">
-        {dynamicOptions.map((option) => (
+        {summaryOptions.map((option) => (
           <div
             key={option.id}
             className="flex items-center justify-between bg-gray-100 py-3 px-4 rounded-lg"
@@ -170,6 +163,8 @@ const DesignSummarySection = () => {
           </div>
         ))}
       </div>
+
+      {/* Coin Preview */}
       <div className="flex justify-center mb-12 relative">
         <div className="flex flex-col items-center">
           <Image
@@ -189,13 +184,14 @@ const DesignSummarySection = () => {
         </div>
       </div>
 
+      {/* Bottom Buttons */}
       <div className="flex justify-center gap-4 mb-8">
         {bottomButtons.map((btn, index) => (
           <Button
             key={btn.id}
             type="button"
             variant="ternary"
-            onClick={() => {
+             onClick={() => {
               handleButtonClick(btn.id);
               if (index === 0) {
                 handleFirstButtonAction();
@@ -235,6 +231,7 @@ const DesignSummarySection = () => {
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className="flex justify-center gap-4">
         {isLoggedIn && (
           <Button
@@ -245,13 +242,6 @@ const DesignSummarySection = () => {
             SAVE AS DRAFT
           </Button>
         )}
-        {/* <Button
-          type="button"
-          variant="ternary"
-          className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
-        >
-          SAVE AS DRAFT
-        </Button> */}
         <Button
           type="button"
           variant="primary"

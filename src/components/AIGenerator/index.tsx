@@ -1,200 +1,96 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Button from "../common/button/Button";
-import { initialGeneratorState } from "./data";
-import { GeneratorState, QAFormData, UploadData } from "./types";
+import {  QAFormData } from "./types";
 import CoinUploadScreen from "./CoinUpload";
 import CoinDesignInterface from "./CoinDesignInterface";
 import CoinPromptBox from "./CoinPromptBox";
 import QAPromptsForm from "./QAPromptsForm";
 import { ThreeDRender } from "./ThreeDRender";
 import DesignSummarySection from "@/src/containers/design-summary";
+import { useAiFlowStore } from "@/src/store/useAiFlowStore";
+
 
 const AIGenerator: React.FC = () => {
   const router = useRouter();
-  const [state, setState] = useState<GeneratorState>(initialGeneratorState);
-  const [uploadData, setUploadData] = useState<UploadData>({ image: null });
-  const [historyStack, setHistoryStack] = useState<string[]>(["main"]);
+  const { state, uploadData, goTo, goBack, setUploadData } = useAiFlowStore();
+
 
   useEffect(() => {
-    const handlePopState = () => {
-      setHistoryStack((prev) => {
-        const newStack = [...prev];
-        newStack.pop();
-        const previousState = newStack[newStack.length - 1] || "main";
-
-        if (previousState === "main") {
-          setState(initialGeneratorState);
-        } else if (previousState === "upload") {
-          setState({
-            ...initialGeneratorState,
-            showUpload: true,
-          });
-        } else if (previousState === "guide") {
-          setState({
-            ...initialGeneratorState,
-            showGuide: true,
-          });
-        } else if (previousState === "design") {
-          setState({
-            ...initialGeneratorState,
-            showDesignInterface: true,
-          });
-        } else if (previousState === "qaPrompts") {
-          setState({
-            ...initialGeneratorState,
-            showQAPrompts: true,
-          });
-        } else if (previousState === "threeDRender") {
-          setState({
-            ...initialGeneratorState,
-            showThreeDRender: true,
-          });
-        } else if (previousState === "designSummary") {
-          setState({
-            ...initialGeneratorState,
-            showDesignSummary: true,
-          });
-        }
-
-        return newStack;
-      });
-    };
-
+    const handlePopState = () => goBack();
     window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [goBack]);
 
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
-
-  useEffect(() => {
-  if (historyStack.length) {
-    // console.debug("History stack updated:", historyStack);
-  }
-}, [historyStack]);
 
 
   const handleProvideImageClick = () => {
-    setState((prev) => ({
-      ...prev,
-      showUpload: true,
-      showGuide: false,
-      showDesignInterface: false,
-      showQAPrompts: false,
-      showThreeDRender: false,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "upload"]);
+    goTo("upload");
     window.history.pushState({ screen: "upload" }, "", window.location.href);
   };
 
+
   const handleEnterGuideClick = () => {
-    setState((prev) => ({
-      ...prev,
-      showUpload: false,
-      showGuide: true,
-      showDesignInterface: false,
-      showQAPrompts: false,
-      showThreeDRender: false,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "guide"]);
+    goTo("guide");
     window.history.pushState({ screen: "guide" }, "", window.location.href);
   };
 
+
   const handleFileChange = (file: File | null) => {
-    setUploadData({ image: file });
+    setUploadData({ image: file, variants: undefined });
   };
 
-  const handleGenerate = () => {
-    setState((prev) => ({
-      ...prev,
-      showUpload: false,
-      showGuide: false,
-      showDesignInterface: true,
-      showQAPrompts: false,
-      showThreeDRender: false,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "design"]);
+
+  const handleGenerate = (variants?: string[]) => {
+    goTo("design", { variants });
     window.history.pushState({ screen: "design" }, "", window.location.href);
   };
 
-  const handlePromptGenerate = () => {
-    setState((prev) => ({
-      ...prev,
-      showGuide: false,
-      showDesignInterface: true,
-      showQAPrompts: false,
-      showThreeDRender: false,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "design"]);
+
+  const handlePromptGenerate = (variants?: string[]) => {
+    goTo("design", { variants });
     window.history.pushState({ screen: "design" }, "", window.location.href);
   };
+
 
   const handleContinue = () => {
-    setState((prev) => ({
-      ...prev,
-      showUpload: false,
-      showGuide: false,
-      showDesignInterface: false,
-      showQAPrompts: true,
-      showThreeDRender: false,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "qaPrompts"]);
+    goTo("qaPrompts");
     window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
   };
 
+
   const handleQASubmit = (data: QAFormData) => {
-    console.log("Q&A Form Data:", data);
     localStorage.setItem("qaFormData", JSON.stringify(data));
-    setState((prev) => ({
-      ...prev,
-      showUpload: false,
-      showGuide: false,
-      showDesignInterface: false,
-      showQAPrompts: false,
-      showThreeDRender: true,
-      showDesignSummary: false,
-    }));
-    setHistoryStack((prev) => [...prev, "threeDRender"]);
+    goTo("threeDRender");
     window.history.pushState({ screen: "threeDRender" }, "", window.location.href);
   };
+
 
   const handleSaveAsDraft = async () => {
     console.log("Saving as draft...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    // alert("Saved as draft successfully!");
   };
+
 
   const handleContinueRender = async () => {
     console.log("Continuing to next step...");
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    router.push("/design-summary"); 
+    router.push("/design-summary");
   };
 
-const handleEdit = () => {
-  setState((prev) => ({
-    ...prev,
-    showUpload: false,
-    showGuide: false,
-    showDesignInterface: false,
-    showQAPrompts: true,  
-    showThreeDRender: false,
-    showDesignSummary: false,
-  }));
-  setHistoryStack((prev) => [...prev, "qaPrompts"]);
-  window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
-};
 
+  const handleEdit = () => {
+    goTo("qaPrompts");
+    window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
+  };
+
+
+  // conditional renders
   if (state.showDesignInterface) {
-    return <CoinDesignInterface onContinue={handleContinue} />;
+    return <CoinDesignInterface onContinue={handleContinue} variants={uploadData.variants} />;
   }
+
 
   if (state.showUpload) {
     return (
@@ -206,19 +102,22 @@ const handleEdit = () => {
     );
   }
 
+
   if (state.showGuide) {
     return <CoinPromptBox onGenerate={handlePromptGenerate} />;
   }
+
 
   if (state.showQAPrompts) {
     return <QAPromptsForm onSubmit={handleQASubmit} />;
   }
 
+
   if (state.showThreeDRender) {
     return (
       <ThreeDRender
-        frontImage="/images/home/front-side.png"
-        backImage="/images/home/front-side.png"
+        frontImage={uploadData.variants?.[0] || "/images/home/front-side.png"}
+        backImage={uploadData.variants?.[1] || "/images/home/front-side.png"}
         title="AI Generated 3D Render"
         onSaveAsDraft={handleSaveAsDraft}
         onContinue={handleContinueRender}
@@ -227,7 +126,11 @@ const handleEdit = () => {
     );
   }
 
-  
+
+  if (state.showDesignSummary) {
+    return <DesignSummarySection  />;
+  }
+
 
   return (
     <div className="min-h-screen">
@@ -244,8 +147,7 @@ const handleEdit = () => {
               className="!bg-gray-100 border-none font-medium py-6 px-6 rounded-lg hover:border-amber-500 hover:border-2 hover:bg-white hover:shadow-amber-400 hover:shadow-sm text-center"
             >
               <div className="text-lg leading-tight">
-                PROVIDE IMAGE OF<br />
-                EXACT DESIGN
+                PROVIDE IMAGE OF<br />EXACT DESIGN
               </div>
             </Button>
             <Button
@@ -255,8 +157,7 @@ const handleEdit = () => {
               className="!bg-gray-100 border-none font-medium py-5 px-6 rounded-lg hover:border-amber-400 hover:border-2 hover:shadow-amber-400 hover:shadow-sm text-center"
             >
               <div className="text-lg leading-tight">
-                ENTER GENERATOR<br />
-                GUIDE
+                ENTER GENERATOR<br />GUIDE
               </div>
             </Button>
           </div>
@@ -265,5 +166,6 @@ const handleEdit = () => {
     </div>
   );
 };
+
 
 export default AIGenerator;
