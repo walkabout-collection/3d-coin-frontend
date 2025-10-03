@@ -124,15 +124,17 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
 
 const handleGenerate = () => {
-  if (!state.previewImage) {
-    setError({ message: "Please upload or select an image." });
-    toast.error("Please upload or select an image.");
-    return;
-  }
+  // if (!state.previewImage) {
+  //   setError({ message: "Please upload or select an image." });
+  //   toast.error("Please upload or select an image.");
+  //   return;
+  // }
 
   // Convert preview image (base64) back to File
-  const fileToSend = base64ToFile(state.previewImage, "preview.png");
-  console.log(fileToSend);
+  let  fileToSend
+  if(state.previewImage) { 
+    fileToSend = base64ToFile(state.previewImage, "preview.png")
+  }
 
   uploadImageMutate({
     image: fileToSend,

@@ -305,7 +305,7 @@ export class Api<
     uploadImageCreate: (
       data: {
         /** @format binary */
-        image: File;
+        image?: File;
         prompt?: string;
       },
       params: RequestParams = {},

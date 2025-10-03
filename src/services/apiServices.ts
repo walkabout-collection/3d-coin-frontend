@@ -1,3 +1,4 @@
+import { da } from "zod/locales";
 import { Api } from "./api/apiTypes";
 import apiClient from "./axiosInstance";
 
@@ -48,9 +49,11 @@ export const forgotPassword = async (
 
 // --- AI ---
 // upload image
-export const uploadImage = async (data: { image: File; prompt?: string }) => {
+export const uploadImage = async (data: { image?: File; prompt?: string }) => {
   const formData = new FormData();
-  formData.append("image", data.image);
+  if(data.image){
+    formData.append("image", data.image);
+  }
   
   // Only append prompt if it exists
   if (data.prompt) {
