@@ -21,7 +21,7 @@ const refreshAccessToken = async () => {
   );
 
 
-  const { accessToken, refreshToken: newRefreshToken } = res.data;
+  const { accessToken, refreshToken: newRefreshToken } = res.data.data;
 
   console.log("Refreshed access token:", accessToken);
   console.log("Refreshed refresh token:", newRefreshToken);
