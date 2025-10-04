@@ -4,7 +4,7 @@ import { Paperclip } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { useGenerateFromPrompt, useUploadImage } from "@/src/hooks/useQueries";
+import { useUploadImage } from "@/src/hooks/useQueries";
 import { z } from "zod";
 import { useCoinStore } from "@/src/store/useCoinStore";
 
@@ -20,7 +20,7 @@ interface ImageData {
 
 interface CoinDesignInterfaceProps {
   onContinue: () => void;
-  variants?: string[]; 
+  variants?: string[];
 }
 
 const initialUIState: UIState = {
@@ -33,47 +33,54 @@ const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   onContinue,
-  variants = [], 
+  variants = [],
 }) => {
   const [state, setState] = useState<UIState>(initialUIState);
   const [imageData, setImageData] = useState<ImageData>({ file: null });
   const [uploadedImages, setUploadedImages] = useState<string[]>(variants);
   const [prompt, setPrompt] = useState("");
-  const [error, setError] = useState<{ message: string } | undefined>(undefined);
-   const { coinImages,addCoinImage } = useCoinStore();
+  const [error, setError] = useState<{ message: string } | undefined>(
+    undefined
+  );
+  const { coinImages, addCoinImage } = useCoinStore();
 
+  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage(
+    {
+      onSuccess: (res) => {
+        toast.success("Generated successfully!");
+        setError(undefined);
 
-  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage({
-  onSuccess: (data) => {
-    toast.success("Generated successfully!");
-    setError(undefined);
+        const file = res.data?.data?.buffer;
+        if (file instanceof File) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            addCoinImage(base64);
 
-    const bufferArray = data?.data?.buffer?.data;
-    if (bufferArray) {
-      const base64 = Buffer.from(bufferArray).toString("base64");
-      const imageUrl = `data:image/png;base64,${base64}`;
+            setUploadedImages((prev) => {
+              const newImages = [...prev, base64];
+              return newImages.slice(-4);
+            });
 
-      // Save in Zustand
-      addCoinImage(imageUrl);
-
-      setUploadedImages((prev) => {
-        const newImages = [...prev, imageUrl];
-        return newImages.slice(-4);
-      });
-
-      setState((prev) => ({
-        ...prev,
-        previewImage: imageUrl,
-        selectedThumbnail: uploadedImages.length,
-      }));
+            setState((prev) => ({
+              ...prev,
+              previewImage: base64,
+              selectedThumbnail: uploadedImages.length,
+            }));
+          };
+          reader.readAsDataURL(file);
+        } else {
+          console.error("No buffer returned from uploadImage API");
+        }
+      },
+      onError: () => {
+        setError({
+          message: "Failed to generate from prompt. Please try again.",
+        });
+        toast.error("Failed to generate from prompt.");
+      },
     }
-  },
-  onError: () => {
-    setError({ message: "Failed to generate from prompt. Please try again." });
-    toast.error("Failed to generate from prompt.");
-  },
-});
-
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,7 +88,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
       const imageUrl = URL.createObjectURL(file);
       setUploadedImages((prev) => {
         const newImages = [...prev, imageUrl];
-        return newImages.slice(-4); 
+        return newImages.slice(-4);
       });
       setState((prev) => ({
         ...prev,
@@ -101,45 +108,40 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     }));
   };
 
- const base64ToFile = (base64String: string, fileName: string): File => {
-  // Check if it is a data URL
-  const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
-  if (!matches) {
-    throw new Error("Invalid base64 string");
-  }
+  const base64ToFile = (base64String: string, fileName: string): File => {
+    // Check if it is a data URL
+    const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
+    if (!matches) {
+      throw new Error("Invalid base64 string");
+    }
 
-  const mime = matches[1];      // e.g., "image/png"
-  const data = matches[2];      // actual base64 content
+    const mime = matches[1]; // e.g., "image/png"
+    const data = matches[2]; // actual base64 content
 
-  const byteString = atob(data);
-  const n = byteString.length;
-  const u8arr = new Uint8Array(n);
+    const byteString = atob(data);
+    const n = byteString.length;
+    const u8arr = new Uint8Array(n);
 
-  for (let i = 0; i < n; i++) {
-    u8arr[i] = byteString.charCodeAt(i);
-  }
+    for (let i = 0; i < n; i++) {
+      u8arr[i] = byteString.charCodeAt(i);
+    }
 
-  return new File([u8arr], fileName, { type: mime });
-};
-
-
-const handleGenerate = () => {
- 
-
-  let fileToSend;
- if(state.previewImage) { 
-    fileToSend = base64ToFile(state.previewImage, "preview.png")
-  }
-
-  uploadImageMutate({
-    image: fileToSend,
-    prompt,
-  });
-};
-
-
-  const handleSaveDraft = () => {
+    return new File([u8arr], fileName, { type: mime });
   };
+
+  const handleGenerate = () => {
+    let fileToSend;
+    if (state.previewImage) {
+      fileToSend = base64ToFile(state.previewImage, "preview.png");
+    }
+
+    uploadImageMutate({
+      image: fileToSend,
+      prompt,
+    });
+  };
+
+  const handleSaveDraft = () => {};
 
   return (
     <div className="min-h-screen">
@@ -172,7 +174,9 @@ const handleGenerate = () => {
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                 <button
                   className="flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
-                  onClick={() => document.getElementById("image-upload")?.click()}
+                  onClick={() =>
+                    document.getElementById("image-upload")?.click()
+                  }
                 >
                   <Paperclip size={16} />
                   <span className="text-sm font-medium">Attach</span>
@@ -230,7 +234,9 @@ const handleGenerate = () => {
 
               <div className="text-sm text-gray-500 leading-relaxed">
                 <p className="uppercase tracking-wide">
-                  Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry standard
+                  Lorem ipsum is simply dummy text of the printing and
+                  typesetting industry. Lorem ipsum has been the industry
+                  standard
                 </p>
               </div>
             </div>
@@ -265,14 +271,14 @@ const handleGenerate = () => {
             {/* Action Buttons */}
             <div className="flex justify-between gap-6 mt-8">
               {/* {isLoggedIn && ( */}
-                <Button
-                  type="button"
-                  variant="ternary"
-                  onClick={handleSaveDraft}
-                  className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
-                >
-                  SAVE AS DRAFT
-                </Button>
+              <Button
+                type="button"
+                variant="ternary"
+                onClick={handleSaveDraft}
+                className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
+              >
+                SAVE AS DRAFT
+              </Button>
               {/* )} */}
 
               <Button
@@ -289,7 +295,10 @@ const handleGenerate = () => {
       </div>
 
       {error && (
-        <div className="mt-1 text-red-500 text-sm text-center" aria-live="polite">
+        <div
+          className="mt-1 text-red-500 text-sm text-center"
+          aria-live="polite"
+        >
           <span>{error.message}</span>
         </div>
       )}
