@@ -3,7 +3,21 @@ import {
   useMutation,
   UseMutationOptions,
 } from "@tanstack/react-query";
-import { coinSpecification, generateFromPrompt, login, logout, previewList, refreshToken, regenerate, saveDesign, sendToDesigner, signup, uploadImage, verifyEmail } from "@/src/services/apiServices";
+import {
+  coinSpecification,
+  createContact,
+  generateFromPrompt,
+  login,
+  logout,
+  previewList,
+  refreshToken,
+  regenerate,
+  saveDesign,
+  sendToDesigner,
+  signup,
+  uploadImage,
+  verifyEmail,
+} from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
 const api = new Api();
@@ -29,13 +43,13 @@ export const useSignup = (
 // Login
 export const useLogin = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.auth.loginCreate>>["data"], 
+    Awaited<ReturnType<typeof api.auth.loginCreate>>["data"],
     Error,
     Parameters<typeof api.auth.loginCreate>[0]
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.auth.loginCreate>>["data"], 
+    Awaited<ReturnType<typeof api.auth.loginCreate>>["data"],
     Error,
     Parameters<typeof api.auth.loginCreate>[0]
   >({
@@ -90,15 +104,15 @@ export const useVerifyEmail = (
 // upload image
 export const useUploadImage = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.uploadImageCreate>>, // return type
+    Awaited<ReturnType<typeof api.aiFlow.uploadImageCreate>>, // return type
     Error,
-    Parameters<typeof api.ai.uploadImageCreate>[0] // input type matches { image: File; prompt?: string }
+    Parameters<typeof api.aiFlow.uploadImageCreate>[0] // input type matches { image: File; prompt?: string }
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.ai.uploadImageCreate>>,
+    Awaited<ReturnType<typeof api.aiFlow.uploadImageCreate>>,
     Error,
-    Parameters<typeof api.ai.uploadImageCreate>[0]
+    Parameters<typeof api.aiFlow.uploadImageCreate>[0]
   >({
     mutationFn: uploadImage,
     ...options,
@@ -107,30 +121,30 @@ export const useUploadImage = (
 // generate from prompt
 export const useGenerateFromPrompt = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.generateFromPromptCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.generateFromPromptCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.generateFromPromptCreate>[0]
+    Parameters<typeof api.aiFlow.generateFromPromptCreate>[0]
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.ai.generateFromPromptCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.generateFromPromptCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.generateFromPromptCreate>[0]
+    Parameters<typeof api.aiFlow.generateFromPromptCreate>[0]
   >({
     mutationFn: generateFromPrompt,
     ...options,
   });
 export const useRegenerate = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.regenerateCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.regenerateCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.regenerateCreate>[0]
+    Parameters<typeof api.aiFlow.regenerateCreate>[0]
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.ai.regenerateCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.regenerateCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.regenerateCreate>[0]
+    Parameters<typeof api.aiFlow.regenerateCreate>[0]
   >({
     mutationFn: regenerate,
     ...options,
@@ -138,41 +152,38 @@ export const useRegenerate = (
 // Coin Specification
 export const useCoinSpecification = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.coinSpecificationCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.coinSpecificationCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.coinSpecificationCreate>[0]
+    Parameters<typeof api.aiFlow.coinSpecificationCreate>[0]
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.ai.coinSpecificationCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.coinSpecificationCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.coinSpecificationCreate>[0]
+    Parameters<typeof api.aiFlow.coinSpecificationCreate>[0]
   >({
     mutationFn: coinSpecification,
     ...options,
   });
 // ai preview
-  export const usePreviewList = (designId: string) =>
-   useQuery<
-    Awaited<ReturnType<typeof api.ai.previewList>>["data"],
-    Error
-  >({
+export const usePreviewList = (designId: string) =>
+  useQuery<Awaited<ReturnType<typeof api.aiFlow.previewList>>["data"], Error>({
     queryKey: ["previewList", designId],
     queryFn: () => previewList({ designId }),
-    enabled: !!designId, 
-  })
+    enabled: !!designId,
+  });
 // save design
 export const useSaveDesign = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.saveDesignCreate>>["data"], 
+    Awaited<ReturnType<typeof api.aiFlow.saveDesignCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.saveDesignCreate>[0] 
+    Parameters<typeof api.aiFlow.saveDesignCreate>[0]
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.ai.saveDesignCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.saveDesignCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.saveDesignCreate>[0]
+    Parameters<typeof api.aiFlow.saveDesignCreate>[0]
   >({
     mutationFn: saveDesign,
     ...options,
@@ -180,16 +191,33 @@ export const useSaveDesign = (
 // send to designer
 export const useSendToDesigner = (
   options?: UseMutationOptions<
-    Awaited<ReturnType<typeof api.ai.sendToDesignerCreate>>["data"], 
+    Awaited<ReturnType<typeof api.aiFlow.sendToDesignerCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.sendToDesignerCreate>[0] 
+    Parameters<typeof api.aiFlow.sendToDesignerCreate>[0]
   >
 ) =>
   useMutation<
-    Awaited<ReturnType<typeof api.ai.sendToDesignerCreate>>["data"],
+    Awaited<ReturnType<typeof api.aiFlow.sendToDesignerCreate>>["data"],
     Error,
-    Parameters<typeof api.ai.sendToDesignerCreate>[0]
+    Parameters<typeof api.aiFlow.sendToDesignerCreate>[0]
   >({
     mutationFn: sendToDesigner,
+    ...options,
+  });
+
+// --- Contact ---
+export const useCreateContact = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof createContact>>, // return type of API
+    Error,
+    Parameters<typeof createContact>[0] // input type of API
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof createContact>>,
+    Error,
+    Parameters<typeof createContact>[0]
+  >({
+    mutationFn: createContact,
     ...options,
   });

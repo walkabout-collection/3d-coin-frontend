@@ -292,38 +292,99 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
-  ai = {
+  aiFlow = {
     /**
      * No description
      *
      * @tags AI
-     * @name UploadImageCreate
-     * @summary Upload an image to generate coin design variants
-     * @request POST:/ai/upload-image
+     * @name GenerateCreate
+     * @summary Generate coin design variants from text prompt, image file, image URL, or a combination
+     * @request POST:/ai-flow/generate
      * @secure
      */
-    uploadImageCreate: (
+    generateCreate: (
       data: {
-        /** @format binary */
-        image?: File;
+        /**
+         * ID of the logged-in user. Omit this field for guest users.
+         * @format uuid
+         */
+        userId?: string | null;
+        /** Optional text prompt for coin design */
         prompt?: string;
+        /**
+         * Optional reference image URL
+         * @format uri
+         */
+        imageUrl?: string;
+        /**
+         * Optional image file for coin design
+         * @format binary
+         */
+        image?: File;
       },
       params: RequestParams = {},
     ) =>
       this.request<
         {
-          /**
-           * URLs of generated coin design variants
-           * @minItems 5
-           */
-         buffer: {
-          type: string;
-          data: number[]; // Array of numbers representing buffer
-        };
+          success?: boolean;
+          data?: {
+            /** @format uuid */
+            designId?: string;
+            variants?: string[];
+          };
         },
-        void
+        any
       >({
-        path: `/ai/upload-image`,
+        path: `/ai-flow/generate`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags AI
+     * @name UploadImageCreate
+     * @summary Upload an image (with optional text prompt) to generate coin design variants
+     * @request POST:/ai-flow/upload-image
+     * @secure
+     */
+    uploadImageCreate: (
+      data: {
+        /**
+         * ID of the logged-in user. Omit this field for guest users.
+         * @format uuid
+         */
+        userId?: string | null;
+        /**
+         * Required image file for coin design.
+         * @format binary
+         */
+        image?: File;
+        /** Optional custom text prompt. If not provided, the default predefined prompt will be used. */
+        prompt?: string | null;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example true */
+          success?: boolean;
+          data?: {
+            /**
+             * Generated image buffer (PNG)
+             * @format binary
+             */
+            buffer?: File;
+          };
+        },
+        any
+      >({
+        path: `/ai-flow/upload-image`,
         method: "POST",
         body: data,
         secure: true,
@@ -338,15 +399,12 @@ export class Api<
      * @tags AI
      * @name GenerateFromPromptCreate
      * @summary Generate coin design variants from text prompt and optional image URL
-     * @request POST:/ai/generate-from-prompt
+     * @request POST:/ai-flow/generate-from-prompt
      * @secure
      */
     generateFromPromptCreate: (
       data: {
-        /**
-         * Text prompt for coin design
-         * @minLength 1
-         */
+        /** Text prompt for coin design */
         prompt: string;
         /**
          * Optional reference image URL
@@ -356,22 +414,12 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<
-        {
-          /**
-           * URLs of generated coin design variants
-           * @minItems 5
-           */
-          variants?: string[];
-        },
-        void
-      >({
-        path: `/ai/generate-from-prompt`,
+      this.request<void, any>({
+        path: `/ai-flow/generate-from-prompt`,
         method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
         ...params,
       }),
 
@@ -381,7 +429,7 @@ export class Api<
      * @tags AI
      * @name RegenerateCreate
      * @summary Regenerate coin design variants
-     * @request POST:/ai/regenerate
+     * @request POST:/ai-flow/regenerate
      * @secure
      */
     regenerateCreate: (
@@ -396,87 +444,47 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<
-        {
-          /**
-           * URLs of regenerated coin design variants
-           * @minItems 5
-           */
-          variants?: string[];
-        },
-        void
-      >({
-        path: `/ai/regenerate`,
+      this.request<void, any>({
+        path: `/ai-flow/regenerate`,
         method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
         ...params,
       }),
 
     /**
-     * No description
+     * @description Both guests and logged-in users can save specifications.
      *
      * @tags AI
      * @name CoinSpecificationCreate
      * @summary Save coin specifications (front/back details)
-     * @request POST:/ai/coin-specification
+     * @request POST:/ai-flow/coin-specification
      * @secure
      */
     coinSpecificationCreate: (
       data: {
-        /**
-         * Name of the coin design
-         * @minLength 1
-         */
+        /** Name of the coin design */
         name: string;
-        /**
-         * URL of front image
-         * @format uri
-         */
+        /** @format uri */
         frontImage?: string;
-        /** Description of front side */
         frontDescription?: string;
-        /**
-         * URL of back image
-         * @format uri
-         */
+        /** @format uri */
         backImage?: string;
-        /** Description of back side */
         backDescription?: string;
-        /** Material and finish type */
         materialFinish?: string;
-        /** Shape of the coin */
         coinShape?: string;
-        /** Contrast style */
         contrastStyle?: string;
-        /** Level of detail */
         detailLevel?: string;
       },
       params: RequestParams = {},
     ) =>
-      this.request<
-        {
-          /**
-           * URL of generated front design
-           * @format uri
-           */
-          frontImage?: string;
-          /**
-           * URL of generated back design
-           * @format uri
-           */
-          backImage?: string;
-        },
-        void
-      >({
-        path: `/ai/coin-specification`,
+      this.request<void, any>({
+        path: `/ai-flow/coin-specification`,
         method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
         ...params,
       }),
 
@@ -486,7 +494,7 @@ export class Api<
      * @tags AI
      * @name PreviewList
      * @summary Preview front and back coin designs
-     * @request GET:/ai/preview
+     * @request GET:/ai-flow/preview
      * @secure
      */
     previewList: (
@@ -499,110 +507,65 @@ export class Api<
       },
       params: RequestParams = {},
     ) =>
-      this.request<
-        {
-          /**
-           * URL of front design
-           * @format uri
-           */
-          frontImage?: string;
-          /**
-           * URL of back design
-           * @format uri
-           */
-          backImage?: string;
-        },
-        void
-      >({
-        path: `/ai/preview`,
+      this.request<void, any>({
+        path: `/ai-flow/preview`,
         method: "GET",
         query: query,
         secure: true,
-        format: "json",
         ...params,
       }),
 
     /**
-     * No description
+     * @description Guests and logged-in users can save designs.
      *
      * @tags AI
      * @name SaveDesignCreate
      * @summary Save the final coin design
-     * @request POST:/ai/save-design
+     * @request POST:/ai-flow/save-design
      * @secure
      */
     saveDesignCreate: (
       data: {
-        /**
-         * ID of the design to save
-         * @format uuid
-         */
+        /** @format uuid */
         designId: string;
+        /** Base64-encoded images selected by the user */
+        selectedVariants: string[];
       },
       params: RequestParams = {},
     ) =>
-      this.request<
-        {
-          /** ID of the saved design */
-          designId?: string;
-          /**
-           * URL of front design
-           * @format uri
-           */
-          frontImage?: string;
-          /**
-           * URL of back design
-           * @format uri
-           */
-          backImage?: string;
-        },
-        void
-      >({
-        path: `/ai/save-design`,
+      this.request<void, any>({
+        path: `/ai-flow/save-design`,
         method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
         ...params,
       }),
 
     /**
-     * No description
+     * @description Guests and logged-in users can send to designer.
      *
      * @tags AI
      * @name SendToDesignerCreate
      * @summary Send coin design to designer with instructions
-     * @request POST:/ai/send-to-designer
+     * @request POST:/ai-flow/send-to-designer
      * @secure
      */
     sendToDesignerCreate: (
       data: {
-        /**
-         * ID of the design to send
-         * @format uuid
-         */
+        /** @format uuid */
         designId: string;
         /** Instructions for the designer */
         instructions?: string;
       },
       params: RequestParams = {},
     ) =>
-      this.request<
-        {
-          /** ID of the sent design */
-          designId?: string;
-          /** Status of the submission (e.g., pending) */
-          status?: string;
-        },
-        void
-      >({
-        path: `/ai/send-to-designer`,
+      this.request<void, any>({
+        path: `/ai-flow/send-to-designer`,
         method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
         ...params,
       }),
   };
@@ -815,6 +778,390 @@ export class Api<
         ...params,
       }),
   };
+  contact = {
+    /**
+     * No description
+     *
+     * @tags Contact
+     * @name CreateCreate
+     * @summary Create a new contact form entry
+     * @request POST:/contact/create
+     * @secure
+     */
+    createCreate: (
+      data: {
+        /** @example "John" */
+        firstName: string;
+        /** @example "Doe" */
+        lastName: string;
+        /** @example "john.doe@example.com" */
+        email: string;
+        /** @example "+1234567890" */
+        contactNumber: string;
+        /** @example "Inquiry about product XYZ" */
+        description: string;
+        /**
+         * @format uri
+         * @example "https://example.com/profile.jpg"
+         */
+        image?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example "5f7a8d88b06c0f3218f9b213" */
+          id?: string;
+          /** @example "John" */
+          firstName?: string;
+          /** @example "Doe" */
+          lastName?: string;
+          /** @example "john.doe@example.com" */
+          email?: string;
+        },
+        void
+      >({
+        path: `/contact/create`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Contact
+     * @name UserContactFormList
+     * @summary Get contact form submitted by the authenticated user
+     * @request GET:/contact/user/contact-form
+     * @secure
+     */
+    userContactFormList: (params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example "5f7a8d88b06c0f3218f9b213" */
+          id?: string;
+          /** @example "John" */
+          firstName?: string;
+          /** @example "Doe" */
+          lastName?: string;
+          /** @example "john.doe@example.com" */
+          email?: string;
+        },
+        void
+      >({
+        path: `/contact/user/contact-form`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Contact
+     * @name AdminContactFormsList
+     * @summary Get all contact forms (Admin only)
+     * @request GET:/contact/admin/contact-forms
+     * @secure
+     */
+    adminContactFormsList: (params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example "5f7a8d88b06c0f3218f9b213" */
+          id?: string;
+          /** @example "John" */
+          firstName?: string;
+          /** @example "Doe" */
+          lastName?: string;
+          /** @example "john.doe@example.com" */
+          email?: string;
+        }[],
+        void
+      >({
+        path: `/contact/admin/contact-forms`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
+  design = {
+    /**
+     * No description
+     *
+     * @tags CoinDesign
+     * @name CreateCreate
+     * @summary Create a new coin design (with associated quote and optional packaging)
+     * @request POST:/design/create
+     * @secure
+     */
+    createCreate: (
+      data: {
+        /**
+         * Name of the coin design (required)
+         * @minLength 1
+         * @maxLength 100
+         */
+        name: string;
+        /** Design status (used in quote as designStatus) */
+        status?: "DRAFT" | "BINGO" | "DESIGNER_REVIEW" | "SUBMITTED";
+        /** Total number of coins (used in quote) */
+        totalCoins?: number;
+        /**
+         * Email address for the quote
+         * @format email
+         */
+        email?: string;
+        /**
+         * Quoted amount for the design
+         * @format float
+         */
+        amount?: number;
+        /** Payment method for the quote (required) */
+        method: "STRIPE" | "QUICKBOOKS" | "MANUAL";
+        /** Feedback related to the quote */
+        feedback?: string;
+        /** Generator prompt text */
+        generatorPrompt?: string;
+        /** URL or base64 string for generator image */
+        generatorImage?: string;
+        /** Instructions for the designer */
+        designerInstructions?: string;
+        /** The **S3 object key** for the front image of the coin design. Example: "1685900000000_myimage.png" */
+        frontImage?: string;
+        /** Description for front */
+        frontDescription?: string;
+        /** Text on front */
+        frontText?: string;
+        /**
+         * Style for front text (max 50 chars)
+         * @maxLength 50
+         */
+        frontTextStyle?: string;
+        /** Front reference information */
+        frontReference?: string;
+        /** Impact of the front reference */
+        frontReferenceImpact?: string;
+        /** Front composition details */
+        frontComposition?: string;
+        /** The **S3 object key** for the back image of the coin design. Example: "1685900000001_mybackimage.jpg" */
+        backImage?: string;
+        /** Description for back */
+        backDescription?: string;
+        /** Text on back */
+        backText?: string;
+        /**
+         * Style for back text (max 50 chars)
+         * @maxLength 50
+         */
+        backTextStyle?: string;
+        /** Back reference information */
+        backReference?: string;
+        /** Impact of the back reference */
+        backReferenceImpact?: string;
+        /** Back composition details */
+        backComposition?: string;
+        /**
+         * Shape of the coin (max 50 chars)
+         * @maxLength 50
+         */
+        coinShape?: string;
+        /** Subject of the coin design */
+        subject?: string;
+        /**
+         * Material and finish details (max 50 chars)
+         * @maxLength 50
+         */
+        materialFinish?: string;
+        /**
+         * Contrast style of the design (max 50 chars)
+         * @maxLength 50
+         */
+        contrastStyle?: string;
+        /**
+         * Level of detail in the design (max 50 chars)
+         * @maxLength 50
+         */
+        detailLevel?: string;
+        /** Any prohibited content notes */
+        prohibitedContent?: string;
+        /**
+         * Set to true to include packaging information
+         * @default false
+         */
+        packaging?: boolean;
+        /** Packaging description (optional, only used if `packaging` is true) */
+        description?: string;
+        /** S3 key or image reference for packaging (optional) */
+        referenceImg?: string;
+        /** Any text to be printed or included in the packaging */
+        text?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/design/create`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags CoinDesign
+     * @name GetDesign
+     * @summary Get all coin designs for the authenticated user
+     * @request GET:/design/all
+     * @secure
+     */
+    getDesign: (params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/design/all`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags CoinDesign
+     * @name DesignDetail
+     * @summary Get a coin design by ID
+     * @request GET:/design/{id}
+     * @secure
+     */
+    designDetail: (id: string, params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/design/${id}`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags CoinDesign
+     * @name DesignUpdate
+     * @summary Update a coin design
+     * @request PUT:/design/{id}
+     * @secure
+     */
+    designUpdate: (
+      id: string,
+      data: {
+        /**
+         * Name of the coin design
+         * @minLength 1
+         * @maxLength 100
+         */
+        name: string;
+        /** Status of the design */
+        status?: "DRAFT" | "BINGO" | "DESIGNER_REVIEW";
+        /** Total number of coins */
+        totalCoins?: number;
+        /** Generator prompt text */
+        generatorPrompt?: string;
+        /** URL or base64 string for generator image */
+        generatorImage?: string;
+        /** Instructions for the designer */
+        designerInstructions?: string;
+        /** The **S3 object key** for the front image of the coin design. This key should be obtained from the S3 upload API after successful upload. Example: "1685900000000_myimage.png" */
+        frontImage?: string;
+        /** Description for front */
+        frontDescription?: string;
+        /** Text on front */
+        frontText?: string;
+        /**
+         * Style for front text (max 50 chars)
+         * @maxLength 50
+         */
+        frontTextStyle?: string;
+        /** Front reference information */
+        frontReference?: string;
+        /** Impact of the front reference */
+        frontReferenceImpact?: string;
+        /** Front composition details */
+        frontComposition?: string;
+        /** The **S3 object key** for the back image of the coin design. This key should be obtained from the S3 upload API after successful upload. Example: "1685900000001_mybackimage.jpg" */
+        backImage?: string;
+        /** Description for back */
+        backDescription?: string;
+        /** Text on back */
+        backText?: string;
+        /**
+         * Style for back text (max 50 chars)
+         * @maxLength 50
+         */
+        backTextStyle?: string;
+        /** Back reference information */
+        backReference?: string;
+        /** Impact of the back reference */
+        backReferenceImpact?: string;
+        /** Back composition details */
+        backComposition?: string;
+        /**
+         * Shape of the coin (max 50 chars)
+         * @maxLength 50
+         */
+        coinShape?: string;
+        /** Subject of the coin design */
+        subject?: string;
+        /**
+         * Material and finish details (max 50 chars)
+         * @maxLength 50
+         */
+        materialFinish?: string;
+        /**
+         * Contrast style of the design (max 50 chars)
+         * @maxLength 50
+         */
+        contrastStyle?: string;
+        /**
+         * Level of detail in the design (max 50 chars)
+         * @maxLength 50
+         */
+        detailLevel?: string;
+        /** Any prohibited content notes */
+        prohibitedContent?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/design/${id}`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags CoinDesign
+     * @name DesignDelete
+     * @summary Delete a coin design
+     * @request DELETE:/design/{id}
+     * @secure
+     */
+    designDelete: (id: string, params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/design/${id}`,
+        method: "DELETE",
+        secure: true,
+        ...params,
+      }),
+  };
   monitoring = {
     /**
      * No description
@@ -947,6 +1294,383 @@ export class Api<
         path: `/monitoring/simulate-error`,
         method: "GET",
         secure: true,
+        ...params,
+      }),
+  };
+  order = {
+    /**
+     * No description
+     *
+     * @tags Order
+     * @name CreateCreate
+     * @summary Create a new order
+     * @request POST:/order/create
+     * @secure
+     */
+    createCreate: (
+      data: {
+        /** @example "ORD12345" */
+        orderId?: string;
+        /** @example "FedEx" */
+        carrier?: string;
+        /** @example "APPROVED" */
+        status?: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED";
+        /** @example 1.5 */
+        weight?: number;
+        /** @example 100 */
+        totalCoins?: number;
+        /** @example 299.99 */
+        totalPrice?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/order/create`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Order
+     * @name UserList
+     * @summary Get all orders of the authenticated user
+     * @request GET:/order/user
+     * @secure
+     */
+    userList: (params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/order/user`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Order
+     * @name OrderDetail
+     * @summary Get an order by ID (authenticated user)
+     * @request GET:/order/{orderId}
+     * @secure
+     */
+    orderDetail: (orderId: string, params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/order/${orderId}`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Order
+     * @name AdminAllList
+     * @summary (Admin) Get all orders
+     * @request GET:/order/admin/all
+     * @secure
+     */
+    adminAllList: (params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/order/admin/all`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Order
+     * @name AdminStatusPartialUpdate
+     * @summary (Admin) Update order status
+     * @request PATCH:/order/admin/{orderId}/status
+     * @secure
+     */
+    adminStatusPartialUpdate: (
+      orderId: string,
+      data: {
+        /** @example "COMPLETED" */
+        status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED";
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void>({
+        path: `/order/admin/${orderId}/status`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+  };
+  package = {
+    /**
+     * No description
+     *
+     * @tags package
+     * @name UserDetail
+     * @summary Get a package by ID (authenticated user)
+     * @request GET:/package/user/{packageId}
+     * @secure
+     */
+    userDetail: (packageId: string, params: RequestParams = {}) =>
+      this.request<any, any>({
+        path: `/package/user/${packageId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags package
+     * @name PackageDetail
+     * @summary Get any package by ID (admin only)
+     * @request GET:/package/{packageId}
+     * @secure
+     */
+    packageDetail: (packageId: string, params: RequestParams = {}) =>
+      this.request<any, any>({
+        path: `/package/${packageId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+  };
+  quote = {
+    /**
+     * No description
+     *
+     * @tags Quote
+     * @name UserDetail
+     * @summary Get a single quote of the authenticated user
+     * @request GET:/quote/user/{id}
+     * @secure
+     */
+    userDetail: (id: string, params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/quote/user/${id}`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Quote
+     * @name UserList
+     * @summary Get all quotes of authenticated user
+     * @request GET:/quote/user
+     * @secure
+     */
+    userList: (params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/quote/user`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Quote
+     * @name AdminList
+     * @summary (Admin) Get all quotes
+     * @request GET:/quote/admin
+     * @secure
+     */
+    adminList: (params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/quote/admin`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Quote
+     * @name AdminDetail
+     * @summary (Admin) Get a single quote by ID
+     * @request GET:/quote/admin/{id}
+     * @secure
+     */
+    adminDetail: (id: string, params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/quote/admin/${id}`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Quote
+     * @name AdminDelete
+     * @summary (Admin) Delete a quote
+     * @request DELETE:/quote/admin/{id}
+     * @secure
+     */
+    adminDelete: (id: string, params: RequestParams = {}) =>
+      this.request<
+        {
+          success?: boolean;
+          message?: string;
+        },
+        void
+      >({
+        path: `/quote/admin/${id}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Quote
+     * @name AdminApproveCreate
+     * @summary (Admin) Approve a quote and create an order
+     * @request POST:/quote/admin/{id}/approve
+     * @secure
+     */
+    adminApproveCreate: (
+      id: string,
+      data: {
+        /**
+         * The amount to be approved for the quote
+         * @example 199.99
+         */
+        amount?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          success?: boolean;
+          message?: string;
+          /** The updated quote with linked order */
+          data?: object;
+        },
+        void
+      >({
+        path: `/quote/admin/${id}/approve`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+  };
+  s3 = {
+    /**
+     * No description
+     *
+     * @tags S3
+     * @name UploadUrlCreate
+     * @summary Get a presigned URL for uploading a file to S3
+     * @request POST:/s3/upload-url
+     * @secure
+     */
+    uploadUrlCreate: (
+      data: {
+        /** @example "image.png" */
+        fileName: string;
+        /** @example "image/png" */
+        mimeType: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** The presigned upload URL */
+          url?: string;
+          /** The S3 object key */
+          key?: string;
+        },
+        void
+      >({
+        path: `/s3/upload-url`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags S3
+     * @name RetrieveUrlDetail
+     * @summary Get a presigned URL for downloading a file from S3
+     * @request GET:/s3/retrieve-url/{fileName}
+     * @secure
+     */
+    retrieveUrlDetail: (fileName: string, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** The presigned download URL */
+          url?: string;
+        },
+        void
+      >({
+        path: `/s3/retrieve-url/${fileName}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags S3
+     * @name DeleteFileDelete
+     * @summary Delete a file from S3 by key
+     * @request DELETE:/s3/delete-file
+     * @secure
+     */
+    deleteFileDelete: (
+      data: {
+        /**
+         * The S3 object key to delete
+         * @example "1609459200000_image.png"
+         */
+        key: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example "File deleted successfully" */
+          message?: string;
+        },
+        void
+      >({
+        path: `/s3/delete-file`,
+        method: "DELETE",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
         ...params,
       }),
   };
