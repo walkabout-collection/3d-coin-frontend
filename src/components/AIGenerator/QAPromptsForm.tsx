@@ -45,6 +45,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
     formState: { errors },
     setValue,
     watch,
+    setFocus,
   } = useForm<QAFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -133,16 +134,20 @@ const submitHandler = async (data: QAFormData) => {
     console.error("Failed to submit coin specification:", err);
   }
 };
+const handleError = (errors: any) => {
+  const firstErrorField = Object.keys(errors)[0] as keyof QAFormData;
 
-
+  if (firstErrorField) {
+    setFocus(firstErrorField); 
+  }
+};
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-primary mb-2 mt-4">ANSWER GUIDED Q&A</h1>
         <h2 className="text-3xl font-semibold text-primary">PROMPTS</h2>
       </div>
-
-      <form onSubmit={handleSubmit(submitHandler)} className="space-y-8">
+      <form onSubmit={handleSubmit(submitHandler, handleError)} className="space-y-8">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">1. COIN SHAPE:</h3>

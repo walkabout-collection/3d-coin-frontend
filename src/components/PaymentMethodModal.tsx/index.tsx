@@ -7,7 +7,7 @@ import { paymentOptions } from "./data";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPaymentSelect: (option: PaymentOption) => void;
+  onPaymentSelect: (option: PaymentOption, amount: number) => void;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -16,17 +16,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onPaymentSelect,
 }) => {
   const [selected, setSelected] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
 
   const handleSelect = (option: PaymentOption) => {
     setSelected(option.id);
-    onPaymentSelect(option);
+  };
+
+  const handleContinue = () => {
+    const selectedOption = paymentOptions.find((opt) => opt.id === selected);
+    if (selectedOption && amount) {
+      onPaymentSelect(selectedOption, parseFloat(amount));
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-8 w-[420px] h-[380px] shadow-lg relative flex flex-col">
+    <div className="fixed inset-0  bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-8 w-[420px] h-[420px] shadow-lg relative flex flex-col">
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-6 text-gray-500 hover:text-gray-700 cursor-pointer"
@@ -46,7 +55,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           Select one option to continue
         </p>
 
-        <div className="grid grid-cols-3 gap-4 mt-8">
+        {/* Payment Options */}
+        <div className="grid grid-cols-3 gap-4 mt-4">
           {paymentOptions.map((option) => (
             <label
               key={option.id}
@@ -80,11 +90,26 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           ))}
         </div>
 
+        {/* Amount Input */}
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Enter Total Coin Amount
+          </label>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
+            placeholder="Enter amount"
+          />
+        </div>
+
+        {/* Continue Button */}
         <button
-          onClick={onClose}
-          disabled={!selected}
-          className={`mt-auto mx-auto py-2 rounded-full font-medium max-w-[180px] px-6 transition c${
-            selected
+          onClick={handleContinue}
+          disabled={!selected || !amount}
+          className={`mt-auto mx-auto py-2 rounded-full font-medium max-w-[180px] px-6 transition ${
+            selected && amount
               ? "bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978] text-white shadow-[0_4px_12px_rgba(0,0,0,0.6)] hover:from-[#193359] hover:via-[#244978] hover:to-[#2d5b94] cursor-pointer"
               : "bg-gray-300 text-gray-600 cursor-not-allowed"
           }`}
