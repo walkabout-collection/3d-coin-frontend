@@ -9,7 +9,7 @@ import {
   exampleTexts,
 } from './data';
 import { QAFormData, QAPromptsFormProps } from './types';
-import { useForm } from 'react-hook-form';
+import { FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Input from '../common/input';
@@ -134,7 +134,7 @@ const submitHandler = async (data: QAFormData) => {
     console.error("Failed to submit coin specification:", err);
   }
 };
-const handleError = (errors: any) => {
+const handleError = (errors: FieldErrors<QAFormData>) => {
   const firstErrorField = Object.keys(errors)[0] as keyof QAFormData;
 
   if (firstErrorField) {
