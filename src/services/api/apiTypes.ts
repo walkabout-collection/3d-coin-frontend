@@ -57,7 +57,7 @@ export interface ApiConfig<SecurityDataType = unknown> {
   baseUrl?: string;
   baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
   securityWorker?: (
-    securityData: SecurityDataType | null,
+    securityData: SecurityDataType | null
   ) => Promise<RequestParams | void> | RequestParams | void;
   customFetch?: typeof fetch;
 }
@@ -103,7 +103,9 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected encodeQueryParam(key: string, value: any) {
     const encodedKey = encodeURIComponent(key);
-    return `${encodedKey}=${encodeURIComponent(typeof value === "number" ? value : `${value}`)}`;
+    return `${encodedKey}=${encodeURIComponent(
+      typeof value === "number" ? value : `${value}`
+    )}`;
   }
 
   protected addQueryParam(query: QueryParamsType, key: string) {
@@ -118,13 +120,13 @@ export class HttpClient<SecurityDataType = unknown> {
   protected toQueryString(rawQuery?: QueryParamsType): string {
     const query = rawQuery || {};
     const keys = Object.keys(query).filter(
-      (key) => "undefined" !== typeof query[key],
+      (key) => "undefined" !== typeof query[key]
     );
     return keys
       .map((key) =>
         Array.isArray(query[key])
           ? this.addArrayQueryParam(query, key)
-          : this.addQueryParam(query, key),
+          : this.addQueryParam(query, key)
       )
       .join("&");
   }
@@ -159,8 +161,8 @@ export class HttpClient<SecurityDataType = unknown> {
           property instanceof Blob
             ? property
             : typeof property === "object" && property !== null
-              ? JSON.stringify(property)
-              : `${property}`,
+            ? JSON.stringify(property)
+            : `${property}`
         );
         return formData;
       }, new FormData());
@@ -170,7 +172,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected mergeRequestParams(
     params1: RequestParams,
-    params2?: RequestParams,
+    params2?: RequestParams
   ): RequestParams {
     return {
       ...this.baseApiParams,
@@ -185,7 +187,7 @@ export class HttpClient<SecurityDataType = unknown> {
   }
 
   protected createAbortSignal = (
-    cancelToken: CancelToken,
+    cancelToken: CancelToken
   ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
       const abortController = this.abortControllers.get(cancelToken);
@@ -231,7 +233,9 @@ export class HttpClient<SecurityDataType = unknown> {
     const responseFormat = format || requestParams.format;
 
     return this.customFetch(
-      `${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`,
+      `${baseUrl || this.baseUrl || ""}${path}${
+        queryString ? `?${queryString}` : ""
+      }`,
       {
         ...requestParams,
         headers: {
@@ -248,7 +252,7 @@ export class HttpClient<SecurityDataType = unknown> {
           typeof body === "undefined" || body === null
             ? null
             : payloadFormatter(body),
-      },
+      }
     ).then(async (response) => {
       const r = response as HttpResponse<T, E>;
       r.data = null as unknown as T;
@@ -290,7 +294,7 @@ export class HttpClient<SecurityDataType = unknown> {
  * API documentation for Express TypeScript Boilerplate
  */
 export class Api<
-  SecurityDataType extends unknown,
+  SecurityDataType extends unknown
 > extends HttpClient<SecurityDataType> {
   aiFlow = {
     /**
@@ -322,7 +326,7 @@ export class Api<
          */
         image?: File;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -368,7 +372,7 @@ export class Api<
         /** Optional custom text prompt. If not provided, the default predefined prompt will be used. */
         prompt?: string | null;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -412,9 +416,9 @@ export class Api<
          */
         imageUrl?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
-      this.request<void, any>({
+      this.request<{ variants: string[] }, any>({
         path: `/ai-flow/generate-from-prompt`,
         method: "POST",
         body: data,
@@ -442,7 +446,7 @@ export class Api<
         /** Optional updates for regeneration */
         updates?: object;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, any>({
         path: `/ai-flow/regenerate`,
@@ -477,7 +481,7 @@ export class Api<
         contrastStyle?: string;
         detailLevel?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, any>({
         path: `/ai-flow/coin-specification`,
@@ -505,7 +509,7 @@ export class Api<
          */
         designId: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, any>({
         path: `/ai-flow/preview`,
@@ -531,7 +535,7 @@ export class Api<
         /** Base64-encoded images selected by the user */
         selectedVariants: string[];
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, any>({
         path: `/ai-flow/save-design`,
@@ -558,7 +562,7 @@ export class Api<
         /** Instructions for the designer */
         instructions?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, any>({
         path: `/ai-flow/send-to-designer`,
@@ -593,7 +597,7 @@ export class Api<
          */
         password: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -634,7 +638,7 @@ export class Api<
         /** @format password */
         password: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -672,7 +676,7 @@ export class Api<
       data: {
         refreshToken: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/auth/refresh-token`,
@@ -713,7 +717,7 @@ export class Api<
       data: {
         token: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/auth/verify-email`,
@@ -738,7 +742,7 @@ export class Api<
         /** @format email */
         email: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, any>({
         path: `/auth/forgot-password`,
@@ -767,7 +771,7 @@ export class Api<
          */
         password: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/auth/reset-password`,
@@ -806,7 +810,7 @@ export class Api<
          */
         image?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -1002,7 +1006,7 @@ export class Api<
         /** Any text to be printed or included in the packaging */
         text?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/design/create`,
@@ -1134,7 +1138,7 @@ export class Api<
         /** Any prohibited content notes */
         prohibitedContent?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/design/${id}`,
@@ -1269,7 +1273,7 @@ export class Api<
       data: {
         alerts?: object[];
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/monitoring/alerts`,
@@ -1322,7 +1326,7 @@ export class Api<
         /** @example 299.99 */
         totalPrice?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/order/create`,
@@ -1399,7 +1403,7 @@ export class Api<
         /** @example "COMPLETED" */
         status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED";
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/order/admin/${orderId}/status`,
@@ -1558,7 +1562,7 @@ export class Api<
          */
         amount?: number;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -1595,7 +1599,7 @@ export class Api<
         /** @example "image/png" */
         mimeType: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -1656,7 +1660,7 @@ export class Api<
          */
         key: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<
         {
@@ -1719,7 +1723,7 @@ export class Api<
         contactNumber?: string;
         image?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/api/user`,
@@ -1770,7 +1774,7 @@ export class Api<
         contactNumber?: string;
         image?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/api/user/${id}`,
@@ -1836,7 +1840,7 @@ export class Api<
         contactNumber?: string;
         image?: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/api/user/profile`,
@@ -1866,7 +1870,7 @@ export class Api<
          */
         newPassword: string;
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, void>({
         path: `/api/user/password`,
