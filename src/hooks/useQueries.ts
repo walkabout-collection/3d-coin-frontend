@@ -6,6 +6,7 @@ import {
 import {
   coinSpecification,
   createContact,
+  createDesign,
   generateFromPrompt,
   login,
   logout,
@@ -219,5 +220,21 @@ export const useCreateContact = (
     Parameters<typeof createContact>[0]
   >({
     mutationFn: createContact,
+    ...options,
+  });
+// create design
+export const useCreateDesign = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.design.createCreate>>,
+    Error,
+    Parameters<typeof api.design.createCreate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.design.createCreate>>,
+    Error,
+    Parameters<typeof api.design.createCreate>[0]
+  >({
+    mutationFn: createDesign,
     ...options,
   });

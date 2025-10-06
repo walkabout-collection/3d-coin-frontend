@@ -4,50 +4,97 @@ import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
 import { PaymentOption } from "@/src/containers/payment-method/types";
-import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import Input from "@/src/components/common/input";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { useCreateDesign } from "@/src/hooks/useQueries";
+import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 
 const DesignSummarySection = () => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(
-    null
-  );
+  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(null);
   const [feedback, setFeedback] = useState<string>("");
+  const [amount, setAmount] = useState<number | null>(null);
   const isLoggedIn = false;
 
   const router = useRouter();
+  const { mutate: createDesign, isPending, error } = useCreateDesign({
+    onSuccess: () => {
+      toast.success("Design submitted successfully!");
+      setShowPaymentModal(false);
+      setSelectedPayment(null);
+      setAmount(null);
+      setFeedback("");
+      router.push("/success");
+    },
+    onError: (err) => {
+      console.error("CreateDesign error:", err); 
+      toast.error("Failed to submit design: " + err.message);
+    },
+  });
 
-  const { dimensions, material, edgeType, artwork, packaging } =
+  const { dimensions, material, edgeType, artwork, packaging, textRings } =
     useStandardBuilderStore();
-
-    // console.table({dimensions, material, edgeType, artwork, packaging});
 
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
   };
 
-  const handleSubmitForQuote = () => {
-    if (!selectedPayment) {
+  const handleSubmitForQuote = (paymentOption?: PaymentOption, amountValue?: number) => {
+    const payment = paymentOption || selectedPayment;
+    const qty = amountValue !== undefined ? amountValue : amount;
+
+    console.log("handleSubmitForQuote called with:", { payment, qty }); 
+
+    if (!payment || qty === null) {
+      console.log("Opening PaymentModal due to missing payment or amount"); 
       setShowPaymentModal(true);
       return;
     }
-    console.log("Submitting quote with payment method:", selectedPayment);
+
+    const designData = {
+      name: "Custom Coin Design",
+      status: "SUBMITTED" as const,
+      totalCoins: qty,
+      email: "user@example.com", 
+      method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
+      feedback: feedback || undefined,
+      generatorPrompt: artwork.front.prompt || artwork.back.prompt || undefined,
+      generatorImage: artwork.front.previewImage || artwork.back.previewImage || undefined,
+      frontImage: artwork.front.previewImage || undefined,
+      frontDescription: artwork.front.prompt || undefined,
+      frontText: textRings.front.top || textRings.front.bottom || undefined,
+     
+
+      backImage: artwork.back.previewImage || undefined,
+      backDescription: artwork.back.prompt || undefined,
+      backText: textRings.back.top || textRings.back.bottom || undefined,
+    
+      coinShape: dimensions.coinDiameter ? `Diameter: ${dimensions.coinDiameter}` : undefined,
+      materialFinish: material || undefined,
+      packaging: packaging.preferences ? true : false,
+      description: packaging.preferences || undefined,
+      // referenceImg: undefined,
+      text: packaging.backText || undefined,
+    };
+
+    console.log("Submitting designData:", designData); 
+
+    createDesign(designData);
   };
 
-  const handlePaymentSelect = (option: PaymentOption) => {
-    setSelectedPayment(option);
+  const handlePaymentSelect = (option: PaymentOption, amount: number) => {
+    console.log("handlePaymentSelect called with:", { option, amount }); 
+    handleSubmitForQuote(option, amount);
   };
 
   const handleModalClose = () => {
     setShowPaymentModal(false);
   };
 
-
   const handleFirstButtonAction = async () => {
-    //  dummy API call
     try {
       const response = await fetch("https://dummyapi.example.com/submit", {
         method: "POST",
@@ -68,7 +115,6 @@ const DesignSummarySection = () => {
       console.error("Error in dummy API call:", error);
     }
   };
- 
 
   const summaryOptions = [
     {
@@ -86,7 +132,6 @@ const DesignSummarySection = () => {
       type: "material",
       image: "/images/home/dimensions.png",
       path: "/standard-builder/material",
-
     },
     {
       id: 3,
@@ -95,12 +140,11 @@ const DesignSummarySection = () => {
       type: "edge",
       image: "/images/home/dimensions.png",
       path: "/standard-builder/edge-type",
-
     },
     {
       id: 4,
       label: "Artwork",
-      value: `Front: ${artwork.front.prompt || artwork.front.previewImage|| "N/A"}, Back: ${
+      value: `Front: ${artwork.front.prompt || artwork.front.previewImage || "N/A"}, Back: ${
         artwork.back.prompt || artwork.back.previewImage || "N/A"
       }`,
       type: "artwork",
@@ -191,7 +235,7 @@ const DesignSummarySection = () => {
             key={btn.id}
             type="button"
             variant="ternary"
-             onClick={() => {
+            onClick={() => {
               handleButtonClick(btn.id);
               if (index === 0) {
                 handleFirstButtonAction();
@@ -245,10 +289,11 @@ const DesignSummarySection = () => {
         <Button
           type="button"
           variant="primary"
-          onClick={handleSubmitForQuote}
+          onClick={() => handleSubmitForQuote()}
           className="max-w-[280px] w-full text-lg font-medium"
+          disabled={isPending}
         >
-          SUBMIT FOR QUOTE
+          {isPending ? "Submitting..." : "SUBMIT FOR QUOTE"}
         </Button>
       </div>
 

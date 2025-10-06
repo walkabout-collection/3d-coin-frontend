@@ -120,6 +120,15 @@ export const sendToDesigner = async (
   const res = await apiClient.post("/ai-flow/send-to-designer", data);
   return res.data;
 };
+// submit design
+
+export const createDesign = async (
+  data: Parameters<typeof api.design.createCreate>[0]
+): Promise<Awaited<ReturnType<typeof api.design.createCreate>>> => {
+    const res = await apiClient.post("/design/create", data);
+
+    return res.data;
+  };
 
 // --- Contact ---
 export const createContact = async (data: {
