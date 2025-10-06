@@ -63,7 +63,7 @@ export const useAiFlowStore = create<AiFlowStore>()(
           newStack.pop();
           const previous = newStack[newStack.length - 1] || "main";
 
-          const newState: GeneratorState = { ...initialGeneratorState };
+          let newState: GeneratorState = { ...initialGeneratorState };
           if (previous === "upload") newState.showUpload = true;
           if (previous === "guide") newState.showGuide = true;
           if (previous === "design") newState.showDesignInterface = true;
@@ -88,7 +88,9 @@ export const useAiFlowStore = create<AiFlowStore>()(
         historyStack: ["main"],
       }),
     }),
-    { name: "ai-flow-storage" }
+    {
+      name: "ai-flow-storage",
+      // skipHydration: true,
+    }
   )
 );
-
