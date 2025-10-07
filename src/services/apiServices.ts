@@ -142,3 +142,33 @@ export const createContact = async (data: {
   const res = await apiClient.post("/contact/create", data);
   return res.data;
 };
+
+// get quote admin
+export const getAdminQuotes = async (): Promise<
+  Awaited<ReturnType<typeof api.quote.adminList>>["data"]
+> => {
+  const res = await apiClient.get("/quote/admin");
+  return res.data;
+};
+// delete quote
+export const deleteAdminQuote = async (
+  id: string
+): Promise<Awaited<ReturnType<typeof api.quote.adminDelete>>["data"]> => {
+  const res = await apiClient.delete(`/quote/admin/${id}`);
+  return res.data;
+};
+// --- Approve Admin Quote ---
+export const approveAdminQuote = async (
+  id: string,
+  amount: number
+): Promise<Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"]> => {
+  const res = await apiClient.post(`/quote/admin/${id}/approve`, { amount });
+  return res.data;
+};
+// --- Get Admin Quote by ID ---
+export const getAdminQuoteById = async (
+  id: string
+): Promise<Awaited<ReturnType<typeof api.quote.adminDetail>>["data"]> => {
+  const res = await apiClient.get(`/quote/admin/${id}`);
+  return res.data;
+};

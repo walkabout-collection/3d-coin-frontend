@@ -2,12 +2,17 @@ import {
   useQuery,
   useMutation,
   UseMutationOptions,
+  UseQueryOptions,
 } from "@tanstack/react-query";
 import {
+  approveAdminQuote,
   coinSpecification,
   createContact,
   createDesign,
+  deleteAdminQuote,
   generateFromPrompt,
+  getAdminQuoteById,
+  getAdminQuotes,
   login,
   logout,
   previewList,
@@ -236,5 +241,72 @@ export const useCreateDesign = (
     Parameters<typeof api.design.createCreate>[0]
   >({
     mutationFn: createDesign,
+    ...options,
+  });
+
+
+  // get admin quote
+export const useAdminQuotes = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof api.quote.adminList>>["data"],
+    Error
+  >
+) =>
+  useQuery<
+    Awaited<ReturnType<typeof api.quote.adminList>>["data"],
+    Error
+  >({
+    queryKey: ["adminQuotes"],
+    queryFn: getAdminQuotes,
+    ...options,
+  });
+
+// Delete Admin Quote
+export const useDeleteAdminQuote = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.quote.adminDelete>>["data"],
+    Error,
+    string
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.quote.adminDelete>>["data"],
+    Error,
+    string
+  >({
+    mutationFn: (id: string) => deleteAdminQuote(id),
+    ...options,
+  });
+// --- Approve Admin Quote ---
+export const useApproveAdminQuote = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"],
+    Error,
+    { id: string; amount: number }
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"],
+    Error,
+    { id: string; amount: number }
+  >({
+    mutationFn: ({ id, amount }) => approveAdminQuote(id, amount),
+    ...options,
+  });
+// --- Get Admin Quote by ID ---
+export const useAdminQuoteById = (
+  id: string,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof api.quote.adminDetail>>["data"],
+    Error
+  >
+) =>
+  useQuery<
+    Awaited<ReturnType<typeof api.quote.adminDetail>>["data"],
+    Error
+  >({
+    queryKey: ["adminQuote", id],
+    queryFn: () => getAdminQuoteById(id),
+    enabled: !!id, 
     ...options,
   });
