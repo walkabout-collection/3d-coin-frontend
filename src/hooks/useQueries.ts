@@ -245,7 +245,7 @@ export const useCreateDesign = (
   });
 
 
-  // get admin quote
+  // get all admin quote
 export const useAdminQuotes = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.quote.adminList>>["data"],

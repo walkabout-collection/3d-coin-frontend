@@ -143,12 +143,17 @@ export const createContact = async (data: {
   return res.data;
 };
 
-// get quote admin
+// get all quote admin
 export const getAdminQuotes = async (): Promise<
   Awaited<ReturnType<typeof api.quote.adminList>>["data"]
 > => {
-  const res = await apiClient.get("/quote/admin");
-  return res.data;
+  const res =await apiClient.get("/quote/admin", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+  return res.data.data;
 };
 // delete quote
 export const deleteAdminQuote = async (

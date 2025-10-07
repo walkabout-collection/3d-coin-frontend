@@ -5,4 +5,7 @@ export interface Quote {
   email: string;
   label: string;
   createdAt: string;
+  status: string;
+  user: any;
+  orderId: string;
 }

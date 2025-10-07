@@ -1,5 +1,8 @@
 export interface Quote {
-  id: number;
+  status: string;
+  user: any;
+  orderId: string;
+  id: string;
   name: string;
   orderNo: string;
   email: string;
