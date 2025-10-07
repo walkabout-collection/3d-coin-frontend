@@ -376,6 +376,7 @@ export class Api<
     ) =>
       this.request<
         {
+          [x: string]: any;
           /** @example true */
           success?: boolean;
           data?: {

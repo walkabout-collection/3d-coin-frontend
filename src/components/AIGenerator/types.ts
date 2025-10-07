@@ -43,13 +43,13 @@ export interface QAFormData {
   coinStyles: string;
   detailLevel: string;
   frontDescription: string;
-  frontReferenceImage: File ; 
+  frontReferenceImage: string ; 
   frontReferenceImageImpact: string;
   frontTextInsideArtwork: string;
   frontTextStyle: string;
   frontCompositionNotes: string;
   backDescription: string;
-  backReferenceImage: File; 
+  backReferenceImage: string; 
   backReferenceImageImpact: string;
   backTextInsideArtwork: string;
   backTextStyle: string;
