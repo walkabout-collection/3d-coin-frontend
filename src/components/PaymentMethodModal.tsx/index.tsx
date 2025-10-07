@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import { paymentOptions } from "./data";
@@ -7,8 +7,16 @@ import { paymentOptions } from "./data";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPaymentSelect: (option: PaymentOption, amount: number) => void;
+  onPaymentSelect: (option: PaymentOption, amount: number, email: string) => void;
 }
+
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
@@ -17,6 +25,39 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [selected, setSelected] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState<{ email?: string } | null>(null);
+
+   useEffect(() => {
+    const checkAuth = () => {
+      const token = getCookie("token");
+      setIsLoggedIn(!!token);
+    };
+
+    const updateUserData = () => {
+      const storedData = getCookie("user"); 
+      if (storedData) {
+        try {
+          setUserData(JSON.parse(decodeURIComponent(storedData)));
+        } catch (error) {
+          console.error("Failed to parse userData from cookie:", error);
+          setUserData(null);
+        }
+      } else {
+        setUserData(null);
+      }
+    };
+
+    checkAuth();
+    updateUserData();
+    window.addEventListener("authChanged", checkAuth);
+    window.addEventListener("userChanged", updateUserData);
+    return () => {
+      window.removeEventListener("authChanged", checkAuth);
+      window.removeEventListener("userChanged", updateUserData);
+    };
+  }, []);
 
   const handleSelect = (option: PaymentOption) => {
     setSelected(option.id);
@@ -24,8 +65,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleContinue = () => {
     const selectedOption = paymentOptions.find((opt) => opt.id === selected);
-    if (selectedOption && amount) {
-      onPaymentSelect(selectedOption, parseFloat(amount));
+    const userEmail = isLoggedIn ? userData?.email || "" : email;
+    if (selectedOption && amount && userEmail) {
+      onPaymentSelect(selectedOption, parseFloat(amount), userEmail);
       onClose();
     }
   };
@@ -34,7 +76,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-8 w-[420px] h-[420px] shadow-lg relative flex flex-col">
+      <div className="bg-white rounded-xl p-8 w-[420px] h-[450px] shadow-lg relative flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -104,12 +146,27 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           />
         </div>
 
+        {!isLoggedIn && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Enter Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
+              placeholder="Enter your email"
+            />
+          </div>
+        )}
+
         {/* Continue Button */}
         <button
           onClick={handleContinue}
-          disabled={!selected || !amount}
-          className={`mt-auto mx-auto py-2 rounded-full font-medium max-w-[180px] px-6 transition ${
-            selected && amount
+          disabled={!selected || !amount || (!isLoggedIn && !email)}
+          className={`mt-3 mx-auto py-2 rounded-full font-medium max-w-[180px] px-6 transition ${
+            selected && amount && (isLoggedIn || email)
               ? "bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978] text-white shadow-[0_4px_12px_rgba(0,0,0,0.6)] hover:from-[#193359] hover:via-[#244978] hover:to-[#2d5b94] cursor-pointer"
               : "bg-gray-300 text-gray-600 cursor-not-allowed"
           }`}

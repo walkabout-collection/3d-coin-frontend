@@ -50,7 +50,7 @@ const DesignTeamForm: React.FC = () => {
       // Step 1: Upload image if exists
       if (data.image) {
         const uploadRes = await uploadImageMutation({ image: data.image });
-        imageUrl = uploadRes.url; // returned from API
+        imageUrl = uploadRes.url; 
       }
 
       // Step 2: Submit contact form with uploaded image URL
