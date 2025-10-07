@@ -7,8 +7,9 @@ import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
 import AddQuoteModal from "@/src/components/admin/AddQuoteModal";
 import ApproveQuoteModal from "@/src/components/admin/ApproveQuoteModal";
-import { useAdminQuotes } from "@/src/hooks/useQueries";
+import { useAdminQuotes, useDeleteAdminQuote } from "@/src/hooks/useQueries";
 import { quotesCards } from "./data";
+import { toast } from "react-toastify";
 
 const AdminQuotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,21 +18,25 @@ const AdminQuotes: React.FC = () => {
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
 
-  const { data: quotesData = [], isLoading, isError } = useAdminQuotes();
+  const { data: quotesData = [], isLoading, isError, refetch } = useAdminQuotes();
+
+  const { mutate: deleteQuote, isPending: isDeleting } = useDeleteAdminQuote({
+    onSuccess: () => {
+      refetch(); 
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete quote: ${err.message}`);
+    },
+  });
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort.length) return dataToSort;
-
     return [...dataToSort].sort((a, b) => {
       switch (sortValue) {
         case "newest":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case "oldest":
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         default:
           return 0;
       }
@@ -47,7 +52,6 @@ const AdminQuotes: React.FC = () => {
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
-
     return sortedDataState.filter((row) => {
       const searchableFields = [
         row.user?.firstName,
@@ -57,10 +61,9 @@ const AdminQuotes: React.FC = () => {
         row.orderId,
         row.status,
       ]
-        .filter(Boolean) 
+        .filter(Boolean)
         .join(" ")
         .toLowerCase();
-
       return searchableFields.includes(searchTerm.toLowerCase());
     });
   }, [sortedDataState, searchTerm]);
@@ -81,8 +84,7 @@ const AdminQuotes: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    console.log(`Deleting quote ${id}`);
-    setSortedDataState((prev) => prev.filter((quote) => quote.id !== id));
+      deleteQuote(id);
   };
 
   const handleApproveClose = () => {
@@ -112,7 +114,7 @@ const AdminQuotes: React.FC = () => {
   return (
     <div className="min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Quotes</h1>
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {quotesCards.map((card) => (
           <div
             key={card.id}
@@ -141,11 +143,7 @@ const AdminQuotes: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between mb-6 mt-10">
-        <Search
-          placeholder="SEARCH"
-          onSearch={handleSearch}
-          variant="primary"
-        />
+        <Search placeholder="SEARCH" onSearch={handleSearch} variant="primary" />
         <div className="flex items-center gap-6">
           <Button
             type="button"
@@ -213,6 +211,7 @@ const AdminQuotes: React.FC = () => {
                 <button
                   className="p-2 text-xs rounded-full bg-gray-200 cursor-pointer"
                   onClick={() => handleDelete(quote.id)}
+                  disabled={isDeleting}
                 >
                   <Image
                     src="/images/dashboard/delete.svg"
