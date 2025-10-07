@@ -378,6 +378,7 @@ import Image from 'next/image';
 import Button from '../common/button/Button';
 import { useAiFlowStore } from '@/src/store/useAiFlowStore';
 import { useQAPromptsStore } from '@/src/store/useCoinStore';
+import { fr } from 'zod/locales';
 
 const formSchema = z.object({
   coinShape: z.string().min(1, 'Coin shape is required'),
@@ -434,6 +435,8 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
 
   const formData = watch();
   const { setFormData, setInProgress } = useQAPromptsStore();
+  console.log("QA Proceed clicked – Initial form data:", formData);
+ 
   
   const { goTo } = useAiFlowStore();
   const [frontImageUrl, setFrontImageUrl] = useState<string>('');
@@ -448,10 +451,12 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
         backUrl: data.backImageUrl , 
       };
     } catch (error) {
-      console.error('Error fetching S3 images:', error);
+      // console.error('Error fetching S3 images:', error);
       return {
-        frontUrl: 'https://via.placeholder.com/200',
-        backUrl: 'https://via.placeholder.com/200',
+        // frontUrl: 'https://via.placeholder.com/200',
+        // backUrl: 'https://via.placeholder.com/200',
+        frontUrl: '',
+        backUrl: '',
       };
     }
   };
@@ -467,10 +472,14 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
   }, [setValue, setFormData]);
 
   const onFormSubmit = async (data: QAFormData) => {
+      console.log("🚀 QA Proceed clicked – Final form data:", data);
+
     setFormData(data);
     setInProgress(true);
     onSubmit(data);
     goTo('threeDRender');
+      console.log("📦 Stored in Zustand:", useQAPromptsStore.getState().formData);
+
   };
 
   return (

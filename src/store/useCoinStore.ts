@@ -17,6 +17,7 @@ export const useCoinStore = create<CoinStore>((set) => ({
   clearCoinImages: () => set({ coinImages: [] }),
 }));
 
+// coin design interface
 interface CoinStoreState {
   frontImages: string[];
   backImages: string[];
@@ -69,7 +70,7 @@ export const useQAPromptsStore = create<QAPromptsState>()(
       setFormData: (data) =>
         set((state) => ({
           formData: { ...state.formData, ...data },
-          isInProgress: true, // Set in progress when form data is updated
+          isInProgress: true, 
         })),
       setInProgress: (status) => set({ isInProgress: status }),
       resetFormData: () => set({ formData: {}, isInProgress: false }),

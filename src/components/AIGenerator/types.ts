@@ -66,9 +66,9 @@ export interface QAPromptsFormProps {
 
 
 export interface ThreeDRenderProps {
-  frontImage?: string; 
-  backImage?: string;  
-  title?: string;
+  // frontImage?: string; 
+  // backImage?: string;  
+  name?: string;
   onSaveAsDraft?: () => void;
   onContinue?: () => void;
   className?: string;
