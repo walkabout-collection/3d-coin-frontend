@@ -174,6 +174,11 @@ export const approveAdminQuote = async (
 export const getAdminQuoteById = async (
   id: string
 ): Promise<Awaited<ReturnType<typeof api.quote.adminDetail>>["data"]> => {
-  const res = await apiClient.get(`/quote/admin/${id}`);
-  return res.data;
+  const res =await apiClient.get(`/quote/admin/${id}`, {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+  return res.data.data;
 };

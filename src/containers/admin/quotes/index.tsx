@@ -10,6 +10,7 @@ import ApproveQuoteModal from "@/src/components/admin/ApproveQuoteModal";
 import { useAdminQuotes, useDeleteAdminQuote } from "@/src/hooks/useQueries";
 import { quotesCards } from "./data";
 import { toast } from "react-toastify";
+import ViewQuoteModal from "@/src/components/admin/ViewQuoteModal/ViewQuoteModal";
 
 const AdminQuotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,8 +18,14 @@ const AdminQuotes: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
+    const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
+
 
   const { data: quotesData = [], isLoading, isError, refetch } = useAdminQuotes();
+
+const viewQuote = (id: string) => {
+  setViewQuoteId(id);
+};
 
   const { mutate: deleteQuote, isPending: isDeleting } = useDeleteAdminQuote({
     onSuccess: () => {
@@ -71,9 +78,8 @@ const AdminQuotes: React.FC = () => {
   const handleSortChange = (sort: string) => setInternalSort(sort);
   const handleSearch = (term: string) => setSearchTerm(term);
 
-  const viewQuote = (id: string) => {
-    console.log(`Viewing quote ${id}`);
-  };
+ 
+  
 
   const handleApprove = (id: string) => {
     const quote = filteredData.find((q) => q.id === id);
@@ -176,7 +182,7 @@ const AdminQuotes: React.FC = () => {
         filteredData.map((quote) => (
           <div
             key={quote.id}
-            className="bg-gray-100 p-6 rounded-lg flex justify-between items-center"
+            className="bg-gray-100 p-6 rounded-lg flex justify-between items-center mb-2"
           >
             <div className="flex-1">
               <div className="space-y-1">
@@ -251,6 +257,12 @@ const AdminQuotes: React.FC = () => {
           onApprove={handleApproveConfirm}
         />
       )}
+      {viewQuoteId && (
+  <ViewQuoteModal
+    id={viewQuoteId}
+    onClose={() => setViewQuoteId(null)}
+  />
+)}
     </div>
   );
 };
