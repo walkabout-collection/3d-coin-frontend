@@ -1,43 +1,58 @@
-'use client';
-import React, { useState, useMemo } from 'react';
-import { TableProps, TableColumn } from './types';
-import Search from '../../common/search';
-import SortDropdown from '../../common/SortDropdown';
-import StatusBadge from '../StatusBadge';
-import Image from 'next/image';
-import PackagingModal from '../PackagingOrderModal.tsx';
+"use client";
+import React, { useState, useMemo } from "react";
+import { TableProps, TableColumn } from "./types";
+import Search from "../../common/search";
+import SortDropdown from "../../common/SortDropdown";
+import StatusBadge from "../StatusBadge";
+import Image from "next/image";
+import { useUpdateAdminOrderStatus } from "@/src/hooks/useQueries";
+import { toast } from "react-toastify";
+import PackagingModal from "../PackagingOrderModal.tsx";
 
-function AdminTable<T extends { date?: string; order?: string; status?: string; userId?: string | number; packaging?: string; packagingDescription?: string; backText?: string }>({
+function AdminTable<
+  T extends {
+    id?: string;
+    date?: string;
+    order?: string;
+    status?: string;
+    userId?: string | number;
+    packaging?: string;
+    description?: string;
+    text?: string;
+  }
+>({
   columns,
   data,
-  className = '',
+  className = "",
   alternatingRows = true,
   showActions = false,
   actions = [],
   pagination,
   sortable = false,
   sortOptions = [
-    { value: 'newest', label: 'Newest To Oldest' },
-    { value: 'oldest', label: 'Oldest To Newest' },
-    { value: 'order_asc', label: 'Order (Low to High)' },
-    { value: 'order_desc', label: 'Order (High to Low)' },
+    { value: "newest", label: "Newest To Oldest" },
+    { value: "oldest", label: "Oldest To Newest" },
+    { value: "order_asc", label: "Order (Low to High)" },
+    { value: "order_desc", label: "Order (High to Low)" },
   ],
   currentSort,
   onSortChange,
   searchable = false,
   onSearch,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = "Search...",
   loading = false,
-  emptyMessage = 'No data available',
-  headerClassName = '',
-  rowClassName = '',
-  cellClassName = '',
+  emptyMessage = "No data available",
+  headerClassName = "",
+  rowClassName = "",
+  cellClassName = "",
 }: TableProps<T>) {
-  const [internalSort, setInternalSort] = useState(currentSort || '');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [internalSort, setInternalSort] = useState(currentSort || "");
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortedDataState, setSortedDataState] = useState<T[]>(data);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<T | null>(null);
+
+  const { mutate: updateStatus } = useUpdateAdminOrderStatus();
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
@@ -60,6 +75,23 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     if (onSortChange) {
       onSortChange(sort);
     }
+    const sortedData = [...data];
+    if (sort === "newest") {
+      sortedData.sort(
+        (a, b) =>
+          new Date(b.date || "").getTime() - new Date(a.date || "").getTime()
+      );
+    } else if (sort === "oldest") {
+      sortedData.sort(
+        (a, b) =>
+          new Date(a.date || "").getTime() - new Date(b.date || "").getTime()
+      );
+    } else if (sort === "order_asc") {
+      sortedData.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+    } else if (sort === "order_desc") {
+      sortedData.sort((a, b) => Number(b.order || 0) - Number(b.order || 0));
+    }
+    setSortedDataState(sortedData);
   };
 
   const handleSearch = (term: string) => {
@@ -67,10 +99,6 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     if (onSearch) {
       onSearch(term);
     }
-  };
-
-  const handleSortData = (sortedData: T[]) => {
-    setSortedDataState(sortedData);
   };
 
   const openModal = (row: T) => {
@@ -93,24 +121,49 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
       return column.render(value, row, index);
     }
 
-    if (String(column.key).toLowerCase().includes('status')) {
+    if (String(column.key).toLowerCase().includes("status")) {
       return (
         <StatusBadge
           status={String(value)}
           editable={true}
           onStatusChange={(newStatus) => {
-            const updatedData = [...sortedDataState];
-            updatedData[index] = { ...updatedData[index], status: newStatus };
-            setSortedDataState(updatedData);
+            if (row.id) {
+              updateStatus(
+                {
+                  orderId: row.id,
+                  data: {
+                    status: newStatus.toUpperCase() as
+                      | "PENDING"
+                      | "APPROVED"
+                      | "CANCELLED"
+                      | "COMPLETED",
+                  },
+                },
+                {
+                  onSuccess: () => {
+                    toast.success("Status updated successfully");
+                    const updatedData = [...sortedDataState];
+                    updatedData[index] = {
+                      ...updatedData[index],
+                      status: newStatus,
+                    };
+                    setSortedDataState(updatedData);
+                  },
+                  onError: () => {
+                    toast.error("Failed to update status");
+                  },
+                }
+              );
+            }
           }}
           userId={row.userId}
         />
       );
     }
 
-    if (String(column.key).toLowerCase().includes('packaging')) {
+    if (String(column.key).toLowerCase().includes("packaging")) {
       const packagingValue = String(value);
-      return packagingValue === 'YES' ? (
+      return packagingValue === "YES" ? (
         <div className="flex items-center">
           <span className="text-sm mr-2">{packagingValue}</span>
           <Image
@@ -125,6 +178,15 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
       ) : (
         <span className="text-sm">{packagingValue}</span>
       );
+    }
+
+    if (String(column.key).toLowerCase().includes("date")) {
+      const dateValue = new Date(String(value)).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+      return <span className="text-sm">{dateValue}</span>;
     }
 
     return value as React.ReactNode;
@@ -150,7 +212,8 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
     return pageNumbers;
   };
 
-  const isAdmin = true; 
+  const isAdmin = true;
+
   return (
     <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-6">
@@ -170,7 +233,7 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
               value={internalSort}
               onChange={handleSortChange}
               data={data}
-              onSort={handleSortData}
+              onSort={setSortedDataState}
               showLabel={true}
               labelText="Sort:"
             />
@@ -184,8 +247,10 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${column.width || ''}`}
-                  style={{ textAlign: column.align || 'left' }}
+                  className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${
+                    column.width || ""
+                  }`}
+                  style={{ textAlign: column.align || "left" }}
                 >
                   {column.label}
                 </th>
@@ -221,14 +286,16 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
                 <tr
                   key={index}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    alternatingRows && index % 2 === 1 ? 'bg-gray-100' : 'bg-white'
+                    alternatingRows && index % 2 === 1
+                      ? "bg-gray-100"
+                      : "bg-white"
                   } ${rowClassName}`}
                 >
                   {columns.map((column) => (
                     <td
                       key={`${index}-${String(column.key)}`}
                       className={`px-6 py-4 text-sm text-gray-900 ${cellClassName}`}
-                      style={{ textAlign: column.align || 'left' }}
+                      style={{ textAlign: column.align || "left" }}
                     >
                       {renderCellContent(column, row[column.key], row, index)}
                     </td>
@@ -269,13 +336,19 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
       {pagination && (
         <div className="flex items-center justify-between mt-6 pt-4 mb-10">
           <div className="text-sm text-gray-500">
-            Showing {(pagination.currentPage - 1) * pagination.entriesPerPage + 1} to{' '}
-            {Math.min(pagination.currentPage * pagination.entriesPerPage, pagination.totalEntries)}{' '}
+            Showing{" "}
+            {(pagination.currentPage - 1) * pagination.entriesPerPage + 1} to{" "}
+            {Math.min(
+              pagination.currentPage * pagination.entriesPerPage,
+              pagination.totalEntries
+            )}{" "}
             of {pagination.totalEntries} entries
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+              onClick={() =>
+                pagination.onPageChange(pagination.currentPage - 1)
+              }
               disabled={pagination.currentPage === 1}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -287,15 +360,17 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
                 onClick={() => pagination.onPageChange(pageNumber)}
                 className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   pageNumber === pagination.currentPage
-                    ? 'bg-primary text-white'
-                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    ? "bg-primary text-white"
+                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 {pageNumber}
               </button>
             ))}
             <button
-              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+              onClick={() =>
+                pagination.onPageChange(pagination.currentPage + 1)
+              }
               disabled={pagination.currentPage === pagination.totalPages}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -306,8 +381,10 @@ function AdminTable<T extends { date?: string; order?: string; status?: string; 
       )}
       {isAdmin && isModalOpen && selectedRow && (
         <PackagingModal
-          packagingDescription={selectedRow.packagingDescription || 'No description available'}
-          backText={selectedRow.backText || 'No back text available'}
+          packagingDescription={
+            selectedRow.description || "No description available"
+          } 
+          backText={selectedRow.text || "No text available"} 
           onClose={closeModal}
         />
       )}

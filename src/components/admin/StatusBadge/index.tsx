@@ -39,12 +39,19 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       label: 'Cancel', 
       icon: <X size={14} />,
       styles: 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200'
-    }
+    },
+     { 
+    value: 'COMPLETED', 
+    label: 'Completed', 
+    icon: <Check size={14} />,
+    styles: 'bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200'
+  }
   ];
+
+
 
   const getVariantStyles = () => {
     const lowercaseStatus = currentStatus.toLowerCase();
-    
     if (variant === 'default') {
       if (lowercaseStatus.includes('approved') || lowercaseStatus.includes('success')) {
         return 'bg-green-100 text-green-800 border border-green-200';
@@ -55,7 +62,10 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       if (lowercaseStatus.includes('cancel') || lowercaseStatus.includes('rejected') || lowercaseStatus.includes('failed')) {
         return 'bg-red-100 text-red-800 border border-red-200';
       }
-     
+    //  completed
+      if (lowercaseStatus.includes('completed')) {
+        return 'bg-purple-100 text-purple-800 border border-purple-200';  
+      }
       return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
 
@@ -65,6 +75,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       warning: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
       danger: 'bg-red-100 text-red-800 border border-red-200',
       info: 'bg-blue-100 text-blue-800 border border-blue-200',
+      completed: 'bg-purple-100 text-purple-800 border border-purple-200',
     };
     return variants[variant];
   };
@@ -74,6 +85,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
     if (lowercaseStatus.includes('approved')) return <Check size={14} />;
     if (lowercaseStatus.includes('pending')) return <Clock size={14} />;
     if (lowercaseStatus.includes('cancel')) return <X size={14} />;
+    if (lowercaseStatus.includes('completed')) return <Check size={14} />;
     return null;
   };
 
@@ -86,7 +98,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

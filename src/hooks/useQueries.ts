@@ -11,6 +11,7 @@ import {
   createDesign,
   deleteAdminQuote,
   generateFromPrompt,
+  getAdminOrders,
   getAdminQuoteById,
   getAdminQuotes,
   login,
@@ -21,6 +22,7 @@ import {
   saveDesign,
   sendToDesigner,
   signup,
+  updateAdminOrderStatus,
   uploadImage,
   verifyEmail,
 } from "@/src/services/apiServices";
@@ -308,5 +310,36 @@ export const useAdminQuoteById = (
     queryKey: ["adminQuote", id],
     queryFn: () => getAdminQuoteById(id),
     enabled: !!id, 
+    ...options,
+  });
+// get all admin order
+export const useAdminOrders = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof api.order.adminAllList>>["data"],
+    Error
+  >
+) =>
+  useQuery<
+    Awaited<ReturnType<typeof api.order.adminAllList>>["data"],
+    Error
+  >({
+    queryKey: ["adminOrders"],
+    queryFn: getAdminOrders,
+    ...options,
+  });
+// update admin order status
+export const useUpdateAdminOrderStatus = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"],
+    Error,
+    { orderId: string; data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" } }
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"],
+    Error,
+    { orderId: string; data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" } }
+  >({
+    mutationFn: ({ orderId, data }) => updateAdminOrderStatus(orderId, data),
     ...options,
   });

@@ -182,3 +182,25 @@ export const getAdminQuoteById = async (
 });
   return res.data.data;
 };
+// get all admin orders
+export const getAdminOrders = async (): Promise<
+  Awaited<ReturnType<typeof api.order.adminAllList>>["data"]
+> => {
+    const res =await apiClient.get("/order/admin/all", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+return res.data.data;};
+
+// update admin order status
+export const updateAdminOrderStatus = async (
+  orderId: string,
+  data: {
+    status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED";
+  }
+): Promise<Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"]> => {
+  const res = await apiClient.patch(`/order/admin/${orderId}/status`, data);
+  return res.data;
+};
