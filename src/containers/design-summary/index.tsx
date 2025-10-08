@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Button from "@/src/components/common/button/Button";
 import { bottomButtons } from "@/src/containers/design-summary/data";
@@ -11,13 +11,21 @@ import { toast } from "react-toastify";
 import { useCreateDesign } from "@/src/hooks/useQueries";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
+
 const DesignSummarySection = () => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(null);
   const [feedback, setFeedback] = useState<string>("");
   const [amount, setAmount] = useState<number | null>(null);
-  const isLoggedIn = false;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const router = useRouter();
   const { mutate: createDesign, isPending, error } = useCreateDesign({
@@ -30,7 +38,7 @@ const DesignSummarySection = () => {
       router.push("/success");
     },
     onError: (err) => {
-      console.error("CreateDesign error:", err); 
+      console.error("CreateDesign error:", err);
       toast.error("Failed to submit design: " + err.message);
     },
   });
@@ -38,18 +46,41 @@ const DesignSummarySection = () => {
   const { dimensions, material, edgeType, artwork, packaging, textRings } =
     useStandardBuilderStore();
 
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = getCookie("token");
+      setIsLoggedIn(!!token);
+    };
+
+    checkAuth();
+    window.addEventListener("authChanged", checkAuth);
+    return () => {
+      window.removeEventListener("authChanged", checkAuth);
+    };
+  }, []);
+
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
   };
 
-  const handleSubmitForQuote = (paymentOption?: PaymentOption, amountValue?: number) => {
+  const handleSubmitForQuote = (
+    paymentOption?: PaymentOption,
+    amountValue?: number,
+    email?: string
+  ) => {
     const payment = paymentOption || selectedPayment;
     const qty = amountValue !== undefined ? amountValue : amount;
 
-    console.log("handleSubmitForQuote called with:", { payment, qty }); 
+    console.log("handleSubmitForQuote called with:", { payment, qty, email });
 
     if (!payment || qty === null) {
-      console.log("Opening PaymentModal due to missing payment or amount"); 
+      console.log("Opening PaymentModal due to missing payment or amount");
+      setShowPaymentModal(true);
+      return;
+    }
+
+    if (!isLoggedIn && !email) {
+      console.log("Opening PaymentModal due to missing email and not logged in");
       setShowPaymentModal(true);
       return;
     }
@@ -58,7 +89,7 @@ const DesignSummarySection = () => {
       name: "Custom Coin Design",
       status: "SUBMITTED" as const,
       totalCoins: qty,
-      email: "user@example.com", 
+      email: email || undefined, 
       method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
       feedback: feedback || undefined,
       generatorPrompt: artwork.front.prompt || artwork.back.prompt || undefined,
@@ -66,28 +97,27 @@ const DesignSummarySection = () => {
       frontImage: artwork.front.previewImage || undefined,
       frontDescription: artwork.front.prompt || undefined,
       frontText: textRings.front.top || textRings.front.bottom || undefined,
-     
-
       backImage: artwork.back.previewImage || undefined,
       backDescription: artwork.back.prompt || undefined,
       backText: textRings.back.top || textRings.back.bottom || undefined,
-    
       coinShape: dimensions.coinDiameter ? `Diameter: ${dimensions.coinDiameter}` : undefined,
       materialFinish: material || undefined,
       packaging: packaging.preferences ? true : false,
       description: packaging.preferences || undefined,
-      // referenceImg: undefined,
-      text: packaging.backText || undefined,
+     text: packaging.backText || undefined,
+
     };
 
-    console.log("Submitting designData:", designData); 
+    console.log("Submitting designData:", designData);
 
     createDesign(designData);
   };
 
-  const handlePaymentSelect = (option: PaymentOption, amount: number) => {
-    console.log("handlePaymentSelect called with:", { option, amount }); 
-    handleSubmitForQuote(option, amount);
+  const handlePaymentSelect = (option: PaymentOption, amount: number, email?: string) => {
+    console.log("handlePaymentSelect called with:", { option, amount, email });
+    setSelectedPayment(option);
+    setAmount(amount);
+    handleSubmitForQuote(option, amount, email);
   };
 
   const handleModalClose = () => {
