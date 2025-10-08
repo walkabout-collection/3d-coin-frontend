@@ -101,32 +101,37 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
     }
 
     const designData = {
-      name: name,
-      status: "SUBMITTED" as const,
-      totalCoins: qty,
-      email: email, 
-      method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
-      frontImage: frontImage,
-      frontDescription: formData.frontDescription || undefined,
-      frontText: formData.frontTextInsideArtwork || undefined,
-      backImage: backImage,
-      backDescription: formData.backDescription || undefined,
-      backText: formData.backTextInsideArtwork || undefined,
-      coinShape: formData.coinShape || undefined,
-      materialFinish: formData.metalFinishes || undefined,
-      // frontReferenceImage: formData.frontReferenceImage || undefined,
-      // backReferenceImage: formData.backReferenceImage || undefined,
-      // frontReferenceImageImpact: formData.frontReferenceImageImpact || undefined,
-      // backReferenceImageImpact: formData.backReferenceImageImpact || undefined,
-      frontTextStyle: formData.frontTextStyle || undefined,
-      backTextStyle: formData.backTextStyle || undefined,
-      frontComposition: formData.frontComposition || undefined,
-      backComposition: formData.backComposition || undefined,
-      prohibitedContent: formData.prohibitedContent || undefined,
-      subject: formData.subject || undefined,
-      coinStyles: formData.coinStyles || undefined,
-      detailLevel: formData.detailLevel || undefined,
-    };
+  name: name,
+  status: "SUBMITTED" as const,
+  totalCoins: qty,
+  email: email,
+  method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
+
+  // FRONT
+  frontImage: frontImage || undefined,
+  frontDescription: formData.frontDescription || undefined,
+  frontText: formData.frontTextInsideArtwork || undefined,
+  frontTextStyle: formData.frontTextStyle || undefined,
+  frontReference: formData.frontReferenceImage || undefined,
+  frontReferenceImpact: formData.frontReferenceImageImpact || undefined,
+  frontComposition: formData.frontComposition || undefined,
+
+  // BACK
+  backImage: backImage || undefined,
+  backDescription: formData.backDescription || undefined,
+  backText: formData.backTextInsideArtwork || undefined,
+  backTextStyle: formData.backTextStyle || undefined,
+  backReference: formData.backReferenceImage || undefined,
+  backReferenceImpact: formData.backReferenceImageImpact || undefined,
+  backComposition: formData.backComposition || undefined,
+
+  coinShape: formData.coinShape || undefined,
+  subject: formData.subject || undefined,
+  materialFinish: formData.metalFinishes || undefined,
+  detailLevel: formData.detailLevel || undefined,
+  prohibitedContent: formData.prohibitedContent || undefined,
+
+};
 
     console.log("Submitting design:", designData); 
     createDesign(designData);

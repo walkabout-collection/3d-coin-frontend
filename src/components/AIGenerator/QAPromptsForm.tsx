@@ -127,7 +127,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
 
   const formData = watch();
   const { setFormData, setInProgress } = useQAPromptsStore();
-  console.log("QA Proceed clicked – Initial form data:", formData);
+  // console.log("QA Proceed clicked – Initial form data:", formData);
  
   
   const { goTo } = useAiFlowStore();

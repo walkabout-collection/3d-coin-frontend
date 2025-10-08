@@ -18,18 +18,22 @@ const AdminQuotes: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
-    const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
+  const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
 
+  const {
+    data: quotesData = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useAdminQuotes();
 
-  const { data: quotesData = [], isLoading, isError, refetch } = useAdminQuotes();
-
-const viewQuote = (id: string) => {
-  setViewQuoteId(id);
-};
+  const viewQuote = (id: string) => {
+    setViewQuoteId(id);
+  };
 
   const { mutate: deleteQuote, isPending: isDeleting } = useDeleteAdminQuote({
     onSuccess: () => {
-      refetch(); 
+      refetch();
     },
     onError: (err: Error) => {
       toast.error(`Failed to delete quote: ${err.message}`);
@@ -41,9 +45,13 @@ const viewQuote = (id: string) => {
     return [...dataToSort].sort((a, b) => {
       switch (sortValue) {
         case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
         default:
           return 0;
       }
@@ -78,9 +86,6 @@ const viewQuote = (id: string) => {
   const handleSortChange = (sort: string) => setInternalSort(sort);
   const handleSearch = (term: string) => setSearchTerm(term);
 
- 
-  
-
   const handleApprove = (id: string) => {
     const quote = filteredData.find((q) => q.id === id);
     if (quote) {
@@ -90,7 +95,7 @@ const viewQuote = (id: string) => {
   };
 
   const handleDelete = (id: string) => {
-      deleteQuote(id);
+    deleteQuote(id);
   };
 
   const handleApproveClose = () => {
@@ -149,7 +154,11 @@ const viewQuote = (id: string) => {
       </div>
 
       <div className="flex items-center justify-between mb-6 mt-10">
-        <Search placeholder="SEARCH" onSearch={handleSearch} variant="primary" />
+        <Search
+          placeholder="SEARCH"
+          onSearch={handleSearch}
+          variant="primary"
+        />
         <div className="flex items-center gap-6">
           <Button
             type="button"
@@ -204,7 +213,10 @@ const viewQuote = (id: string) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-md font-bold text-black">Email:</span>
-                  <span className="text-sm text-gray-900">{quote.email}</span>
+                  <span className="text-sm text-gray-900">
+                    {" "}
+                    {quote.user ? quote.user.email : quote.email}
+                  </span>
                 </div>
               </div>
             </div>
@@ -258,11 +270,8 @@ const viewQuote = (id: string) => {
         />
       )}
       {viewQuoteId && (
-  <ViewQuoteModal
-    id={viewQuoteId}
-    onClose={() => setViewQuoteId(null)}
-  />
-)}
+        <ViewQuoteModal id={viewQuoteId} onClose={() => setViewQuoteId(null)} />
+      )}
     </div>
   );
 };

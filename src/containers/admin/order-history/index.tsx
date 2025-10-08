@@ -29,12 +29,14 @@ const OrdersHistory = () => {
         searchPlaceholder="Search orders..."
         sortable={true}
         currentSort="newest"
+        
         pagination={{
           currentPage,
           entriesPerPage,
           totalEntries: orderData.length,
           totalPages: Math.ceil(orderData.length / entriesPerPage),
           onPageChange: (page: number) => setCurrentPage(page),
+
         }}
       />
     </div>
