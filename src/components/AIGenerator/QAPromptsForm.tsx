@@ -19,24 +19,78 @@ import { useAiFlowStore } from '@/src/store/useAiFlowStore';
 import { useDesignCoinStore, useQAPromptsStore } from '@/src/store/useCoinStore';
 
 const formSchema = z.object({
-  coinShape: z.string().min(1, 'Coin shape is required'),
-  subject: z.string().min(1, 'Subject is required'),
-  metalFinishes: z.string().min(1, 'Metal finish is required'),
-  coinStyles: z.string().min(1, 'Coin style is required'),
-  detailLevel: z.string().min(1, 'Detail level is required'),
-  frontDescription: z.string().min(1, 'Front description is required'),
-  frontReferenceImage: z.string().min(1, 'Front reference image is required'),
-  frontReferenceImageImpact: z.string().min(1, 'Front reference image impact is required'),
-  frontTextInsideArtwork: z.string().min(1, 'Front text inside artwork is required'),
-  frontTextStyle: z.string().min(1, 'Front text style is required'),
-  frontCompositionNotes: z.string().min(1, 'Front composition notes are required'),
-  backDescription: z.string().min(1, 'Back description is required'),
-  backReferenceImage: z.string().min(1, 'Back reference image is required'),
-  backReferenceImageImpact: z.string().min(1, 'Back reference image impact is required'),
-  backTextInsideArtwork: z.string().min(1, 'Back text inside artwork is required'),
-  backTextStyle: z.string().min(1, 'Back text style is required'),
-  backCompositionNotes: z.string().min(1, 'Back composition notes are required'),
-  prohibitedContent: z.string().min(1, 'Prohibited content is required'),
+  coinShape: z
+    .string()
+    .min(1, 'Coin shape is required')
+    .max(50, 'Coin shape cannot exceed 50 characters'),
+  subject: z
+    .string()
+    .min(1, 'Subject is required')
+    .max(50, 'Subject cannot exceed 50 characters'),
+  metalFinishes: z
+    .string()
+    .min(1, 'Metal finish is required')
+    .max(50, 'Metal finish cannot exceed 50 characters'),
+  coinStyles: z
+    .string()
+    .min(1, 'Coin style is required')
+    .max(50, 'Coin style cannot exceed 50 characters'),
+  detailLevel: z
+    .string()
+    .min(1, 'Detail level is required')
+    .max(50, 'Detail level cannot exceed 50 characters'),
+  frontDescription: z
+    .string()
+    .min(1, 'Front description is required')
+    .max(50, 'Front description cannot exceed 50 characters'),
+  frontReferenceImage: z
+    .string()
+    .min(1, 'Front reference image is required')
+    .max(50, 'Front reference image cannot exceed 50 characters'),
+  frontReferenceImageImpact: z
+    .string()
+    .min(1, 'Front reference image impact is required')
+    .max(50, 'Front reference image impact cannot exceed 50 characters'),
+  frontTextInsideArtwork: z
+    .string()
+    .min(1, 'Front text inside artwork is required')
+    .max(50, 'Front text inside artwork cannot exceed 50 characters'),
+  frontTextStyle: z
+    .string()
+    .min(1, 'Front text style is required')
+    .max(50, 'Front text style cannot exceed 50 characters'),
+  frontComposition: z
+    .string()
+    .min(1, 'Front composition notes are required')
+    .max(50, 'Front composition notes cannot exceed 50 characters'),
+  backDescription: z
+    .string()
+    .min(1, 'Back description is required')
+    .max(50, 'Back description cannot exceed 50 characters'),
+  backReferenceImage: z
+    .string()
+    .min(1, 'Back reference image is required')
+    .max(50, 'Back reference image cannot exceed 50 characters'),
+  backReferenceImageImpact: z
+    .string()
+    .min(1, 'Back reference image impact is required')
+    .max(50, 'Back reference image impact cannot exceed 50 characters'),
+  backTextInsideArtwork: z
+    .string()
+    .min(1, 'Back text inside artwork is required')
+    .max(50, 'Back text inside artwork cannot exceed 50 characters'),
+  backTextStyle: z
+    .string()
+    .min(1, 'Back text style is required')
+    .max(50, 'Back text style cannot exceed 50 characters'),
+  backComposition: z
+    .string()
+    .min(1, 'Back composition notes are required')
+    .max(50, 'Back composition notes cannot exceed 50 characters'),
+  prohibitedContent: z
+    .string()
+    .min(1, 'Prohibited content is required')
+    .max(50, 'Prohibited content cannot exceed 50 characters'),
 });
 
 export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialData = {} }) => {
@@ -59,13 +113,13 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
       frontReferenceImageImpact: '',
       frontTextInsideArtwork: '',
       frontTextStyle: '',
-      frontCompositionNotes: '',
+      frontComposition: '',
       backDescription: '',
       backReferenceImage: '',
       backReferenceImageImpact: '',
       backTextInsideArtwork: '',
       backTextStyle: '',
-      backCompositionNotes: '',
+      backComposition: '',
       prohibitedContent: '',
       ...initialData,
     },
@@ -276,15 +330,15 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">6. COMPOSITION NOTES</h3>
               <Input
-                {...register('frontCompositionNotes', {
-                  onChange: (e) => setFormData({ frontCompositionNotes: e.target.value }),
+                {...register('frontComposition', {
+                  onChange: (e) => setFormData({ frontComposition: e.target.value }),
                 })}
                 rows={1}
                 placeholder={placeholderTexts.frontCompositionNotes}
                 inputSize="md"
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
-                error={errors.frontCompositionNotes?.message}
+                error={errors.frontComposition?.message}
               />
               <p className="text-xs text-gray-500 mt-2">{exampleTexts.compositionNotes}</p>
             </div>
@@ -381,8 +435,8 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">6. COMPOSITION NOTES</h3>
               <Input
-                {...register('backCompositionNotes', {
-                  onChange: (e) => setFormData({ backCompositionNotes: e.target.value }),
+                {...register('backComposition', {
+                  onChange: (e) => setFormData({ backComposition: e.target.value }),
                 })}
                 textarea
                 rows={1}
@@ -390,7 +444,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
                 inputSize="md"
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
-                error={errors.backCompositionNotes?.message}
+                error={errors.backComposition?.message}
               />
               <p className="text-xs text-gray-500 mt-2">{exampleTexts.compositionNotes}</p>
             </div>

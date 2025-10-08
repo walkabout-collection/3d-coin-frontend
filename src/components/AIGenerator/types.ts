@@ -47,13 +47,13 @@ export interface QAFormData {
   frontReferenceImageImpact: string;
   frontTextInsideArtwork: string;
   frontTextStyle: string;
-  frontCompositionNotes: string;
+  frontComposition: string;
   backDescription: string;
   backReferenceImage: string; 
   backReferenceImageImpact: string;
   backTextInsideArtwork: string;
   backTextStyle: string;
-  backCompositionNotes: string;
+  backComposition: string;
   prohibitedContent: string;
 }
 

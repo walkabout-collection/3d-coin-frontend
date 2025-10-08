@@ -7,7 +7,7 @@ import { paymentOptions } from "./data";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPaymentSelect: (option: PaymentOption, amount: number, email: string) => void;
+  onPaymentSelect: (option: PaymentOption, amount: number, email?: string) => void;
 }
 
 const getCookie = (name: string): string | null => {
@@ -27,35 +27,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [amount, setAmount] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState<{ email?: string } | null>(null);
 
-   useEffect(() => {
+  useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
       setIsLoggedIn(!!token);
     };
 
-    const updateUserData = () => {
-      const storedData = getCookie("user"); 
-      if (storedData) {
-        try {
-          setUserData(JSON.parse(decodeURIComponent(storedData)));
-        } catch (error) {
-          console.error("Failed to parse userData from cookie:", error);
-          setUserData(null);
-        }
-      } else {
-        setUserData(null);
-      }
-    };
-
     checkAuth();
-    updateUserData();
     window.addEventListener("authChanged", checkAuth);
-    window.addEventListener("userChanged", updateUserData);
     return () => {
       window.removeEventListener("authChanged", checkAuth);
-      window.removeEventListener("userChanged", updateUserData);
     };
   }, []);
 
@@ -65,8 +47,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleContinue = () => {
     const selectedOption = paymentOptions.find((opt) => opt.id === selected);
-    const userEmail = isLoggedIn ? userData?.email || "" : email;
-    if (selectedOption && amount && userEmail) {
+    if (selectedOption && amount) {
+      // If logged in, pass undefined for email; otherwise, pass the email input
+      const userEmail = isLoggedIn ? undefined : email;
+      if (!isLoggedIn && !userEmail) {
+        // If not logged in and no email provided, prevent submission
+        return;
+      }
       onPaymentSelect(selectedOption, parseFloat(amount), userEmail);
       onClose();
     }
@@ -146,6 +133,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           />
         </div>
 
+        {/* Email Input (only shown if not logged in) */}
         {!isLoggedIn && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
