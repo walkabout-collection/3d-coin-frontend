@@ -40,9 +40,11 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   const [frontImageError, setFrontImageError] = useState(false);
   const [backImageError, setBackImageError] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(
+    null
+  );
   const [amount, setAmount] = useState<number | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -67,6 +69,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
     },
     onError: (err) => {
       toast.error("Failed to submit design: " + err.message);
+      console.error("CreateDesign error:", err);
     },
   });
 
@@ -89,51 +92,50 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
     const payment = paymentOption || selectedPayment;
     const qty = amountValue !== undefined ? amountValue : amount;
 
+
     if (!payment || qty === null) {
       setShowPaymentModal(true);
       return;
     }
 
-   
     if (!isLoggedIn && !email) {
       setShowPaymentModal(true);
       return;
     }
 
     const designData = {
-  name: name,
-  status: "SUBMITTED" as const,
-  totalCoins: qty,
-  email: email,
-  method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
+      name: name,
+      status: "SUBMITTED" as const,
+      totalCoins: qty,
+      email: email,
+      method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
 
-  // FRONT
-  frontImage: frontImage || undefined,
-  frontDescription: formData.frontDescription || undefined,
-  frontText: formData.frontTextInsideArtwork || undefined,
-  frontTextStyle: formData.frontTextStyle || undefined,
-  frontReference: formData.frontReferenceImage || undefined,
-  frontReferenceImpact: formData.frontReferenceImageImpact || undefined,
-  frontComposition: formData.frontComposition || undefined,
+      // FRONT
+      frontImage: frontImage || undefined,
+      frontDescription: formData.frontDescription || undefined,
+      frontText: formData.frontTextInsideArtwork || undefined,
+      frontTextStyle: formData.frontTextStyle || undefined,
+      frontReference: formData.frontReferenceImage || undefined,
+      frontReferenceImpact: formData.frontReferenceImageImpact || undefined,
+      frontComposition: formData.frontComposition || undefined,
 
-  // BACK
-  backImage: backImage || undefined,
-  backDescription: formData.backDescription || undefined,
-  backText: formData.backTextInsideArtwork || undefined,
-  backTextStyle: formData.backTextStyle || undefined,
-  backReference: formData.backReferenceImage || undefined,
-  backReferenceImpact: formData.backReferenceImageImpact || undefined,
-  backComposition: formData.backComposition || undefined,
+      // BACK
+      backImage: backImage || undefined,
+      backDescription: formData.backDescription || undefined,
+      backText: formData.backTextInsideArtwork || undefined,
+      backTextStyle: formData.backTextStyle || undefined,
+      backReference: formData.backReferenceImage || undefined,
+      backReferenceImpact: formData.backReferenceImageImpact || undefined,
+      backComposition: formData.backComposition || undefined,
 
-  coinShape: formData.coinShape || undefined,
-  subject: formData.subject || undefined,
-  materialFinish: formData.metalFinishes || undefined,
-  detailLevel: formData.detailLevel || undefined,
-  prohibitedContent: formData.prohibitedContent || undefined,
+      coinShape: formData.coinShape || undefined,
+      subject: formData.subject || undefined,
+      materialFinish: formData.metalFinishes || undefined,
+      detailLevel: formData.detailLevel || undefined,
+      prohibitedContent: formData.prohibitedContent || undefined,
+    };
 
-};
-
-    console.log("Submitting design:", designData); 
+    console.log("Submitting design:", designData);
     createDesign(designData);
 
     if (onContinue) {
@@ -149,7 +151,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   const handlePaymentSelect = (
     option: PaymentOption,
     amount: number,
-    email?: string 
+    email?: string
   ) => {
     setSelectedPayment(option);
     setAmount(amount);
@@ -249,7 +251,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
           <Button
             type="button"
             variant="primary"
-            onClick={() => handleSubmitForQuote()}
+            onClick={() => setShowPaymentModal(true)}
             disabled={loading || isProcessing || isPending}
             className="rounded-full font-base text-md max-w-[140px]"
           >

@@ -1786,6 +1786,78 @@ export class Api<
         ...params,
       }),
 
+
+   /**
+ * No description
+ *
+ * @tags Users
+ * @name UserProfileUpdate
+ * @summary Update current user's profile
+ * @request PUT:/api/users/profile
+ * @secure
+ */
+userProfileUpdate: (
+  data: {
+    /** @minLength 2 */
+    firstName?: string;
+    /** @minLength 2 */
+    lastName?: string;
+    /** @format email */
+    email?: string;
+    contactNumber?: string;
+    image?: string;
+  },
+  params: RequestParams = {}
+) =>
+  this.request<void, void>({
+    path: `/api/users/profile/update`,
+    method: "PUT",
+    body: data,
+    secure: true,
+    type: ContentType.Json,
+    ...params,
+  }),
+
+  
+  /**
+ * Change the password of the currently authenticated user.
+ *
+ * Sends a PUT request to the `/api/users/password/change` endpoint with the old and new passwords.
+ * Requires authentication (Bearer token).
+ *
+ * @param {Object} data - The password change data.
+ * @param {string} data.oldPassword - The current password of the user.
+ * @param {string} data.newPassword - The new password to set (minimum length 8 as per API spec).
+ * @param {RequestParams} [params={}] - Optional additional request parameters (e.g., headers, query params).
+ *
+ * @returns {Promise<void>} Resolves if password change is successful.
+ *
+ * @throws Will throw an error if the request fails, e.g., due to invalid old password or unauthorized access.
+ *
+ * @example
+ * ```ts
+ * await api.changePassword({
+ *   oldPassword: 'currentPass123',
+ *   newPassword: 'newSecurePass456',
+ * });
+ * ```
+ */
+changePassword: (
+  data: {
+    oldPassword: string;
+    newPassword: string;
+  },
+  params: RequestParams = {}
+) =>
+  this.request<void, void>({
+    path: `/api/users/password/change`,
+    method: "PUT",
+    body: data,
+    secure: true,
+    type: ContentType.Json,
+    ...params,
+  }),
+
     /**
      * No description
      *
@@ -1881,5 +1953,63 @@ export class Api<
         type: ContentType.Json,
         ...params,
       }),
+
+      /**
+ * No description
+ *
+ * @tags Users
+ * @name GetUserProfile
+ * @summary Retrieve current user's profile
+ * @request GET:/api/users/profile
+ * @secure
+ */
+getProfile: (
+  params: RequestParams = {}
+) =>
+  this.request<User, void>({
+    path: `/api/users/profile`,
+    method: "GET",
+    secure: true,
+    type: ContentType.Json,
+    ...params,
+  }),
+
+  /**
+ * No description
+ *
+ * @tags Qupte
+ * @name getAdminStat
+ * @summary Get admin stats
+ * @request GET:/quote/admin/stats
+ * @secure
+ * */
+  adminStats: (params: RequestParams = {}) =>
+  this.request<AdminStats, void>({
+    path: `/quote/admin/get/stats`,
+    method: "GET",
+    secure: true,
+    type: ContentType.Json,
+    ...params,
+  }),
+
+  /**
+ * No description
+ *
+ * @tags Qupte
+ * @name getUserStats
+ * @summary Get user stats
+ * @request GET:/quote/user/stats
+ * @secure
+ * */
+  userStats: (params: RequestParams = {}) =>
+  this.request<UserStats, void>({
+    path: `/quote/user/get/stats`,
+    method: "GET",
+    secure: true,
+    type: ContentType.Json,
+    ...params,   
+  }),
+
   };
+  
 }

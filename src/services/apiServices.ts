@@ -204,3 +204,40 @@ export const updateAdminOrderStatus = async (
   const res = await apiClient.patch(`/order/admin/${orderId}/status`, data);
   return res.data;
 };
+
+
+
+export const updateCurrentUserProfile = async (
+  data: Parameters<typeof api.api.userProfileUpdate>[0]
+): Promise<Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"]> => {
+  const res = await apiClient.put("/users/profile/update", data);
+  return res.data;
+};
+
+export const changeUserPassword = async (
+  data: Parameters<typeof api.api.changePassword>[0]
+): Promise<Awaited<ReturnType<typeof api.api.changePassword>>["data"]> => {
+  const res = await apiClient.put("/users/password/change", data);
+  return res.data;
+};
+
+export const getUserProfile = async (): Promise<
+  Awaited<ReturnType<typeof api.api.getProfile>>["data"]
+> => {
+  const res = await apiClient.get("/users/profile");
+  return res.data.data;
+};
+
+export const getAdminStat = async (): Promise<
+  Awaited<ReturnType<typeof api.api.adminStats>>["data"]
+> => {
+  const res = await apiClient.get("/quote/admin/get/stats");
+  return res.data.data;
+};
+
+export const getUserStats = async (): Promise<
+  Awaited<ReturnType<typeof api.api.userStats>>["data"]
+> => {
+  const res = await apiClient.get("/quote/user/get/stats");
+  return res.data.data;
+};

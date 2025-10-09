@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import {
   approveAdminQuote,
+  changeUserPassword,
   coinSpecification,
   createContact,
   createDesign,
@@ -14,6 +15,9 @@ import {
   getAdminOrders,
   getAdminQuoteById,
   getAdminQuotes,
+  getAdminStat,
+  getUserProfile,
+  getUserStats,
   login,
   logout,
   previewList,
@@ -23,6 +27,7 @@ import {
   sendToDesigner,
   signup,
   updateAdminOrderStatus,
+  updateCurrentUserProfile,
   uploadImage,
   verifyEmail,
 } from "@/src/services/apiServices";
@@ -343,3 +348,85 @@ export const useUpdateAdminOrderStatus = (
     mutationFn: ({ orderId, data }) => updateAdminOrderStatus(orderId, data),
     ...options,
   });
+  
+
+  export const useUpdateCurrentUserProfile = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"],
+    Error,
+    Parameters<typeof api.api.userProfileUpdate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"],
+    Error,
+    Parameters<typeof api.api.userProfileUpdate>[0]
+  >({
+    mutationFn: (data) => updateCurrentUserProfile(data),
+    ...options,
+  });
+
+
+  export const useUpdateCurrentUserPassword = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.api.userPasswordUpdate>>["data"],
+    Error,
+    Parameters<typeof api.api.userPasswordUpdate>[0]
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.api.userPasswordUpdate>>["data"],
+    Error,
+    Parameters<typeof api.api.userPasswordUpdate>[0]
+  >({
+    mutationFn: (data) => changeUserPassword(data),
+    ...options,
+  });
+
+
+export const useGetUserProfile = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof api.api.getProfile>>["data"],
+    Error
+  >
+) =>
+  useQuery<
+    Awaited<ReturnType<typeof api.api.getProfile>>["data"],
+    Error
+  >({
+    queryKey: ["userProfile"],
+    queryFn: getUserProfile,
+    ...options,
+  });
+
+  export const useGetAdminStats =(
+    options?: UseQueryOptions<
+      Awaited<ReturnType<typeof api.api.adminStats>>["data"],
+      Error
+    >
+  ) =>
+  useQuery<
+    Awaited<ReturnType<typeof api.api.adminStats>>["data"],
+    Error
+  >({
+    queryKey: ["adminStats"],
+    queryFn: getAdminStat,
+    ...options,
+  },
+  )
+
+  export const useGetUserStats = (
+    options?: UseQueryOptions<
+      Awaited<ReturnType<typeof api.api.userStats>>["data"],
+      Error
+    >
+  ) =>
+  useQuery<
+    Awaited<ReturnType<typeof api.api.userStats>>["data"],
+    Error
+  >({
+    queryKey: ["userStats"],
+    queryFn: getUserStats,
+    ...options,
+  },
+  )
