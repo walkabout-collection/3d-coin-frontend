@@ -155,6 +155,18 @@ export const getAdminQuotes = async (): Promise<
 });
   return res.data.data;
 };
+
+export const getUserQuotes = async (): Promise<
+  Awaited<ReturnType<typeof api.quote.userList>>["data"]
+> => {
+  const res =await apiClient.get("/quote/user", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+  return res.data.data;
+}
 // delete quote
 export const deleteAdminQuote = async (
   id: string
@@ -193,6 +205,19 @@ export const getAdminOrders = async (): Promise<
   },
 });
 return res.data.data;};
+
+
+export const getUserOrders = async (): Promise<
+  Awaited<ReturnType<typeof api.order.userList>>["data"]
+> => {
+  const res =await apiClient.get("/order/user", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+return res.data.data;
+}
 
 // update admin order status
 export const updateAdminOrderStatus = async (
@@ -240,4 +265,22 @@ export const getUserStats = async (): Promise<
 > => {
   const res = await apiClient.get("/quote/user/get/stats");
   return res.data.data;
+};
+
+
+export const approveUserPayment = async (
+  paymentId: string
+): Promise<Awaited<ReturnType<typeof api.order.adminApproveUserPayment>>["data"]> => {
+  const res = await apiClient.patch(`/order/admin/payment/${paymentId}/approve`);
+  return res.data;
+};
+
+export const createUserPayment = async (
+  data: {
+    orderId: string;
+    amount: number;
+    method: "MANUAL" | "STRIPE" | "QUICKBOOKS";
+  }
+): Promise<void> => {
+  await apiClient.post("/order/user/payment/create", data);
 };

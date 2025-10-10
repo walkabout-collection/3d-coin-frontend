@@ -6,17 +6,21 @@ import {
 } from "@tanstack/react-query";
 import {
   approveAdminQuote,
+  approveUserPayment,
   changeUserPassword,
   coinSpecification,
   createContact,
   createDesign,
+  createUserPayment,
   deleteAdminQuote,
   generateFromPrompt,
   getAdminOrders,
   getAdminQuoteById,
   getAdminQuotes,
   getAdminStat,
+  getUserOrders,
   getUserProfile,
+  getUserQuotes,
   getUserStats,
   login,
   logout,
@@ -251,20 +255,28 @@ export const useCreateDesign = (
     ...options,
   });
 
-
-  // get all admin quote
+// get all admin quote
 export const useAdminQuotes = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.quote.adminList>>["data"],
     Error
   >
 ) =>
-  useQuery<
-    Awaited<ReturnType<typeof api.quote.adminList>>["data"],
-    Error
-  >({
+  useQuery<Awaited<ReturnType<typeof api.quote.adminList>>["data"], Error>({
     queryKey: ["adminQuotes"],
     queryFn: getAdminQuotes,
+    ...options,
+  });
+
+export const useUserQuotes = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof api.quote.userList>>["data"],
+    Error
+  >
+) =>
+  useQuery<Awaited<ReturnType<typeof api.quote.userList>>["data"], Error>({
+    queryKey: ["userQuotes"],
+    queryFn: getUserQuotes,
     ...options,
   });
 
@@ -308,13 +320,10 @@ export const useAdminQuoteById = (
     Error
   >
 ) =>
-  useQuery<
-    Awaited<ReturnType<typeof api.quote.adminDetail>>["data"],
-    Error
-  >({
+  useQuery<Awaited<ReturnType<typeof api.quote.adminDetail>>["data"], Error>({
     queryKey: ["adminQuote", id],
     queryFn: () => getAdminQuoteById(id),
-    enabled: !!id, 
+    enabled: !!id,
     ...options,
   });
 // get all admin order
@@ -324,12 +333,21 @@ export const useAdminOrders = (
     Error
   >
 ) =>
-  useQuery<
-    Awaited<ReturnType<typeof api.order.adminAllList>>["data"],
-    Error
-  >({
+  useQuery<Awaited<ReturnType<typeof api.order.adminAllList>>["data"], Error>({
     queryKey: ["adminOrders"],
     queryFn: getAdminOrders,
+    ...options,
+  });
+
+export const useUserOrders = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof api.order.userList>>["data"],
+    Error
+  >
+) =>
+  useQuery<Awaited<ReturnType<typeof api.order.userList>>["data"], Error>({
+    queryKey: ["userOrders"],
+    queryFn: getUserOrders,
     ...options,
   });
 // update admin order status
@@ -337,20 +355,25 @@ export const useUpdateAdminOrderStatus = (
   options?: UseMutationOptions<
     Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"],
     Error,
-    { orderId: string; data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" } }
+    {
+      orderId: string;
+      data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" };
+    }
   >
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"],
     Error,
-    { orderId: string; data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" } }
+    {
+      orderId: string;
+      data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" };
+    }
   >({
     mutationFn: ({ orderId, data }) => updateAdminOrderStatus(orderId, data),
     ...options,
   });
-  
 
-  export const useUpdateCurrentUserProfile = (
+export const useUpdateCurrentUserProfile = (
   options?: UseMutationOptions<
     Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"],
     Error,
@@ -366,8 +389,7 @@ export const useUpdateAdminOrderStatus = (
     ...options,
   });
 
-
-  export const useUpdateCurrentUserPassword = (
+export const useUpdateCurrentUserPassword = (
   options?: UseMutationOptions<
     Awaited<ReturnType<typeof api.api.userPasswordUpdate>>["data"],
     Error,
@@ -383,50 +405,66 @@ export const useUpdateAdminOrderStatus = (
     ...options,
   });
 
-
 export const useGetUserProfile = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.api.getProfile>>["data"],
     Error
   >
 ) =>
-  useQuery<
-    Awaited<ReturnType<typeof api.api.getProfile>>["data"],
-    Error
-  >({
+  useQuery<Awaited<ReturnType<typeof api.api.getProfile>>["data"], Error>({
     queryKey: ["userProfile"],
     queryFn: getUserProfile,
     ...options,
   });
 
-  export const useGetAdminStats =(
-    options?: UseQueryOptions<
-      Awaited<ReturnType<typeof api.api.adminStats>>["data"],
-      Error
-    >
-  ) =>
-  useQuery<
+export const useGetAdminStats = (
+  options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.api.adminStats>>["data"],
     Error
-  >({
+  >
+) =>
+  useQuery<Awaited<ReturnType<typeof api.api.adminStats>>["data"], Error>({
     queryKey: ["adminStats"],
     queryFn: getAdminStat,
     ...options,
-  },
-  )
+  });
 
-  export const useGetUserStats = (
-    options?: UseQueryOptions<
-      Awaited<ReturnType<typeof api.api.userStats>>["data"],
-      Error
-    >
-  ) =>
-  useQuery<
+export const useGetUserStats = (
+  options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.api.userStats>>["data"],
     Error
-  >({
+  >
+) =>
+  useQuery<Awaited<ReturnType<typeof api.api.userStats>>["data"], Error>({
     queryKey: ["userStats"],
     queryFn: getUserStats,
     ...options,
-  },
-  )
+  });
+
+export const useCreateUserPayment = (
+  options?: UseMutationOptions<
+    void,
+    Error,
+    { orderId: string; amount: number; method: "MANUAL" | "STRIPE" | "QUICKBOOKS" }
+  >
+) =>
+  useMutation({
+    mutationFn: createUserPayment,
+    ...options,
+  });
+
+export const useApproveUserPayment = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof api.order.adminApproveUserPayment>>["data"],
+    Error,
+    string // paymentId
+  >
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof api.order.adminApproveUserPayment>>["data"],
+    Error,
+    string
+  >({
+    mutationFn: (paymentId) => approveUserPayment(paymentId),
+    ...options,
+  });

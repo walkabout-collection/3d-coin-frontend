@@ -1,0 +1,52 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - feat/**       # optional: feature branches
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build Next.js Frontend
+
+    env:
+      NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      NODE_ENV: production
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint Code
+        run: npm run lint
+
+      - name: Build Next.js App
+        run: npm run build
+
+      - name: Run Tests
+        if: false   # enable later if you add tests
+        run: npm test
+
+      - name: Upload Production Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next

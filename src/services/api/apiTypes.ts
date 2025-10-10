@@ -1338,6 +1338,46 @@ export class Api<
         ...params,
       }),
 
+      
+userCreatePayment: (
+  data: {
+    orderId: string;
+    amount: number;
+    method: PaymentMethod;
+  },
+  params: RequestParams = {}
+) =>
+  this.request<void, void>({
+    path: `/order/user/payment/create`,  
+    method: "POST",
+    body: data,
+    secure: true,
+    type: ContentType.Json,
+    ...params,
+  }),
+
+  adminApproveUserPayment: (
+  paymentId: string,
+  params: RequestParams = {}
+) =>
+  this.request<
+    {
+      success?: boolean;
+      message?: string;
+      data?: object; 
+    },
+    void
+  >({
+    path: `/order/admin/payment/${paymentId}/approve`,
+    method: "PATCH",
+    secure: true,
+    type: ContentType.Json,
+    format: "json",
+    ...params,
+  }),
+
+
+
     /**
      * No description
      *

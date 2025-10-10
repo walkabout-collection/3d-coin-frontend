@@ -1,15 +1,16 @@
 import React from 'react';
 import Button from '../common/button/Button';
+import { OrderDataItem } from '@/src/containers/orders/types';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  trackingNo: string;
+  order: OrderDataItem;
   price: number;
-  onConfirmPayment: (trackingNo: string) => void;
+  onConfirmPayment: (order: OrderDataItem) => void;
 }
 
-const PayNowModal: React.FC<ModalProps> = ({ isOpen, onClose, trackingNo, price, onConfirmPayment }) => {
+const PayNowModal: React.FC<ModalProps> = ({ isOpen, onClose, order, price, onConfirmPayment }) => {
   if (!isOpen) return null;
 
   const adminAccountDetails = {
@@ -19,26 +20,12 @@ const PayNowModal: React.FC<ModalProps> = ({ isOpen, onClose, trackingNo, price,
     accountHolder: 'Admin Name',
   };
 
-  const handleConfirmPayment = async () => {
-    try {
-      await fetch('/api/notify-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trackingNo, paymentMethod: 'MANUAL', price }),
-      });
-      onConfirmPayment(trackingNo); 
-      onClose();
-    } catch (error) {
-      console.error('Error notifying admin:', error);
-      alert('Failed to notify admin. Please try again.');
-    }
-  };
 
   return (
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-100 p-6 rounded-lg shadow-lg max-w-lg w-full">
         <h2 className="text-xl font-semibold mb-4">Manual Payment Details</h2>
-        <p className="mb-2"><strong>Order No:</strong> {trackingNo}</p>
+        <p className="mb-2"><strong>Order No:</strong> {order.orderId}</p>
         <p className="mb-2"><strong>Amount:</strong> ${price.toFixed(2)}</p>
         <p className="mb-2"><strong>Bank Name:</strong> {adminAccountDetails.bankName}</p>
         <p className="mb-2"><strong>Account Number:</strong> {adminAccountDetails.accountNumber}</p>
@@ -59,7 +46,7 @@ const PayNowModal: React.FC<ModalProps> = ({ isOpen, onClose, trackingNo, price,
             <Button
             type="submit"
             variant="primary"
-            onClick={handleConfirmPayment}
+            onClick={()=>onConfirmPayment(order)}
             className="max-w-[200px] rounded-full py-3 font-base text-sm mt-6"
           >
             Confirm Payment

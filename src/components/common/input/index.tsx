@@ -1,7 +1,8 @@
 "use client";
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import { InputProps } from "./types";
 import Image from "next/image";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 const Input = forwardRef<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
@@ -23,10 +24,13 @@ const Input = forwardRef<
       options = [],
       rows = 3,
       labelClassName = "",
+      type = "text",
       ...props
     },
     ref
   ) => {
+    const [showPassword, setShowPassword] = useState(false);
+
     const effectiveBg = bg === "" || bg === "bg-transparent" ? "" : bg;
 
     const baseStyles = `
@@ -57,12 +61,16 @@ const Input = forwardRef<
       sizeStyles[inputSize],
       className,
       error ? "border-red-500" : "",
+      type === "password" ? "pr-12" : "", // extra space for eye icon
     ]
       .filter(Boolean)
       .join(" ");
 
+    // Determine input type for rendering
+    const inputType = type === "password" && showPassword ? "text" : type;
+
     return (
-      <div className="mb-4">
+      <div className="mb-4 relative">
         {label && (
           <label
             className={`block mb-2 text-sm font-normal text-gray-700 ${labelClassName}`}
@@ -109,13 +117,30 @@ const Input = forwardRef<
             {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
           />
         ) : (
-          <input
-            ref={ref as React.Ref<HTMLInputElement>}
-            className={combinedStyles}
-            placeholder={placeholder}
-            {...register}
-            {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
-          />
+          <div className="relative">
+            <input
+              ref={ref as React.Ref<HTMLInputElement>}
+              className={combinedStyles}
+              placeholder={placeholder}
+              type={inputType}
+              {...register}
+              {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
+            />
+            {type === "password" && (
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-500 hover:text-gray-700 focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            )}
+          </div>
         )}
 
         {error && (

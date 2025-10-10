@@ -1,18 +1,27 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
-import { quotesData } from './data';
 import { Quote } from './types';
 import Search from '@/src/components/common/search';
 import SortDropdown from '@/src/components/common/SortDropdown';
 import { Eye } from 'lucide-react';
+import { useUserQuotes } from '@/src/hooks/useQueries';
 
 const Quotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [internalSort, setInternalSort] = useState('newest');
-  const [sortedDataState, setSortedDataState] = useState<Quote[]>(quotesData);
+  const [sortedDataState, setSortedDataState] = useState<Quote[] | null>();
+
+  const {data: quotesData, isPending, isError, refetch} = useUserQuotes();
+  console.log(quotesData);
+
+ useEffect(() => {
+  setSortedDataState(quotesData ?? []);
+}, [quotesData]);
+
+
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
-    if (!sortValue || !dataToSort.length) return dataToSort;
+    if (!sortValue || !dataToSort?.length) return dataToSort;
 
     return [...dataToSort].sort((a, b) => {
       switch (sortValue) {
@@ -21,9 +30,9 @@ const Quotes: React.FC = () => {
         case 'oldest':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'order_asc':
-          return a.orderNo.localeCompare(b.orderNo);
+          return a.orderId!.localeCompare(b.orderId!);
         case 'order_desc':
-          return b.orderNo.localeCompare(a.orderNo);
+          return b.orderId!.localeCompare(a.orderId!);
         default:
           return 0;
       }
@@ -31,13 +40,16 @@ const Quotes: React.FC = () => {
   };
 
   useEffect(() => {
+  if (quotesData) {
     setSortedDataState(sortData(quotesData, internalSort));
-  }, [internalSort]);
+  }
+}, [internalSort, quotesData]);
+
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
 
-    return sortedDataState.filter((row) =>
+    return sortedDataState?.filter((row) =>
       Object.values(row).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -52,7 +64,7 @@ const Quotes: React.FC = () => {
     setSearchTerm(term);
   };
 
-  const viewQuote = (id: number) => {
+  const viewQuote = (id: string) => {
     console.log(`Viewing quote ${id}`);
   };
 
@@ -61,6 +73,14 @@ const Quotes: React.FC = () => {
     { value: 'oldest', label: 'Oldest To Newest' },
    
   ];
+
+  if (isPending) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error</div>;
+  }
 
   return (
     <div className="min-h-screen">
@@ -82,12 +102,12 @@ const Quotes: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {filteredData.length === 0 ? (
+        {filteredData?.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">No quotes found</p>
           </div>
         ) : (
-          filteredData.map((quote) => (
+          filteredData?.map((quote) => (
             <div
               key={quote.id}
               className="bg-gray-100 p-6 rounded-lg flex justify-between items-center"
@@ -96,23 +116,20 @@ const Quotes: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-md font-bold text-black">Name:</span>
-                    <span className="text-sm text-gray-900">{quote.name}</span>
+                    <span className="text-sm text-gray-900">{quote.user?.firstName + " " + quote.user?.lastName}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-md font-bold text-black">Order No:</span>
-                    <span className="text-sm text-gray-900">{quote.orderNo}</span>
+                    <span className="text-sm text-gray-900">{quote.orderId}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-md font-bold text-black">Email:</span>
-                    <span className="text-sm text-gray-900">{quote.email}</span>
+                    <span className="text-sm text-gray-900">{quote.email ?? quote.user?.email}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col items-center gap-2">
-                <span className="text-black px-3 py-1 rounded-md text-sm font-semibold bg-gray-200">
-                  {quote.label}
-                </span>
                 <button
                   onClick={() => viewQuote(quote.id)}
                   className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"

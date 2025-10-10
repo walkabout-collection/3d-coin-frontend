@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,125 +13,84 @@ import {
 import { toast } from "react-toastify";
 import { AxiosError } from "axios";
 
-const formSchema = z
-  .object({
-    firstName: z
-      .string()
-      .optional()
-      .refine((val) => val === undefined || val === "" || val.length >= 1, {
-        message: "First name is required",
-      }),
-    lastName: z
-      .string()
-      .optional()
-      .refine((val) => val === undefined || val === "" || val.length >= 1, {
-        message: "Last name is required",
-      }),
-    email: z
-      .string()
-      .optional()
-      .refine(
-        (val) => {
-          if (!val || val === "") return true;
-          return z.string().email().safeParse(val).success;
-        },
-        {
-          message: "Invalid email address",
-        }
-      ),
-    contactNumber: z
-      .string()
-      .optional()
-      .refine(
-        (val) => {
-          if (!val || val === "") return true;
-          return val.length >= 10 && val.length <= 15;
-        },
-        {
-          message: "Contact number must be between 10 and 15 digits",
-        }
-      ),
-    oldPassword: z.string().optional().or(z.literal("")),
-    newPassword: z.string().optional().or(z.literal("")),
-    confirmPassword: z.string().optional().or(z.literal("")),
-  })
-  .refine(
-    (data) => {
-      const { oldPassword = "", newPassword = "", confirmPassword = "" } = data;
-      const changing = oldPassword !== "" || newPassword !== "" || confirmPassword !== "";
-
-      if (!changing) return true;
-
-      const validLength = oldPassword.length >= 6 && newPassword.length >= 6;
-      const matches = newPassword === confirmPassword;
-
-      return validLength && matches;
-    },
-    {
-      message:
-        "To change password, all fields must be filled, at least 6 characters, and new passwords must match.",
-      path: ["confirmPassword"],
-    }
-  );
-
-type FormData = z.infer<typeof formSchema>;
-
-const AdminAccountSetting: React.FC = () => {
-  const {
-    data: profile,
-    isLoading,
-    error,
-  } = useGetUserProfile();
-
-  const {
-  mutate: updateUserProfile,
-  isPending: isProfileUpdating,
-} = useUpdateCurrentUserProfile({
-  onSuccess(data: unknown) {  
-  if (data && typeof data === "object" && "data" in data) {
-    const res = data as {  message: string, data: FormData & { id: string }  };
-    toast.success(res.message);
-
-    reset({
-      firstName: res.data.firstName || "",
-      lastName: res.data.lastName || "",
-      email: res.data.email || "",
-      contactNumber: res.data.contactNumber || "",
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-  } else {
-    toast.success("Profile updated");
-  }
-},
-
-  onError(error: unknown) {
-    const err = error as AxiosError<{ message?: string }>;
-    toast.error(err.response?.data?.message || "Failed to update profile");
-  },
+// Main form schema without password fields
+const formSchema = z.object({
+  firstName: z
+    .string()
+    .min(1, "First name is required"),
+  lastName: z
+    .string()
+    .min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  contactNumber: z
+    .string()
+    .min(10, "Contact number must be at least 10 digits")
+    .max(15, "Contact number too long"),
 });
 
+// Password form schema for modal
+const passwordSchema = z
+  .object({
+    oldPassword: z.string().min(6, "Current password is required"),
+    newPassword: z.string().min(6, "New password must be at least 6 characters"),
+    confirmPassword: z.string().min(6, "Confirm password is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
+type FormData = z.infer<typeof formSchema>;
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
+const AdminAccountSetting: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Fetch user profile
+  const { data: profile, isLoading, error } = useGetUserProfile();
+
+  // Update user profile mutation
+  const {
+    mutate: updateUserProfile,
+    isPending: isProfileUpdating,
+  } = useUpdateCurrentUserProfile({
+    onSuccess(data: unknown) {
+      if (data && typeof data === "object" && "data" in data) {
+        const res = data as { message: string; data: FormData & { id: string } };
+        toast.success(res.message);
+        reset(res.data);
+      } else {
+        toast.success("Profile updated");
+      }
+    },
+    onError(error: unknown) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast.error(err.response?.data?.message || "Failed to update profile");
+    },
+  });
+
+  // Change password mutation
   const {
     mutate: changePassword,
     isPending: isChangePasswordPending,
   } = useUpdateCurrentUserPassword({
     onSuccess(data: unknown) {
-  if (data && typeof data === "object" && "data" in data) {
-    const res = data as { data: { message: string } };
-    toast.success(res.data.message);
-  } else {
-    toast.success("Password updated");
-  }
-},
-
+      if (data && typeof data === "object" && "data" in data) {
+        const res = data as { data: { message: string } };
+        toast.success(res.data.message);
+      } else {
+        toast.success("Password updated");
+      }
+      setIsModalOpen(false);
+      resetPasswordForm();
+    },
     onError(error: unknown) {
       const err = error as AxiosError<{ message?: string }>;
       toast.error(err.response?.data?.message || "Failed to change password");
     },
   });
 
+  // Main form (profile info)
   const {
     register,
     handleSubmit,
@@ -144,12 +103,20 @@ const AdminAccountSetting: React.FC = () => {
       lastName: "",
       email: "",
       contactNumber: "",
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
     },
   });
 
+  // Password form (modal)
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPasswordForm,
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+  });
+
+  // Prefill profile data
   useEffect(() => {
     if (profile) {
       reset({
@@ -157,54 +124,21 @@ const AdminAccountSetting: React.FC = () => {
         lastName: profile.lastName || "",
         email: profile.email || "",
         contactNumber: profile.contactNumber || "",
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
       });
     }
   }, [profile, reset]);
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      // Update password if applicable
-      if (data.oldPassword && data.newPassword) {
-        await new Promise<void>((resolve, reject) =>
-          changePassword(
-            {
-              oldPassword: data.oldPassword || "",
-              newPassword: data.newPassword || "",
-            },
-            {
-              onSuccess: () => resolve(),
-              onError: (err) => reject(err),
-            }
-          )
-        );
-      }
+  // Submit profile update
+  const onSubmit = (data: FormData) => {
+    updateUserProfile(data);
+  };
 
-      // Update profile info
-      await new Promise<void>((resolve, reject) =>
-        updateUserProfile(
-          {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            contactNumber: data.contactNumber,
-          },
-          {
-            onSuccess: () => resolve(),
-            onError: (err) => reject(err),
-          }
-        )
-      );
-
-      reset();
-    } catch (error) {
-      console.error(
-        "Failed to update: " +
-          (error instanceof Error ? error.message : "Unknown error")
-      );
-    }
+  // Submit password update from modal
+  const onPasswordSubmit = (data: PasswordFormData) => {
+    changePassword({
+      oldPassword: data.oldPassword,
+      newPassword: data.newPassword,
+    });
   };
 
   if (isLoading) {
@@ -218,10 +152,9 @@ const AdminAccountSetting: React.FC = () => {
   return (
     <div className="max-w-2xl min-h-screen mb-20">
       <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
-      <p className="text-gray-600 font-semibold mb-6">
-        USER ID: {profile?.id || "N/A"}
-      </p>
+      <p className="text-gray-600 font-semibold mb-6">USER ID: {profile?.id || "N/A"}</p>
 
+      {/* Profile form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-5">
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -267,49 +200,92 @@ const AdminAccountSetting: React.FC = () => {
           bg="bg-gray-100"
           labelClassName="text-md !font-semibold text-gray-900"
         />
-        <Input
-          label="OLD PASSWORD"
-          placeholder="************"
-          type="password"
-          inputSize="md"
-          {...register("oldPassword")}
-          error={errors.oldPassword?.message}
-          className="border-none py-4 px-6 rounded-xl"
-          bg="bg-gray-100"
-          labelClassName="text-md !font-semibold text-gray-900"
-        />
-        <Input
-          label="NEW PASSWORD"
-          placeholder="************"
-          type="password"
-          inputSize="md"
-          {...register("newPassword")}
-          error={errors.newPassword?.message}
-          className="border-none py-4 px-6 rounded-xl"
-          bg="bg-gray-100"
-          labelClassName="text-md !font-semibold text-gray-900"
-        />
-        <Input
-          label="CONFIRM PASSWORD"
-          placeholder="************"
-          type="password"
-          inputSize="md"
-          {...register("confirmPassword")}
-          error={errors.confirmPassword?.message}
-          className="border-none py-4 px-6 rounded-xl"
-          bg="bg-gray-100"
-          labelClassName="text-md !font-semibold text-gray-900"
-        />
+
+        {/* Change Password Button */}
+        <div>
+          <label className="text-md font-semibold text-gray-900 mb-1 block">Password</label>
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-1 py-2 px-6 rounded-full max-w-[280px]"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Change Password
+          </Button>
+        </div>
 
         <Button
           type="submit"
           variant="primary"
-          disabled={isChangePasswordPending || isProfileUpdating}
+          disabled={isProfileUpdating}
           className="max-w-[100px] rounded-full py-3 font-semibold mt-6 mb-20"
         >
-          {isChangePasswordPending || isProfileUpdating ? "Saving..." : "Save"}
+          {isProfileUpdating ? "Saving..." : "Save"}
         </Button>
       </form>
+
+      {/* Password Change Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md relative">
+            <h3 className="text-xl font-bold mb-6">Change Password</h3>
+            <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
+              <Input
+                label="Current Password"
+                placeholder="********"
+                type="password"
+                {...registerPassword("oldPassword")}
+                error={passwordErrors.oldPassword?.message}
+                className="border-none py-4 px-6 rounded-xl"
+                bg="bg-gray-100"
+                labelClassName="text-md !font-semibold text-gray-900"
+              />
+              <Input
+                label="New Password"
+                placeholder="********"
+                type="password"
+                {...registerPassword("newPassword")}
+                error={passwordErrors.newPassword?.message}
+                className="border-none py-4 px-6 rounded-xl"
+                bg="bg-gray-100"
+                labelClassName="text-md !font-semibold text-gray-900"
+              />
+              <Input
+                label="Confirm Password"
+                placeholder="********"
+                type="password"
+                {...registerPassword("confirmPassword")}
+                error={passwordErrors.confirmPassword?.message}
+                className="border-none py-4 px-6 rounded-xl"
+                bg="bg-gray-100"
+                labelClassName="text-md !font-semibold text-gray-900"
+              />
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="rounded-full px-5 py-2"
+                  onClick={() => {
+                    resetPasswordForm();
+                    setIsModalOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isChangePasswordPending}
+                  className="rounded-full px-5 py-2"
+                >
+                  {isChangePasswordPending ? "Saving..." : "Reset Password"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
