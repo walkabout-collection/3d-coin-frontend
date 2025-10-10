@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "next lint",
-    "prepare": "husky install",
+    "prepare": "husky",
     "generate:api": "swagger-typescript-api generate -p http://localhost:8000/v3/api-docs -o src/services/api -n apiTypes.ts"
   },
   "dependencies": {
@@ -35,11 +35,15 @@
     "eslint-config-next": "15.5.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
+    "prettier": "^3.6.2",
     "swagger-typescript-api": "^13.2.13",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --fix"
+    "*.{js,jsx,ts,tsx,json,css,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

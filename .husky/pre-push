@@ -10,4 +10,6 @@ if ! npm run build; then
   exit 1
 fi
 
-echo "✅🎉 Build succeeded! 🚀 Proceeding with the push... 📤✨"
+# Lint and fix staged files
+echo "🔍 Running lint-staged to format/lint staged files..."
+npx lint-staged
