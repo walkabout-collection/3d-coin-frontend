@@ -8,6 +8,6 @@ export interface Quote {
   label: string;
   createdAt: string;
   status: string;
-  user: User;
+  user?: User;
   orderId: string;
 }
