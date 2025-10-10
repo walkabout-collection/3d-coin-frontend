@@ -1,6 +1,8 @@
+import { User } from "@/src/services/api/apiTypes";
+
 export interface Quote {
   status: string;
-  user: any;
+  user: User;
   orderId: string;
   id: string;
   name: string;
@@ -9,3 +11,4 @@ export interface Quote {
   label: string;
   createdAt: string;
 }
+

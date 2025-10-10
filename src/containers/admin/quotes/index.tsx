@@ -17,7 +17,7 @@ const AdminQuotes: React.FC = () => {
   const [internalSort, setInternalSort] = useState("newest");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<Quote  | null>(null);
   const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
 
   const {

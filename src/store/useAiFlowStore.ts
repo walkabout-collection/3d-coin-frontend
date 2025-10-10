@@ -63,7 +63,7 @@ export const useAiFlowStore = create<AiFlowStore>()(
           newStack.pop();
           const previous = newStack[newStack.length - 1] || "main";
 
-          let newState: GeneratorState = { ...initialGeneratorState };
+          const newState: GeneratorState = { ...initialGeneratorState };
           if (previous === "upload") newState.showUpload = true;
           if (previous === "guide") newState.showGuide = true;
           if (previous === "design") newState.showDesignInterface = true;

@@ -1,3 +1,19 @@
+import { User } from "@/src/services/api/apiTypes";
+
+export type PaymentMethod = "STRIPE" | "QUICKBOOKS" | "MANUAL";
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
+export interface Payment {
+  id: string;
+  orderId?: string | null;
+  userId?: string | null;
+  user?: User | null;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amount: number;
+  paidAt?: string | null;       // ISO date string
+  createdAt: string;            // ISO date string
+}
+
 export interface OrderResponse {
   id: string;
   userId: string | null;
@@ -76,7 +92,7 @@ export interface OrderResponse {
       updatedAt: string;
     } | null;
   }[];
-  payments: any[]; 
+  payments: Payment[]; 
 }
 
 export interface OrderDataItem {
@@ -91,3 +107,4 @@ export interface OrderDataItem {
   description: string;  
   text: string;         
 };
+
