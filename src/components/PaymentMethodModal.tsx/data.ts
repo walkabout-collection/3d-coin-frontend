@@ -2,18 +2,18 @@ import { PaymentOption } from "@/src/containers/payment-method/types";
 
 export const paymentOptions: PaymentOption[] = [
   {
-    id: "quickbooks",
-    name: " Quickbooks",
+    id: "QUICKBOOKS",
+    name: "QuickBooks",
     logo: "/images/home/quickbooks.png",
   },
   {
-    id: "stripe",
-    name: " Stripe",
+    id: "STRIPE",
+    name: "Stripe",
     logo: "/images/home/stripe.png",
   },
   {
-    id: "manual",
-    name: "Manual Invoice",
+    id: "MANUAL",
+    name: "Manual",
     logo: "/images/dashboard/email.svg",
   },
 ];

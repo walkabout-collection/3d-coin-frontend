@@ -1,10 +1,110 @@
+import { User } from "@/src/services/api/apiTypes";
+
+export type PaymentMethod = "STRIPE" | "QUICKBOOKS" | "MANUAL";
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
+export interface Payment {
+  id: string;
+  orderId?: string | null;
+  userId?: string | null;
+  user?: User | null;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amount: number;
+  paidAt?: string | null;       // ISO date string
+  createdAt: string;            // ISO date string
+}
+
+export interface OrderResponse {
+  id: string;
+  userId: string | null;
+  orderId: string | null;
+  carrier: string | null;
+  status: string;
+  weight: number | null;
+  orderDate: string;
+  totalCoins: number;
+  totalPrice: number | null;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    contactNumber: string | null;
+    refreshToken: string | null;
+    role: string;
+    emailVerified: string | null;
+    emailVerificationToken: string | null;
+    emailVerificationExpires: string | null;
+    passwordResetToken: string | null;
+    passwordResetExpires: string | null;
+    image: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  quotes: {
+    id: string;
+    userId: string | null;
+    orderId: string;
+    status: string;
+    amount: number | null;
+    totalCoins: number;
+    feedback: string | null;
+    createdAt: string;
+    method: string;
+    designStatus: string;
+    coinDesignId: string;
+    packagingId: string | null;
+    email: string | null;
+    packaging: string | null;
+  description: string | null;
+    coinDesign: {
+      id: string;
+      userId: string | null;
+      name: string;
+      status: string;
+      totalCoins: number;
+      generatorPrompt: string | null;
+      generatorImage: string | null;
+      designerInstructions: string | null;
+      frontImage: string;
+      frontDescription: string | null;
+      frontText: string | null;
+      frontTextStyle: string | null;
+      frontReference: string | null;
+      frontReferenceImpact: string | null;
+      frontComposition: string | null;
+      backImage: string;
+      backDescription: string | null;
+      text: string | null;
+      backTextStyle: string | null;
+      backReference: string | null;
+      backReferenceImpact: string | null;
+      backComposition: string | null;
+      coinShape: string | null;
+      subject: string | null;
+      materialFinish: string | null;
+      contrastStyle: string | null;
+      detailLevel: string | null;
+      prohibitedContent: string | null;
+      orderId: string | null;
+      createdAt: string;
+      updatedAt: string;
+    } | null;
+  }[];
+  payments: Payment[]; 
+}
+
 export interface OrderDataItem {
+   id: string;
   trackingNo: string;
   packaging: string;
   order: string;
   date: string;
   payment: string;
   status: string;
-  packagingDescription?: string;
-  backText?: string;
-}
+  userId: string;
+  description: string;  
+  text: string;         
+};
+

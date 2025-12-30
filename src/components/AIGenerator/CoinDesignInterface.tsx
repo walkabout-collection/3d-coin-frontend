@@ -1,12 +1,13 @@
+
 "use client";
 import React, { useState } from "react";
 import { Paperclip } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { useGenerateFromPrompt, useUploadImage } from "@/src/hooks/useQueries";
+import { useUploadImage } from "@/src/hooks/useQueries";
 import { z } from "zod";
-import { useCoinStore } from "@/src/store/useCoinStore";
+import { useDesignCoinStore } from "@/src/store/useCoinStore";
 
 interface UIState {
   previewImage: string | null;
@@ -19,8 +20,8 @@ interface ImageData {
 }
 
 interface CoinDesignInterfaceProps {
-  onContinue: () => void;
-  variants?: string[]; 
+  onContinue: (frontImages: string[], backImages: string[]) => void; 
+  variants?: string[];
 }
 
 const initialUIState: UIState = {
@@ -33,61 +34,73 @@ const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   onContinue,
-  variants = [], 
+  variants = [],
 }) => {
   const [state, setState] = useState<UIState>(initialUIState);
   const [imageData, setImageData] = useState<ImageData>({ file: null });
-  const [uploadedImages, setUploadedImages] = useState<string[]>(variants);
+  const [activeTab, setActiveTab] = useState<"front" | "back">("front");
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<{ message: string } | undefined>(undefined);
-   const { coinImages,addCoinImage } = useCoinStore();
-
+  const { frontImages, backImages, addFrontImage, addBackImage } = useDesignCoinStore();
 
   const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage({
-  onSuccess: (data) => {
-    toast.success("Generated successfully!");
-    setError(undefined);
+    onSuccess: (res) => {
+      toast.success("Generated successfully!");
+      setError(undefined);
 
-    const bufferArray = data?.data?.buffer?.data;
-    if (bufferArray) {
-      const base64 = Buffer.from(bufferArray).toString("base64");
-      const imageUrl = `data:image/png;base64,${base64}`;
-
-      // Save in Zustand
-      addCoinImage(imageUrl);
-
-      setUploadedImages((prev) => {
-        const newImages = [...prev, imageUrl];
-        return newImages.slice(-4);
+      const file = res.data?.data?.buffer;
+      if (file instanceof File) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          if (activeTab === "front") {
+            addFrontImage(base64);
+            setState((prev) => ({
+              ...prev,
+              previewImage: base64,
+              selectedThumbnail: frontImages.length,
+            }));
+          } else {
+            addBackImage(base64);
+            setState((prev) => ({
+              ...prev,
+              previewImage: base64,
+              selectedThumbnail: backImages.length,
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        console.error("No buffer returned from uploadImage API");
+      }
+    },
+    onError: () => {
+      setError({
+        message: "Failed to generate from prompt. Please try again.",
       });
-
-      setState((prev) => ({
-        ...prev,
-        previewImage: imageUrl,
-        selectedThumbnail: uploadedImages.length,
-      }));
-    }
-  },
-  onError: () => {
-    setError({ message: "Failed to generate from prompt. Please try again." });
-    toast.error("Failed to generate from prompt.");
-  },
-});
-
+      toast.error("Failed to generate from prompt.");
+    },
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const imageUrl = URL.createObjectURL(file);
-      setUploadedImages((prev) => {
-        const newImages = [...prev, imageUrl];
-        return newImages.slice(-4); 
-      });
-      setState((prev) => ({
-        ...prev,
-        previewImage: imageUrl,
-        selectedThumbnail: uploadedImages.length,
-      }));
+      if (activeTab === "front") {
+        addFrontImage(imageUrl);
+        setState((prev) => ({
+          ...prev,
+          previewImage: imageUrl,
+          selectedThumbnail: frontImages.length,
+        }));
+      } else {
+        addBackImage(imageUrl);
+        setState((prev) => ({
+          ...prev,
+          previewImage: imageUrl,
+          selectedThumbnail: backImages.length,
+        }));
+      }
       setImageData({ file });
       setError(undefined);
     }
@@ -101,45 +114,49 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     }));
   };
 
- const base64ToFile = (base64String: string, fileName: string): File => {
-  // Check if it is a data URL
-  const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
-  if (!matches) {
-    throw new Error("Invalid base64 string");
-  }
+  const base64ToFile = (base64String: string, fileName: string): File => {
+    const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
+    if (!matches) {
+      throw new Error("Invalid base64 string");
+    }
 
-  const mime = matches[1];      // e.g., "image/png"
-  const data = matches[2];      // actual base64 content
+    const mime = matches[1];
+    const data = matches[2];
+    const byteString = atob(data);
+    const n = byteString.length;
+    const u8arr = new Uint8Array(n);
 
-  const byteString = atob(data);
-  const n = byteString.length;
-  const u8arr = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      u8arr[i] = byteString.charCodeAt(i);
+    }
 
-  for (let i = 0; i < n; i++) {
-    u8arr[i] = byteString.charCodeAt(i);
-  }
-
-  return new File([u8arr], fileName, { type: mime });
-};
-
-
-const handleGenerate = () => {
- 
-
-  let fileToSend;
- if(state.previewImage) { 
-    fileToSend = base64ToFile(state.previewImage, "preview.png")
-  }
-
-  uploadImageMutate({
-    image: fileToSend,
-    prompt,
-  });
-};
-
-
-  const handleSaveDraft = () => {
+    return new File([u8arr], fileName, { type: mime });
   };
+
+  const handleGenerate = () => {
+    let fileToSend;
+    if (state.previewImage) {
+      fileToSend = base64ToFile(state.previewImage, `${activeTab}-preview.png`);
+    }
+
+    uploadImageMutate({
+      image: fileToSend,
+      prompt,
+    });
+  };
+
+  const handleSaveDraft = () => {};
+
+  const handleContinueClick = () => {
+    if (frontImages.length === 0 || backImages.length === 0) {
+      toast.error("Please generate or upload both front and back images before continuing.");
+      return;
+    }
+    onContinue(frontImages, backImages); 
+  };
+
+
+  const displayedImages = activeTab === "front" ? frontImages : backImages;
 
   return (
     <div className="min-h-screen">
@@ -147,13 +164,37 @@ const handleGenerate = () => {
         <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Left Section - Input Area */}
           <div className="flex flex-col">
+            {/* Tabs */}
+            <div className="flex mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab("front")}
+                className={`py-3 px-6 text-sm font-semibold uppercase tracking-wide ${
+                  activeTab === "front"
+                    ? "text-black border-b-2 border-black"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Front Image
+              </button>
+              <button
+                onClick={() => setActiveTab("back")}
+                className={`py-3 px-6 text-sm font-semibold uppercase tracking-wide ${
+                  activeTab === "back"
+                    ? "text-black border-b-2 border-black"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Back Image
+              </button>
+            </div>
+
             <div className="relative mb-8">
               <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
                 {state.previewImage && (
                   <div className="mb-3">
                     <Image
                       src={state.previewImage}
-                      alt="Attached Preview"
+                      alt={`${activeTab} Preview`}
                       width={64}
                       height={64}
                       className="object-cover rounded-md border border-gray-300 shadow"
@@ -162,7 +203,7 @@ const handleGenerate = () => {
                 )}
                 <textarea
                   className="w-full bg-transparent outline-none resize-none text-lg placeholder-gray-400"
-                  placeholder="Ask anything…"
+                  placeholder={`Enter prompt for ${activeTab} image…`}
                   rows={10}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -207,7 +248,7 @@ const handleGenerate = () => {
             {/* Thumbnail Images Section */}
             <div className="space-y-4">
               <div className="grid grid-cols-4 gap-4">
-                {coinImages?.map((imageUrl, index) => (
+                {displayedImages.map((imageUrl, index) => (
                   <div
                     key={index}
                     className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-105 ${
@@ -219,7 +260,7 @@ const handleGenerate = () => {
                   >
                     <Image
                       src={imageUrl}
-                      alt={`Thumbnail ${index + 1}`}
+                      alt={`${activeTab} Thumbnail ${index + 1}`}
                       width={200}
                       height={200}
                       className="w-full h-full object-cover"
@@ -230,7 +271,9 @@ const handleGenerate = () => {
 
               <div className="text-sm text-gray-500 leading-relaxed">
                 <p className="uppercase tracking-wide">
-                  Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum has been the industry standard
+                  Lorem ipsum is simply dummy text of the printing and
+                  typesetting industry. Lorem ipsum has been the industry
+                  standard
                 </p>
               </div>
             </div>
@@ -243,7 +286,7 @@ const handleGenerate = () => {
                 {state.previewImage ? (
                   <Image
                     src={state.previewImage}
-                    alt="Preview"
+                    alt={`${activeTab} Preview`}
                     width={600}
                     height={600}
                     className="w-full h-full object-cover"
@@ -253,7 +296,7 @@ const handleGenerate = () => {
                     <div className="text-center">
                       <div className="text-4xl mb-2">🪙</div>
                       <div className="text-lg font-medium">
-                        No design selected
+                        No {activeTab} design selected
                       </div>
                       <div className="text-sm">Upload an image to preview</div>
                     </div>
@@ -264,22 +307,21 @@ const handleGenerate = () => {
 
             {/* Action Buttons */}
             <div className="flex justify-between gap-6 mt-8">
-              {/* {isLoggedIn && ( */}
-                <Button
-                  type="button"
-                  variant="ternary"
-                  onClick={handleSaveDraft}
-                  className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
-                >
-                  SAVE AS DRAFT
-                </Button>
-              {/* )} */}
+              <Button
+                type="button"
+                variant="ternary"
+                onClick={handleSaveDraft}
+                className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
+              >
+                SAVE AS DRAFT
+              </Button>
 
               <Button
-                onClick={onContinue}
+                onClick={handleContinueClick}
                 type="button"
                 variant="primary"
                 className="max-w-[180px] w-full text-lg font-medium"
+                disabled={frontImages.length === 0 || backImages.length === 0}
               >
                 CONTINUE
               </Button>

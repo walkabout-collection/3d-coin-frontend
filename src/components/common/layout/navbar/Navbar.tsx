@@ -1,11 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps, User } from "./types";
-
+import { useLogout } from "@/src/hooks/useQueries"; 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
@@ -20,8 +20,23 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [userData, setUserData] = useState<User | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
-  const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false); 
+  const pathname = usePathname();
+  const router = useRouter();
+  const popupRef = useRef<HTMLDivElement>(null); 
+
+  const { mutate: logout } = useLogout({
+    onSuccess: () => {
+      document.cookie = "token=; path=/; max-age=0";
+      document.cookie = "refreshToken=; path=/; max-age=0";
+      window.dispatchEvent(new Event("authChanged"));
+      router.push("/login");
+    },
+    onError: (err) => {
+      console.error("Logout failed:", err.message);
+    },
+  });
 
   const updateUserData = () => {
     const storedData = localStorage.getItem("user");
@@ -37,6 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({
       setUserData(null);
     }
   };
+
   useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
@@ -45,7 +61,6 @@ const Navbar: React.FC<NavbarProps> = ({
 
     checkAuth();
     window.addEventListener("authChanged", checkAuth);
-
     return () => window.removeEventListener("authChanged", checkAuth);
   }, []);
 
@@ -65,12 +80,33 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setIsPopupOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const isActiveLink = (href: string): boolean => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
 
   const shouldShowShadow =
     (pathname !== "/" && pathname !== "/pricing") || isScrolled;
+
+
+  const togglePopup = () => {
+    setIsPopupOpen((prev) => !prev);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsPopupOpen(false);
+  };
 
   return (
     <nav
@@ -104,7 +140,6 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           </Link>
 
-          {/* Navigation Links */}
           <div className="flex items-center space-x-14">
             {navLinks.map((item) => (
               <Link
@@ -121,9 +156,8 @@ const Navbar: React.FC<NavbarProps> = ({
             ))}
           </div>
 
-          {/* User Authentication Section */}
           {isLoggedIn ? (
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-6 relative">
               <button className="text-white hover:text-amber-400 transition-colors">
                 <Image
                   src="/images/navbar/shopping-cart.svg"
@@ -133,7 +167,10 @@ const Navbar: React.FC<NavbarProps> = ({
                 />
               </button>
 
-              <button className="w-12 h-12 rounded-full">
+              <button
+                className="w-12 h-12 rounded-full relative"
+                onClick={togglePopup}
+              >
                 <Image
                   src="/images/navbar/profile.svg"
                   alt="Profile"
@@ -141,6 +178,35 @@ const Navbar: React.FC<NavbarProps> = ({
                   height={40}
                 />
               </button>
+
+              {/* Popup Menu */}
+              {isPopupOpen && (
+                <div
+                  ref={popupRef}
+                  className="absolute top-16 right-0 bg-white shadow-xl rounded-lg py-2 w-48 z-50"
+                >
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
+                    onClick={() => setIsPopupOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
+                    onClick={() => setIsPopupOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center space-x-2">

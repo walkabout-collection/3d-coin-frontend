@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   metalFinishesOptions,
   coinStylesOptions,
@@ -13,29 +13,84 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Input from '../common/input';
-import ImageUpload from '../common/imageUpload';
+import Image from 'next/image';
 import Button from '../common/button/Button';
+import { useAiFlowStore } from '@/src/store/useAiFlowStore';
+import { useDesignCoinStore, useQAPromptsStore } from '@/src/store/useCoinStore';
 
-import { useCoinSpecification, useUploadImage } from '@/src/hooks/useQueries'; 
 const formSchema = z.object({
-  coinShape: z.string().min(1, 'Coin shape is required'),
-  subject: z.string().min(1, 'Subject is required'),
-  metalFinishes: z.string().min(1, 'Metal finish is required'),
-  coinStyles: z.string().min(1, 'Coin style is required'),
-  detailLevel: z.string().min(1, 'Detail level is required'),
-  frontDescription: z.string().min(1, 'Front description is required'),
-  frontReferenceImage: z.instanceof(File, { message: 'Front reference image is required' }),
-  frontReferenceImageImpact: z.string().min(1, 'Front reference image impact is required'),
-  frontTextInsideArtwork: z.string().min(1, 'Front text inside artwork is required'),
-  frontTextStyle: z.string().min(1, 'Front text style is required'),
-  frontCompositionNotes: z.string().min(1, 'Front composition notes are required'),
-  backDescription: z.string().min(1, 'Back description is required'),
-  backReferenceImage: z.instanceof(File, { message: 'Back reference image is required' }),
-  backReferenceImageImpact: z.string().min(1, 'Back reference image impact is required'),
-  backTextInsideArtwork: z.string().min(1, 'Back text inside artwork is required'),
-  backTextStyle: z.string().min(1, 'Back text style is required'),
-  backCompositionNotes: z.string().min(1, 'Back composition notes are required'),
-  prohibitedContent: z.string().min(1, 'Prohibited content is required'),
+  coinShape: z
+    .string()
+    .min(1, 'Coin shape is required')
+    .max(50, 'Coin shape cannot exceed 50 characters'),
+  subject: z
+    .string()
+    .min(1, 'Subject is required')
+    .max(50, 'Subject cannot exceed 50 characters'),
+  metalFinishes: z
+    .string()
+    .min(1, 'Metal finish is required')
+    .max(50, 'Metal finish cannot exceed 50 characters'),
+  coinStyles: z
+    .string()
+    .min(1, 'Coin style is required')
+    .max(50, 'Coin style cannot exceed 50 characters'),
+  detailLevel: z
+    .string()
+    .min(1, 'Detail level is required')
+    .max(50, 'Detail level cannot exceed 50 characters'),
+  frontDescription: z
+    .string()
+    .min(1, 'Front description is required')
+    .max(50, 'Front description cannot exceed 50 characters'),
+  frontReferenceImage: z
+    .string()
+    .min(1, 'Front reference image is required')
+    .max(50, 'Front reference image cannot exceed 50 characters'),
+  frontReferenceImageImpact: z
+    .string()
+    .min(1, 'Front reference image impact is required')
+    .max(50, 'Front reference image impact cannot exceed 50 characters'),
+  frontTextInsideArtwork: z
+    .string()
+    .min(1, 'Front text inside artwork is required')
+    .max(50, 'Front text inside artwork cannot exceed 50 characters'),
+  frontTextStyle: z
+    .string()
+    .min(1, 'Front text style is required')
+    .max(50, 'Front text style cannot exceed 50 characters'),
+  frontComposition: z
+    .string()
+    .min(1, 'Front composition notes are required')
+    .max(50, 'Front composition notes cannot exceed 50 characters'),
+  backDescription: z
+    .string()
+    .min(1, 'Back description is required')
+    .max(50, 'Back description cannot exceed 50 characters'),
+  backReferenceImage: z
+    .string()
+    .min(1, 'Back reference image is required')
+    .max(50, 'Back reference image cannot exceed 50 characters'),
+  backReferenceImageImpact: z
+    .string()
+    .min(1, 'Back reference image impact is required')
+    .max(50, 'Back reference image impact cannot exceed 50 characters'),
+  backTextInsideArtwork: z
+    .string()
+    .min(1, 'Back text inside artwork is required')
+    .max(50, 'Back text inside artwork cannot exceed 50 characters'),
+  backTextStyle: z
+    .string()
+    .min(1, 'Back text style is required')
+    .max(50, 'Back text style cannot exceed 50 characters'),
+  backComposition: z
+    .string()
+    .min(1, 'Back composition notes are required')
+    .max(50, 'Back composition notes cannot exceed 50 characters'),
+  prohibitedContent: z
+    .string()
+    .min(1, 'Prohibited content is required')
+    .max(50, 'Prohibited content cannot exceed 50 characters'),
 });
 
 export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialData = {} }) => {
@@ -54,86 +109,48 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({ onSubmit, initialD
       coinStyles: '',
       detailLevel: '',
       frontDescription: '',
+      frontReferenceImage: '',
       frontReferenceImageImpact: '',
       frontTextInsideArtwork: '',
       frontTextStyle: '',
-      frontCompositionNotes: '',
+      frontComposition: '',
       backDescription: '',
+      backReferenceImage: '',
       backReferenceImageImpact: '',
       backTextInsideArtwork: '',
       backTextStyle: '',
-      backCompositionNotes: '',
+      backComposition: '',
       prohibitedContent: '',
       ...initialData,
     },
   });
 
   const formData = watch();
+  const { setFormData, setInProgress } = useQAPromptsStore();
+  // console.log("QA Proceed clicked – Initial form data:", formData);
+ 
+  
+  const { goTo } = useAiFlowStore();
 
-  const coinSpecMutation = useCoinSpecification({
-    onSuccess: (data) => {
-      console.log('Coin specification submitted:', data);
-      onSubmit && onSubmit(formData);
-    },
-    onError: (err: Error) => {
-      console.error('Failed to submit coin specification:', err);
-    },
-  });
+  const { frontImages, backImages } = useDesignCoinStore();
+ const frontImageUrl = frontImages.at(-1) || '/images/home/front-side.png';
+  const backImageUrl = backImages.at(-1) || '/images/home/front-side.png';
 
-  const handleImageChange = (field: 'frontReferenceImage' | 'backReferenceImage', file: File | null) => {
-    if (file) {
-      setValue(field, file, { shouldValidate: true });
-    }
+ useEffect(() => {
+  setValue('frontReferenceImage', frontImageUrl, { shouldValidate: true });
+  setValue('backReferenceImage', backImageUrl, { shouldValidate: true });
+}, [frontImageUrl, backImageUrl, setValue]);
+
+  const onFormSubmit = async (data: QAFormData) => {
+      // console.log("QA Proceed clicked – Final form data:", data);
+
+    setFormData(data);
+    setInProgress(true);
+    onSubmit(data);
+    goTo('threeDRender');
+      // console.log("Stored in Zustand:", useQAPromptsStore.getState().formData);
+
   };
-
-  // const submitHandler = (data: QAFormData) => {
-  //   const payload = {
-  //     name: data.subject,
-  //     frontImage: data.frontReferenceImage,
-  //     frontDescription: data.frontDescription,
-  //     backImage: data.backReferenceImage,
-  //     backDescription: data.backDescription,
-  //     materialFinish: data.metalFinishes,
-  //     coinShape: data.coinShape,
-  //     contrastStyle: data.coinStyles,
-  //     detailLevel: data.detailLevel,
-  //   };
-
-  //   // Call API mutation
-  //   coinSpecMutation.mutate(payload);
-  // };
-
-  const { mutateAsync: uploadImageMutation } = useUploadImage();
-
-const submitHandler = async (data: QAFormData) => {
-  try {
-    const frontImageUrl = data.frontReferenceImage
-      ? (await uploadImageMutation({image:data.frontReferenceImage})).url
-      : "";
-
-    const backImageUrl = data.backReferenceImage
-      ? (await uploadImageMutation({image:data.backReferenceImage})).url
-      : "";
-
-    const payload = {
-      name: data.subject,
-      frontImage: frontImageUrl,
-      frontDescription: data.frontDescription,
-      backImage: backImageUrl,
-      backDescription: data.backDescription,
-      materialFinish: data.metalFinishes,
-      coinShape: data.coinShape,
-      contrastStyle: data.coinStyles,
-      detailLevel: data.detailLevel,
-    };
-
-    await coinSpecMutation.mutateAsync(payload);
-    console.log("Coin specification submitted successfully:", payload);
-  } catch (err) {
-    console.error("Failed to submit coin specification:", err);
-  }
-};
-
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -142,12 +159,14 @@ const submitHandler = async (data: QAFormData) => {
         <h2 className="text-3xl font-semibold text-primary">PROMPTS</h2>
       </div>
 
-      <form onSubmit={handleSubmit(submitHandler)} className="space-y-8">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">1. COIN SHAPE:</h3>
             <Input
-              {...register('coinShape')}
+              {...register('coinShape', {
+                onChange: (e) => setFormData({ coinShape: e.target.value }),
+              })}
               placeholder={placeholderTexts.coinShape}
               inputSize="md"
               className="border-none py-5 px-6 rounded-xl"
@@ -159,7 +178,9 @@ const submitHandler = async (data: QAFormData) => {
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">2. SUBJECT:</h3>
             <Input
-              {...register('subject')}
+              {...register('subject', {
+                onChange: (e) => setFormData({ subject: e.target.value }),
+              })}
               textarea
               rows={1}
               placeholder={placeholderTexts.subject}
@@ -173,7 +194,9 @@ const submitHandler = async (data: QAFormData) => {
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">3. METAL FINISHES:</h3>
             <Input
-              {...register('metalFinishes')}
+              {...register('metalFinishes', {
+                onChange: (e) => setFormData({ metalFinishes: e.target.value }),
+              })}
               select
               options={metalFinishesOptions}
               placeholder="Select Metal Finishes"
@@ -187,7 +210,9 @@ const submitHandler = async (data: QAFormData) => {
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">4. COIN STYLES</h3>
             <Input
-              {...register('coinStyles')}
+              {...register('coinStyles', {
+                onChange: (e) => setFormData({ coinStyles: e.target.value }),
+              })}
               select
               options={coinStylesOptions}
               placeholder="Select Coin Style"
@@ -201,7 +226,9 @@ const submitHandler = async (data: QAFormData) => {
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">5. DETAIL LEVEL</h3>
             <Input
-              {...register('detailLevel')}
+              {...register('detailLevel', {
+                onChange: (e) => setFormData({ detailLevel: e.target.value }),
+              })}
               select
               options={detailLevelOptions}
               placeholder="Select Detail Level"
@@ -219,7 +246,9 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">1. DESCRIPTION</h3>
               <Input
-                {...register('frontDescription')}
+                {...register('frontDescription', {
+                  onChange: (e) => setFormData({ frontDescription: e.target.value }),
+                })}
                 textarea
                 rows={4}
                 placeholder={placeholderTexts.frontDescription}
@@ -232,20 +261,30 @@ const submitHandler = async (data: QAFormData) => {
 
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">2. REFERENCE IMAGE</h3>
-              <ImageUpload
-                {...register('frontReferenceImage')}
-                onChange={(file) => handleImageChange('frontReferenceImage', file)}
-                value={formData.frontReferenceImage}
-                className="py-16"
-                error={errors.frontReferenceImage?.message}
-                id="front-image-upload"
-              />
+              {frontImageUrl ? (
+                <div className="relative w-64 h-64 mx-auto">
+                  <Image
+                    src={frontImageUrl}
+                    alt="Front Reference Preview"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-md border border-gray-300 shadow"
+                  />
+                </div>
+              ) : (
+                <div className="text-center text-gray-500">Loading front image...</div>
+              )}
+              {errors.frontReferenceImage && (
+                <div className="text-red-500 text-sm mt-2">{errors.frontReferenceImage.message}</div>
+              )}
             </div>
 
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">3. REFERENCE IMAGE IMPACT</h3>
               <Input
-                {...register('frontReferenceImageImpact')}
+                {...register('frontReferenceImageImpact', {
+                  onChange: (e) => setFormData({ frontReferenceImageImpact: e.target.value }),
+                })}
                 select
                 options={referenceImageImpactOptions}
                 placeholder="Select Impact"
@@ -259,7 +298,9 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">4. TEXT INSIDE ARTWORK</h3>
               <Input
-                {...register('frontTextInsideArtwork')}
+                {...register('frontTextInsideArtwork', {
+                  onChange: (e) => setFormData({ frontTextInsideArtwork: e.target.value }),
+                })}
                 textarea
                 rows={4}
                 placeholder={placeholderTexts.frontTextInsideArtwork}
@@ -273,7 +314,9 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">5. TEXT STYLE</h3>
               <Input
-                {...register('frontTextStyle')}
+                {...register('frontTextStyle', {
+                  onChange: (e) => setFormData({ frontTextStyle: e.target.value }),
+                })}
                 textarea
                 rows={1}
                 placeholder={placeholderTexts.frontTextStyle}
@@ -287,13 +330,15 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">6. COMPOSITION NOTES</h3>
               <Input
-                {...register('frontCompositionNotes')}
+                {...register('frontComposition', {
+                  onChange: (e) => setFormData({ frontComposition: e.target.value }),
+                })}
                 rows={1}
                 placeholder={placeholderTexts.frontCompositionNotes}
                 inputSize="md"
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
-                error={errors.frontCompositionNotes?.message}
+                error={errors.frontComposition?.message}
               />
               <p className="text-xs text-gray-500 mt-2">{exampleTexts.compositionNotes}</p>
             </div>
@@ -306,7 +351,9 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">1. DESCRIPTION</h3>
               <Input
-                {...register('backDescription')}
+                {...register('backDescription', {
+                  onChange: (e) => setFormData({ backDescription: e.target.value }),
+                })}
                 textarea
                 rows={4}
                 placeholder={placeholderTexts.backDescription}
@@ -319,20 +366,30 @@ const submitHandler = async (data: QAFormData) => {
 
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">2. REFERENCE IMAGE</h3>
-              <ImageUpload
-                {...register('backReferenceImage')}
-                onChange={(file) => handleImageChange('backReferenceImage', file)}
-                value={formData.backReferenceImage}
-                className="py-16"
-                error={errors.backReferenceImage?.message}
-                id="back-image-upload"
-              />
+              {backImageUrl ? (
+                <div className="relative w-64 h-64 mx-auto">
+                  <Image
+                    src={backImageUrl}
+                    alt="Back Reference Preview"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-md border border-gray-300 shadow"
+                  />
+                </div>
+              ) : (
+                <div className="text-center text-gray-500">Loading back image...</div>
+              )}
+              {errors.backReferenceImage && (
+                <div className="text-red-500 text-sm mt-2">{errors.backReferenceImage.message}</div>
+              )}
             </div>
 
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">3. REFERENCE IMAGE IMPACT</h3>
               <Input
-                {...register('backReferenceImageImpact')}
+                {...register('backReferenceImageImpact', {
+                  onChange: (e) => setFormData({ backReferenceImageImpact: e.target.value }),
+                })}
                 select
                 options={referenceImageImpactOptions}
                 placeholder="Select Impact"
@@ -346,7 +403,9 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">4. TEXT INSIDE ARTWORK</h3>
               <Input
-                {...register('backTextInsideArtwork')}
+                {...register('backTextInsideArtwork', {
+                  onChange: (e) => setFormData({ backTextInsideArtwork: e.target.value }),
+                })}
                 textarea
                 rows={4}
                 placeholder={placeholderTexts.backTextInsideArtwork}
@@ -360,7 +419,9 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">5. TEXT STYLE</h3>
               <Input
-                {...register('backTextStyle')}
+                {...register('backTextStyle', {
+                  onChange: (e) => setFormData({ backTextStyle: e.target.value }),
+                })}
                 textarea
                 rows={1}
                 placeholder={placeholderTexts.backTextStyle}
@@ -374,14 +435,16 @@ const submitHandler = async (data: QAFormData) => {
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4">6. COMPOSITION NOTES</h3>
               <Input
-                {...register('backCompositionNotes')}
+                {...register('backComposition', {
+                  onChange: (e) => setFormData({ backComposition: e.target.value }),
+                })}
                 textarea
                 rows={1}
                 placeholder={placeholderTexts.backCompositionNotes}
                 inputSize="md"
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
-                error={errors.backCompositionNotes?.message}
+                error={errors.backComposition?.message}
               />
               <p className="text-xs text-gray-500 mt-2">{exampleTexts.compositionNotes}</p>
             </div>
@@ -391,7 +454,9 @@ const submitHandler = async (data: QAFormData) => {
         <div>
           <h2 className="text-2xl font-bold text-gray-800 mb-6">PROHIBITED CONTENT</h2>
           <Input
-            {...register('prohibitedContent')}
+            {...register('prohibitedContent', {
+              onChange: (e) => setFormData({ prohibitedContent: e.target.value }),
+            })}
             rows={1}
             placeholder={placeholderTexts.prohibitedContent}
             inputSize="md"

@@ -7,8 +7,9 @@ import Button from "../common/button/Button";
 import { contactHeroData } from "./data";
 import { Mail, Phone, MapPin } from "lucide-react";
 import Input from "../common/input";
+import { useCreateContact } from "@/src/hooks/useQueries";
+import { toast } from "react-toastify";
 
-// ✅ Schema validation
 const contactSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Enter a valid email"),
@@ -28,9 +29,26 @@ export default function Contact() {
     resolver: zodResolver(contactSchema),
   });
 
+  const { mutate: createContact, isPending } = useCreateContact({
+    onSuccess: () => {
+      toast.success("Contact submitted successfully!");
+      reset();
+    },
+    onError: (err) => {
+      toast.error("Failed to submit contact: " + err.message);
+    },
+  });
   const onSubmit = (data: ContactFormData) => {
-    console.log("✅ Form submitted:", data);
-    reset();
+    const [firstName, ...lastParts] = data.fullName.trim().split(" ");
+    const lastName = lastParts.join(" ") || "";
+
+    createContact({
+      firstName,
+      lastName,
+      email: data.email,
+      contactNumber: data.contact,
+      description: data.message,
+    });
   };
 
   const iconMap = {
@@ -39,7 +57,6 @@ export default function Contact() {
     "map-pin": <MapPin className="w-6 h-6 text-black" />,
   };
 
-  // Generate correct link for left side
   const getLink = (icon: string, value: string) => {
     switch (icon) {
       case "mail":
@@ -59,7 +76,7 @@ export default function Contact() {
     <main className="mt-20">
       {/* Hero Section */}
       <section className="relative h-64 flex items-center justify-center bg-[url('/images/contact-hero.png')] bg-cover bg-center">
-        <h1 className="text-3xl md:text-4xl font-semibold text-end w-8/12  text-white">
+        <h1 className="text-3xl md:text-4xl font-semibold text-end w-8/12 text-white">
           Contact Us
         </h1>
       </section>
@@ -103,8 +120,8 @@ export default function Contact() {
                 {...register("fullName")}
                 type="text"
                 placeholder="Enter your full name"
-                 className='border-none py-3 px-6 rounded-xl text-[12px]'
-                bg='bg-gray-100 '
+                className="border-none py-3 px-6 rounded-xl text-[12px]"
+                bg="bg-gray-100 "
               />
               {errors.fullName && (
                 <p className="text-red-500 text-sm mt-1">
@@ -120,8 +137,9 @@ export default function Contact() {
                 {...register("email")}
                 type="email"
                 placeholder="Enter your email address"
-                className='border-none py-3 px-6 rounded-xl text-[12px]'
-                bg='bg-gray-100 '              />
+                className="border-none py-3 px-6 rounded-xl text-[12px]"
+                bg="bg-gray-100 "
+              />
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.email.message}
@@ -136,8 +154,8 @@ export default function Contact() {
                 {...register("contact")}
                 type="text"
                 placeholder="Enter your contact number"
-                className='border-none py-3 px-6 rounded-xl text-[12px]'
-                bg='bg-gray-100 '
+                className="border-none py-3 px-6 rounded-xl text-[12px]"
+                bg="bg-gray-100 "
               />
               {errors.contact && (
                 <p className="text-red-500 text-sm mt-1">
@@ -153,8 +171,9 @@ export default function Contact() {
                 {...register("message")}
                 rows={4}
                 placeholder="Please type your message here..."
-                className='border-none py-3 px-6 rounded-xl text-[12px]'
-                 bg='bg-gray-100 '              />
+                className="border-none py-3 px-6 rounded-xl text-[12px]"
+                bg="bg-gray-100 "
+              />
               {errors.message && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.message.message}
@@ -167,8 +186,9 @@ export default function Contact() {
               variant="primary"
               type="submit"
               className="w-1/2 py-2 text-xl font-semibold"
+              disabled={isPending}
             >
-              Send Message
+              {isPending ? "Sending..." : "Send Message"}
             </Button>
           </form>
         </div>
@@ -176,3 +196,4 @@ export default function Contact() {
     </main>
   );
 }
+

@@ -1,19 +1,25 @@
-'use client';
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import Input from '../common/input';
-import Button from '../common/button/Button';
-import ImageUpload from '../common/imageUpload';
+"use client";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import Input from "../common/input";
+import Button from "../common/button/Button";
+import ImageUpload from "../common/imageUpload";
+import { useCreateContact, useUploadImage } from "@/src/hooks/useQueries";
 
 const formSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
-  contactNumber: z.string().min(10, 'Contact number must be at least 10 digits').max(15, 'Contact number too long'),
-  description: z.string().min(10, 'Description must be at least 10 characters long'),
-  image: z.instanceof(File, { message: 'Image is required' }), 
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
+  contactNumber: z
+    .string()
+    .min(10, "Contact number must be at least 10 digits")
+    .max(15, "Contact number too long"),
+  description: z
+    .string()
+    .min(10, "Description must be at least 10 characters long"),
+  image: z.instanceof(File).nullable(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -28,24 +34,40 @@ const DesignTeamForm: React.FC = () => {
     reset,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      contactNumber: '',
-      description: '',
-      // Omit image from defaultValues, as it must be a File
-    },
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log('Form Data:', data);
-    reset();
-  };
+  const { mutateAsync: uploadImageMutation } = useUploadImage();
+  const { mutateAsync: createContactMutation } = useCreateContact();
 
   const handleFileChange = (file: File | null) => {
-    if (file) {
-      setValue('image', file, { shouldValidate: true });
+    if (file) setValue("image", file, { shouldValidate: true });
+  };
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      let imageUrl: string | undefined;
+
+      // Step 1: Upload image if exists
+      if (data.image) {
+        const uploadRes = await uploadImageMutation({ image: data.image });
+        imageUrl = uploadRes.url; 
+      }
+
+      // Step 2: Submit contact form with uploaded image URL
+      await createContactMutation({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        contactNumber: data.contactNumber,
+        description: data.description,
+        image: imageUrl,
+      });
+
+      reset();
+      alert("Form submitted successfully!");
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert("Failed to submit form. Please try again.");
     }
   };
 
@@ -61,21 +83,15 @@ const DesignTeamForm: React.FC = () => {
             label="First Name"
             placeholder="First Name"
             inputSize="md"
-            {...register('firstName')}
+            {...register("firstName")}
             error={errors.firstName?.message}
-            className="border-none py-4 px-6 rounded-xl"
-            bg="bg-gray-100"
-            labelClassName="text-md !font-semibold text-gray-900"
           />
           <Input
             label="Last Name"
             placeholder="Last Name"
             inputSize="md"
-            {...register('lastName')}
+            {...register("lastName")}
             error={errors.lastName?.message}
-            className="border-none py-4 px-6 rounded-xl"
-            bg="bg-gray-100"
-            labelClassName="text-md !font-semibold text-gray-900"
           />
         </div>
         <Input
@@ -83,35 +99,27 @@ const DesignTeamForm: React.FC = () => {
           placeholder="Email"
           type="email"
           inputSize="md"
-          {...register('email')}
+          {...register("email")}
           error={errors.email?.message}
-          className="border-none py-4 px-6 rounded-xl"
-          bg="bg-gray-100"
-          labelClassName="text-md !font-semibold text-gray-900"
         />
         <Input
           label="Contact Number"
           placeholder="Contact Number"
           type="tel"
           inputSize="md"
-          {...register('contactNumber')}
+          {...register("contactNumber")}
           error={errors.contactNumber?.message}
-          className="border-none py-4 px-6 rounded-xl"
-          bg="bg-gray-100"
-          labelClassName="text-md !font-semibold text-gray-900"
         />
         <Input
           label="Describe your coin in detail"
           placeholder="Describe your coin in detail..."
           inputSize="lg"
-          textarea={true}
+          textarea
           rows={4}
-          {...register('description')}
+          {...register("description")}
           error={errors.description?.message}
-          className="border-none py-4 px-6 rounded-xl"
-          bg="bg-gray-100"
-          labelClassName="text-md !font-semibold text-gray-900"
         />
+
         <div className="flex justify-center my-2 items-center">
           <div className="border-t border-gray-400 w-full"></div>
           <div className="px-4 text-sm text-center font-medium text-gray-700 bg-white">
@@ -119,15 +127,17 @@ const DesignTeamForm: React.FC = () => {
           </div>
           <div className="border-t border-gray-400 w-full"></div>
         </div>
+
         <label className="block mb-2 text-[15px] font-semibold text-gray-900 mt-2">
           Add a design preference image
         </label>
         <ImageUpload
           onChange={handleFileChange}
-          value={watch('image')}
-          error={errors.image?.message} 
-          id="design-image-upload" 
+          value={watch("image")}
+          error={errors.image?.message}
+          id="design-image-upload"
         />
+
         <Button
           type="submit"
           variant="primary"

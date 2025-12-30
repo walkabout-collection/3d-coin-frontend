@@ -88,7 +88,9 @@ export const useAiFlowStore = create<AiFlowStore>()(
         historyStack: ["main"],
       }),
     }),
-    { name: "ai-flow-storage" }
+    {
+      name: "ai-flow-storage",
+      // skipHydration: true,
+    }
   )
 );
-

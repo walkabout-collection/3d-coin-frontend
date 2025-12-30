@@ -1,12 +1,27 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { sidebarItems } from "@/src/containers/admin/dashboard/data";
 import { AdminLayoutProps } from "@/src/containers/admin/dashboard/types";
+import { useLogout } from "@/src/hooks/useQueries";
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const { mutate: logout } = useLogout({
+    onSuccess: () => {
+      document.cookie = "token=; path=/; max-age=0";
+      document.cookie = "refreshToken=; path=/; max-age=0";
+      window.dispatchEvent(new Event("authChanged"));
+
+      router.push("/login");
+    },
+    onError: (err) => {
+      console.error("Logout failed:", err.message);
+    },
+  });
 
   const mainItems = sidebarItems.filter(
     (item) => item.name !== "Account Setting" && item.name !== "Log Out"
@@ -49,6 +64,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Bottom navigation */}
         <nav className="flex flex-col space-y-2 mt-6">
           {bottomItems.map((item) => {
+            if (item.name === "Log Out") {
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => logout()}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-[#e3e7ee]"
+                >
+                  <div className="w-5 h-5 relative flex-shrink-0">
+                    <Image
+                      src={item.icon}
+                      alt={`${item.name} icon`}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="text-sm">{item.name}</span>
+                </button>
+              );
+            }
+
             const isActive = pathname === item.href;
             return (
               <Link

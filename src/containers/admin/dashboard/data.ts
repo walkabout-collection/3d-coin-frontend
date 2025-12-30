@@ -7,15 +7,16 @@ export const sidebarItems: SidebarItem[] = [
     icon: "/images/dashboard/dashboard.svg" 
   },
   { 
-    name: "Orders", 
-    href: "/admin/orders", 
-    icon: "/images/dashboard/orders.svg" 
-  },
-  { 
     name: "Quotes", 
     href: "/admin/quotes", 
     icon: "/images/dashboard/quotes.svg" 
   },
+  { 
+    name: "Orders", 
+    href: "/admin/orders", 
+    icon: "/images/dashboard/orders.svg" 
+  },
+  
   { 
     name: "Payment Method", 
     href: "/admin/payment-method", 

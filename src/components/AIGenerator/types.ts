@@ -43,17 +43,17 @@ export interface QAFormData {
   coinStyles: string;
   detailLevel: string;
   frontDescription: string;
-  frontReferenceImage: File ; 
+  frontReferenceImage: string ; 
   frontReferenceImageImpact: string;
   frontTextInsideArtwork: string;
   frontTextStyle: string;
-  frontCompositionNotes: string;
+  frontComposition: string;
   backDescription: string;
-  backReferenceImage: File; 
+  backReferenceImage: string; 
   backReferenceImageImpact: string;
   backTextInsideArtwork: string;
   backTextStyle: string;
-  backCompositionNotes: string;
+  backComposition: string;
   prohibitedContent: string;
 }
 
@@ -66,9 +66,9 @@ export interface QAPromptsFormProps {
 
 
 export interface ThreeDRenderProps {
-  frontImage?: string; 
-  backImage?: string;  
-  title?: string;
+  // frontImage?: string; 
+  // backImage?: string;  
+  name?: string;
   onSaveAsDraft?: () => void;
   onContinue?: () => void;
   className?: string;

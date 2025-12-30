@@ -6,7 +6,7 @@ import Search from '../search';
 import StatusBadge from '../StatusBadge';
 import SortDropdown from '../SortDropdown';
 
-function Table<T extends { date?: string; order?: string }>({
+function Table<T extends Partial<{ date?: string; order?: string }> & object>({
   columns,
   data,
   className = '',
@@ -34,6 +34,7 @@ function Table<T extends { date?: string; order?: string }>({
   const [internalSort, setInternalSort] = useState(currentSort || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortedDataState, setSortedDataState] = useState<T[]>(data);
+  
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;

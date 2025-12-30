@@ -1,9 +1,16 @@
+import { Payment } from "../admin/order-history/types";
+import { Quote } from "../quotes/types";
+
 export interface OrderDataItem {
-  trackingNo: string;
-  packaging: string;
-  order: string;
-  date: string;
-  paymentMethod: 'MANUAL' | 'QUICKBOOKS' | 'PAYPAL';
+  id: string;
+  orderId: string; 
+  orderDate: string;
   status: 'PENDING' | 'APPROVED' | 'CANCEL';
-  price: number; 
+  totalCoins: number;
+  totalPrice: number | null;
+  weight: number | null;
+  carrier: string | null;
+  userId: string;
+  quotes: Quote[];
+  payments: Payment[]; 
 }

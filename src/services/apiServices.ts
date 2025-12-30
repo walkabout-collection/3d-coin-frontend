@@ -48,11 +48,11 @@ export const forgotPassword = async (
 
 // --- AI ---
 // upload image
-export const uploadImage = async (data: { image?: File; prompt?: string }) => {
+export const uploadImage = async (data: { userId?: string | null; image?: File; prompt?: string | null }) => {
   const formData = new FormData();
   if(data.image) formData.append("image", data.image);
   
-  // Only append prompt if it exists
+  // Only append prompt if it exists  
   if (data.prompt) {
     formData.append("prompt", data.prompt);
   }
@@ -70,36 +70,36 @@ export const uploadImage = async (data: { image?: File; prompt?: string }) => {
 
 // generate from prompt
 export const generateFromPrompt = async (
-  data: Parameters<typeof api.ai.generateFromPromptCreate>[0] 
+  data: Parameters<typeof api.aiFlow.generateFromPromptCreate>[0] 
 ): Promise<
-  Awaited<ReturnType<typeof api.ai.generateFromPromptCreate>>["data"]
+  Awaited<ReturnType<typeof api.aiFlow.generateFromPromptCreate>>["data"]
 > => {
   const res = await apiClient.post("/ai-flow/generate-from-prompt", data);
   return res.data;
 };
 // regenerate
 export const regenerate = async (
-  data: Parameters<typeof api.ai.regenerateCreate>[0]
+  data: Parameters<typeof api.aiFlow.regenerateCreate>[0]
 ): Promise<
-  Awaited<ReturnType<typeof api.ai.regenerateCreate>>["data"]
+  Awaited<ReturnType<typeof api.aiFlow.regenerateCreate>>["data"]
 > => {
   const res = await apiClient.post("/ai-flow/regenerate", data);
   return res.data;
 };
 // coin specification
 export const coinSpecification = async (
-  data: Parameters<typeof api.ai.coinSpecificationCreate>[0]
+  data: Parameters<typeof api.aiFlow.coinSpecificationCreate>[0]
 ): Promise<
-  Awaited<ReturnType<typeof api.ai.coinSpecificationCreate>>["data"]
+  Awaited<ReturnType<typeof api.aiFlow.coinSpecificationCreate>>["data"]
 > => {
   const res = await apiClient.post("/ai-flow/coin-specification", data);
   return res.data;
 };
 // ai preview
 export const previewList = async (
-  data: Parameters<typeof api.ai.previewList>[0]
+  data: Parameters<typeof api.aiFlow.previewList>[0]
 ): Promise<
-  Awaited<ReturnType<typeof api.ai.previewList>>["data"]
+  Awaited<ReturnType<typeof api.aiFlow.previewList>>["data"]
 > => {
   const res = await apiClient.get("/ai-flow/preview", { params: data });
   return res.data;
@@ -107,16 +107,180 @@ export const previewList = async (
 
 // save design
 export const saveDesign = async (
-  data: Parameters<typeof api.ai.saveDesignCreate>[0]
-): Promise<Awaited<ReturnType<typeof api.ai.saveDesignCreate>>["data"]> => {
+  data: Parameters<typeof api.aiFlow.saveDesignCreate>[0]
+): Promise<Awaited<ReturnType<typeof api.aiFlow.saveDesignCreate>>["data"]> => {
   const res = await apiClient.post("/ai-flow/save-design", data);
   return res.data;
 };
 
 // send to designer
 export const sendToDesigner = async (
-  data: Parameters<typeof api.ai.sendToDesignerCreate>[0] 
-): Promise<Awaited<ReturnType<typeof api.ai.sendToDesignerCreate>>["data"]> => {
+  data: Parameters<typeof api.aiFlow.sendToDesignerCreate>[0] 
+): Promise<Awaited<ReturnType<typeof api.aiFlow.sendToDesignerCreate>>["data"]> => {
   const res = await apiClient.post("/ai-flow/send-to-designer", data);
   return res.data;
+};
+// submit design
+
+export const createDesign = async (
+  data: Parameters<typeof api.design.createCreate>[0]
+): Promise<Awaited<ReturnType<typeof api.design.createCreate>>> => {
+    const res = await apiClient.post("/design/create", data);
+
+    return res.data;
+  };
+
+// --- Contact ---
+export const createContact = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  contactNumber: string;
+  description?: string;
+  image?: string;
+}) => {
+  const res = await apiClient.post("/contact/create", data);
+  return res.data;
+};
+
+// get all quote admin
+export const getAdminQuotes = async (): Promise<
+  Awaited<ReturnType<typeof api.quote.adminList>>["data"]
+> => {
+  const res =await apiClient.get("/quote/admin", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+  return res.data.data;
+};
+
+export const getUserQuotes = async (): Promise<
+  Awaited<ReturnType<typeof api.quote.userList>>["data"]
+> => {
+  const res =await apiClient.get("/quote/user", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+  return res.data.data;
+}
+// delete quote
+export const deleteAdminQuote = async (
+  id: string
+): Promise<Awaited<ReturnType<typeof api.quote.adminDelete>>["data"]> => {
+  const res = await apiClient.delete(`/quote/admin/${id}`);
+  return res.data;
+};
+// --- Approve Admin Quote ---
+export const approveAdminQuote = async (
+  id: string,
+  amount: number
+): Promise<Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"]> => {
+  const res = await apiClient.post(`/quote/admin/${id}/approve`, { amount });
+  return res.data;
+};
+// --- Get Admin Quote by ID ---
+export const getAdminQuoteById = async (
+  id: string
+): Promise<Awaited<ReturnType<typeof api.quote.adminDetail>>["data"]> => {
+  const res =await apiClient.get(`/quote/admin/${id}`, {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+  return res.data.data;
+};
+// get all admin orders
+export const getAdminOrders = async (): Promise<
+  Awaited<ReturnType<typeof api.order.adminAllList>>["data"]
+> => {
+    const res =await apiClient.get("/order/admin/all", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+return res.data.data;};
+
+
+export const getUserOrders = async (): Promise<
+  Awaited<ReturnType<typeof api.order.userList>>["data"]
+> => {
+  const res =await apiClient.get("/order/user", {
+  headers: {
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+  },
+});
+return res.data.data;
+}
+
+// update admin order status
+export const updateAdminOrderStatus = async (
+  orderId: string,
+  data: {
+    status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED";
+  }
+): Promise<Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"]> => {
+  const res = await apiClient.patch(`/order/admin/${orderId}/status`, data);
+  return res.data;
+};
+
+
+
+export const updateCurrentUserProfile = async (
+  data: Parameters<typeof api.api.userProfileUpdate>[0]
+): Promise<Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"]> => {
+  const res = await apiClient.put("/users/profile/update", data);
+  return res.data;
+};
+
+export const changeUserPassword = async (
+  data: Parameters<typeof api.api.changePassword>[0]
+): Promise<Awaited<ReturnType<typeof api.api.changePassword>>["data"]> => {
+  const res = await apiClient.put("/users/password/change", data);
+  return res.data;
+};
+
+export const getUserProfile = async (): Promise<
+  Awaited<ReturnType<typeof api.api.getProfile>>["data"]
+> => {
+  const res = await apiClient.get("/users/profile");
+  return res.data.data;
+};
+
+export const getAdminStat = async (): Promise<
+  Awaited<ReturnType<typeof api.api.adminStats>>["data"]
+> => {
+  const res = await apiClient.get("/quote/admin/get/stats");
+  return res.data.data;
+};
+
+export const getUserStats = async (): Promise<
+  Awaited<ReturnType<typeof api.api.userStats>>["data"]
+> => {
+  const res = await apiClient.get("/quote/user/get/stats");
+  return res.data.data;
+};
+
+
+export const approveUserPayment = async (
+  paymentId: string
+): Promise<Awaited<ReturnType<typeof api.order.adminApproveUserPayment>>["data"]> => {
+  const res = await apiClient.patch(`/order/admin/payment/${paymentId}/approve`);
+  return res.data;
+};
+
+export const createUserPayment = async (
+  data: {
+    orderId: string;
+    amount: number;
+    method: "MANUAL" | "STRIPE" | "QUICKBOOKS";
+  }
+): Promise<void> => {
+  await apiClient.post("/order/user/payment/create", data);
 };
