@@ -1,13 +1,12 @@
-
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Paperclip } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useUploadImage } from "@/src/hooks/useQueries";
 import { z } from "zod";
-import { useDesignCoinStore } from "@/src/store/useCoinStore";
+import { useDesignCoinStore, useCoinStore } from "@/src/store/useCoinStore";
 
 interface UIState {
   previewImage: string | null;
@@ -20,7 +19,7 @@ interface ImageData {
 }
 
 interface CoinDesignInterfaceProps {
-  onContinue: (frontImages: string[], backImages: string[]) => void; 
+  onContinue: (frontImages: string[], backImages: string[]) => void;
   variants?: string[];
 }
 
@@ -40,47 +39,70 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const [imageData, setImageData] = useState<ImageData>({ file: null });
   const [activeTab, setActiveTab] = useState<"front" | "back">("front");
   const [prompt, setPrompt] = useState("");
-  const [error, setError] = useState<{ message: string } | undefined>(undefined);
-  const { frontImages, backImages, addFrontImage, addBackImage } = useDesignCoinStore();
+  const [error, setError] = useState<{ message: string } | undefined>(
+    undefined,
+  );
+  const { frontImages, backImages, addFrontImage, addBackImage } =
+    useDesignCoinStore();
+  const { coinImages } = useCoinStore();
 
-  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage({
-    onSuccess: (res) => {
-      toast.success("Generated successfully!");
-      setError(undefined);
-
-      const file = res.data?.data?.buffer;
-      if (file instanceof File) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result as string;
-          if (activeTab === "front") {
-            addFrontImage(base64);
-            setState((prev) => ({
-              ...prev,
-              previewImage: base64,
-              selectedThumbnail: frontImages.length,
-            }));
-          } else {
-            addBackImage(base64);
-            setState((prev) => ({
-              ...prev,
-              previewImage: base64,
-              selectedThumbnail: backImages.length,
-            }));
-          }
-        };
-        reader.readAsDataURL(file);
-      } else {
-        console.error("No buffer returned from uploadImage API");
+  // If an image was uploaded on the previous screen (stored in `coinImages`),
+  // sync it into the design store so it appears in the preview/thumbnails.
+  useEffect(() => {
+    if (coinImages && coinImages.length > 0) {
+      const first = coinImages[0];
+      // only add if not already present
+      if (first && !frontImages.includes(first)) {
+        addFrontImage(first);
+        setState((prev) => ({
+          ...prev,
+          previewImage: first,
+          selectedThumbnail: frontImages.length,
+        }));
       }
+    }
+  }, [coinImages]);
+
+  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage(
+    {
+      onSuccess: (res) => {
+        toast.success("Generated successfully!");
+        setError(undefined);
+
+        const file = res.data?.data?.buffer;
+        if (file instanceof File) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            if (activeTab === "front") {
+              addFrontImage(base64);
+              setState((prev) => ({
+                ...prev,
+                previewImage: base64,
+                selectedThumbnail: frontImages.length,
+              }));
+            } else {
+              addBackImage(base64);
+              setState((prev) => ({
+                ...prev,
+                previewImage: base64,
+                selectedThumbnail: backImages.length,
+              }));
+            }
+          };
+          reader.readAsDataURL(file);
+        } else {
+          console.error("No buffer returned from uploadImage API");
+        }
+      },
+      onError: () => {
+        setError({
+          message: "Failed to generate from prompt. Please try again.",
+        });
+        toast.error("Failed to generate from prompt.");
+      },
     },
-    onError: () => {
-      setError({
-        message: "Failed to generate from prompt. Please try again.",
-      });
-      toast.error("Failed to generate from prompt.");
-    },
-  });
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -149,12 +171,13 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
   const handleContinueClick = () => {
     if (frontImages.length === 0 || backImages.length === 0) {
-      toast.error("Please generate or upload both front and back images before continuing.");
+      toast.error(
+        "Please generate or upload both front and back images before continuing.",
+      );
       return;
     }
-    onContinue(frontImages, backImages); 
+    onContinue(frontImages, backImages);
   };
-
 
   const displayedImages = activeTab === "front" ? frontImages : backImages;
 
@@ -213,7 +236,9 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                 <button
                   className="flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
-                  onClick={() => document.getElementById("image-upload")?.click()}
+                  onClick={() =>
+                    document.getElementById("image-upload")?.click()
+                  }
                 >
                   <Paperclip size={16} />
                   <span className="text-sm font-medium">Attach</span>
@@ -331,7 +356,10 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
       </div>
 
       {error && (
-        <div className="mt-1 text-red-500 text-sm text-center" aria-live="polite">
+        <div
+          className="mt-1 text-red-500 text-sm text-center"
+          aria-live="polite"
+        >
           <span>{error.message}</span>
         </div>
       )}
