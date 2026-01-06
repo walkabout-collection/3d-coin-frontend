@@ -4,7 +4,7 @@ import { Paperclip, X } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { useUploadImage } from "@/src/hooks/useQueries";
+import { useGenerateCoinSide } from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
 
 interface CoinDesignInterfaceProps {
@@ -18,9 +18,11 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const [activeTab, setActiveTab] = useState<"front" | "back">("front");
 
   const {
+    designId,
     front,
     back,
     additionalVariants,
+    setDesignId,
     setFrontImage,
     setBackImage,
     removeFrontImage,
@@ -44,43 +46,38 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     activeTab === "front" ? replaceFrontImage : replaceBackImage;
   const setImage = activeTab === "front" ? setFrontImage : setBackImage;
 
-  const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage(
-    {
+  const { mutate: generateCoinSideMutate, isPending: isGenerating } =
+    useGenerateCoinSide({
       onSuccess: (res) => {
         console.log("API Response:", res);
 
-        // Try different possible response structures
-        const response = res as {
-          data?: { data?: { buffer?: string }; buffer?: string };
-          buffer?: string;
-        };
-        let base64String =
-          response?.data?.data?.buffer || // { data: { data: { buffer: "..." } } }
-          response?.data?.buffer || // { data: { buffer: "..." } }
-          response?.buffer; // { buffer: "..." }
+        if (res.success && res.data) {
+          const { designId: returnedDesignId, side, imageBase64 } = res.data;
 
-        if (base64String) {
-          toast.success("Generated successfully!");
+          toast.success(
+            `${side.charAt(0).toUpperCase() + side.slice(1)} side generated successfully!`,
+          );
+
+          // Store design ID if this is the first generation
+          if (!designId && returnedDesignId) {
+            setDesignId(returnedDesignId);
+          }
 
           // Create data URI from base64 string
-          const imageUrl = `data:image/png;base64,${base64String}`;
+          const imageUrl = `data:image/png;base64,${imageBase64}`;
 
           // Replace the current tab's image with the new one
           replaceImage(imageUrl);
         } else {
-          console.error(
-            "No buffer returned from uploadImage API. Full response:",
-            res,
-          );
+          console.error("Invalid response from generateCoinSide API:", res);
           toast.error("Failed to process image from API");
         }
       },
       onError: (error) => {
         console.error("API Error:", error);
-        toast.error("Failed to generate from prompt.");
+        toast.error("Failed to generate image. Please try again.");
       },
-    },
-  );
+    });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -149,9 +146,12 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
       );
     }
 
-    uploadImageMutate({
+    // Use the new generateCoinSide API with side parameter
+    generateCoinSideMutate({
+      side: activeTab,
+      prompt: currentTab.prompt || undefined,
       image: fileToSend,
-      prompt: currentTab.prompt,
+      designId: designId || undefined,
     });
   };
 

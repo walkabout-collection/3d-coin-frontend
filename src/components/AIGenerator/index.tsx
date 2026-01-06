@@ -466,14 +466,26 @@ const AIGenerator: React.FC = () => {
   const { reset: resetDesignCoin } = useCoinDesignStore();
   const { resetFormData } = useQAPromptsStore();
 
-  // Reset all state on component mount to ensure fresh start
-  // This prevents stale navigation/data from being restored when
-  // returning to Custom Shapes from homepage
+  // Only reset if we're explicitly on the main screen and there's no persisted state
+  // This allows page refresh to maintain the current step
   useEffect(() => {
-    reset();
-    resetDesignCoin();
-    resetFormData();
-  }, [reset, resetDesignCoin, resetFormData]); // Run only once on mount
+    // Check if we have a persisted non-main state - if so, don't reset
+    const hasPersistedState =
+      state.showUpload ||
+      state.showGuide ||
+      state.showDesignInterface ||
+      state.showQAPrompts ||
+      state.showThreeDRender ||
+      state.showDesignSummary;
+
+    // Only reset if we're starting fresh (no persisted state)
+    if (!hasPersistedState) {
+      reset();
+      resetDesignCoin();
+      resetFormData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   useEffect(() => {
     const handlePopState = () => goBack();
@@ -482,11 +494,19 @@ const AIGenerator: React.FC = () => {
   }, [goBack]);
 
   const handleProvideImageClick = () => {
+    // Reset stores when starting a fresh flow from the main screen
+    reset();
+    resetDesignCoin();
+    resetFormData();
     goTo("upload");
     window.history.pushState({ screen: "upload" }, "", window.location.href);
   };
 
   const handleEnterGuideClick = () => {
+    // Reset stores when starting a fresh flow from the main screen
+    reset();
+    resetDesignCoin();
+    resetFormData();
     goTo("guide");
     window.history.pushState({ screen: "guide" }, "", window.location.href);
   };

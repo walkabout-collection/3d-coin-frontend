@@ -46,10 +46,7 @@ const formSchema = z.object({
     .string()
     .min(1, "Front description is required")
     .max(50, "Front description cannot exceed 50 characters"),
-  frontReferenceImage: z
-    .string()
-    .min(1, "Front reference image is required")
-    .max(50, "Front reference image cannot exceed 50 characters"),
+  frontReferenceImage: z.string().min(1, "Front reference image is required"),
   frontReferenceImageImpact: z
     .string()
     .min(1, "Front reference image impact is required")
@@ -70,10 +67,7 @@ const formSchema = z.object({
     .string()
     .min(1, "Back description is required")
     .max(50, "Back description cannot exceed 50 characters"),
-  backReferenceImage: z
-    .string()
-    .min(1, "Back reference image is required")
-    .max(50, "Back reference image cannot exceed 50 characters"),
+  backReferenceImage: z.string().min(1, "Back reference image is required"),
   backReferenceImageImpact: z
     .string()
     .min(1, "Back reference image impact is required")
@@ -105,7 +99,6 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
   } = useForm<QAFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {

@@ -34,9 +34,14 @@ import {
   updateCurrentUserProfile,
   uploadImage,
   verifyEmail,
+  generateCoinSide,
+  getCoinSides,
+  regenerateWithSide,
+  generateCompleteCoin,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const api = new Api();
 
 // --- Auth ---
@@ -46,7 +51,7 @@ export const useSignup = (
     Awaited<ReturnType<typeof api.auth.signupCreate>>["data"],
     Error,
     Parameters<typeof api.auth.signupCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.auth.signupCreate>>["data"],
@@ -63,7 +68,7 @@ export const useLogin = (
     Awaited<ReturnType<typeof api.auth.loginCreate>>["data"],
     Error,
     Parameters<typeof api.auth.loginCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.auth.loginCreate>>["data"],
@@ -80,7 +85,7 @@ export const useRefreshToken = (
     Awaited<ReturnType<typeof api.auth.refreshTokenCreate>>["data"],
     Error,
     Parameters<typeof api.auth.refreshTokenCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.auth.refreshTokenCreate>>["data"],
@@ -93,7 +98,7 @@ export const useRefreshToken = (
 
 // logout
 export const useLogout = (
-  options?: UseMutationOptions<{ message: string }, Error, void>
+  options?: UseMutationOptions<{ message: string }, Error, void>,
 ) =>
   useMutation<{ message: string }, Error, void>({
     mutationFn: logout,
@@ -105,7 +110,7 @@ export const useVerifyEmail = (
     Awaited<ReturnType<typeof api.auth.verifyEmailCreate>>["data"],
     Error,
     Parameters<typeof api.auth.verifyEmailCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.auth.verifyEmailCreate>>["data"],
@@ -124,7 +129,7 @@ export const useUploadImage = (
     Awaited<ReturnType<typeof api.aiFlow.uploadImageCreate>>, // return type
     Error,
     Parameters<typeof api.aiFlow.uploadImageCreate>[0] // input type matches { image: File; prompt?: string }
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.aiFlow.uploadImageCreate>>,
@@ -141,7 +146,7 @@ export const useGenerateFromPrompt = (
     Awaited<ReturnType<typeof api.aiFlow.generateFromPromptCreate>>["data"],
     Error,
     Parameters<typeof api.aiFlow.generateFromPromptCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.aiFlow.generateFromPromptCreate>>["data"],
@@ -156,7 +161,7 @@ export const useRegenerate = (
     Awaited<ReturnType<typeof api.aiFlow.regenerateCreate>>["data"],
     Error,
     Parameters<typeof api.aiFlow.regenerateCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.aiFlow.regenerateCreate>>["data"],
@@ -172,7 +177,7 @@ export const useCoinSpecification = (
     Awaited<ReturnType<typeof api.aiFlow.coinSpecificationCreate>>["data"],
     Error,
     Parameters<typeof api.aiFlow.coinSpecificationCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.aiFlow.coinSpecificationCreate>>["data"],
@@ -195,7 +200,7 @@ export const useSaveDesign = (
     Awaited<ReturnType<typeof api.aiFlow.saveDesignCreate>>["data"],
     Error,
     Parameters<typeof api.aiFlow.saveDesignCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.aiFlow.saveDesignCreate>>["data"],
@@ -211,7 +216,7 @@ export const useSendToDesigner = (
     Awaited<ReturnType<typeof api.aiFlow.sendToDesignerCreate>>["data"],
     Error,
     Parameters<typeof api.aiFlow.sendToDesignerCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.aiFlow.sendToDesignerCreate>>["data"],
@@ -228,7 +233,7 @@ export const useCreateContact = (
     Awaited<ReturnType<typeof createContact>>, // return type of API
     Error,
     Parameters<typeof createContact>[0] // input type of API
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof createContact>>,
@@ -244,7 +249,7 @@ export const useCreateDesign = (
     Awaited<ReturnType<typeof api.design.createCreate>>,
     Error,
     Parameters<typeof api.design.createCreate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.design.createCreate>>,
@@ -260,7 +265,7 @@ export const useAdminQuotes = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.quote.adminList>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.quote.adminList>>["data"], Error>({
     queryKey: ["adminQuotes"],
@@ -272,7 +277,7 @@ export const useUserQuotes = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.quote.userList>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.quote.userList>>["data"], Error>({
     queryKey: ["userQuotes"],
@@ -286,7 +291,7 @@ export const useDeleteAdminQuote = (
     Awaited<ReturnType<typeof api.quote.adminDelete>>["data"],
     Error,
     string
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.quote.adminDelete>>["data"],
@@ -302,7 +307,7 @@ export const useApproveAdminQuote = (
     Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"],
     Error,
     { id: string; amount: number }
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"],
@@ -318,7 +323,7 @@ export const useAdminQuoteById = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.quote.adminDetail>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.quote.adminDetail>>["data"], Error>({
     queryKey: ["adminQuote", id],
@@ -331,7 +336,7 @@ export const useAdminOrders = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.order.adminAllList>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.order.adminAllList>>["data"], Error>({
     queryKey: ["adminOrders"],
@@ -343,7 +348,7 @@ export const useUserOrders = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.order.userList>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.order.userList>>["data"], Error>({
     queryKey: ["userOrders"],
@@ -359,7 +364,7 @@ export const useUpdateAdminOrderStatus = (
       orderId: string;
       data: { status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED" };
     }
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.order.adminStatusPartialUpdate>>["data"],
@@ -378,7 +383,7 @@ export const useUpdateCurrentUserProfile = (
     Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"],
     Error,
     Parameters<typeof api.api.userProfileUpdate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.api.userProfileUpdate>>["data"],
@@ -394,7 +399,7 @@ export const useUpdateCurrentUserPassword = (
     Awaited<ReturnType<typeof api.api.userPasswordUpdate>>["data"],
     Error,
     Parameters<typeof api.api.userPasswordUpdate>[0]
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.api.userPasswordUpdate>>["data"],
@@ -409,7 +414,7 @@ export const useGetUserProfile = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.api.getProfile>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.api.getProfile>>["data"], Error>({
     queryKey: ["userProfile"],
@@ -421,7 +426,7 @@ export const useGetAdminStats = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.api.adminStats>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.api.adminStats>>["data"], Error>({
     queryKey: ["adminStats"],
@@ -433,7 +438,7 @@ export const useGetUserStats = (
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof api.api.userStats>>["data"],
     Error
-  >
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.api.userStats>>["data"], Error>({
     queryKey: ["userStats"],
@@ -445,8 +450,12 @@ export const useCreateUserPayment = (
   options?: UseMutationOptions<
     void,
     Error,
-    { orderId: string; amount: number; method: "MANUAL" | "STRIPE" | "QUICKBOOKS" }
-  >
+    {
+      orderId: string;
+      amount: number;
+      method: "MANUAL" | "STRIPE" | "QUICKBOOKS";
+    }
+  >,
 ) =>
   useMutation({
     mutationFn: createUserPayment,
@@ -458,7 +467,7 @@ export const useApproveUserPayment = (
     Awaited<ReturnType<typeof api.order.adminApproveUserPayment>>["data"],
     Error,
     string // paymentId
-  >
+  >,
 ) =>
   useMutation<
     Awaited<ReturnType<typeof api.order.adminApproveUserPayment>>["data"],
@@ -466,5 +475,71 @@ export const useApproveUserPayment = (
     string
   >({
     mutationFn: (paymentId) => approveUserPayment(paymentId),
+    ...options,
+  });
+
+// --- NEW COIN CUSTOMIZATION API HOOKS ---
+
+// Generate coin side (front or back)
+export const useGenerateCoinSide = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCoinSide>>,
+    Error,
+    Parameters<typeof generateCoinSide>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof generateCoinSide>>,
+    Error,
+    Parameters<typeof generateCoinSide>[0]
+  >({
+    mutationFn: generateCoinSide,
+    ...options,
+  });
+
+// Get both sides of a coin
+export const useGetCoinSides = (
+  designId: string,
+  options?: UseQueryOptions<Awaited<ReturnType<typeof getCoinSides>>, Error>,
+) =>
+  useQuery<Awaited<ReturnType<typeof getCoinSides>>, Error>({
+    queryKey: ["coinSides", designId],
+    queryFn: () => getCoinSides(designId),
+    enabled: !!designId,
+    ...options,
+  });
+
+// Regenerate with side support
+export const useRegenerateWithSide = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof regenerateWithSide>>,
+    Error,
+    Parameters<typeof regenerateWithSide>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof regenerateWithSide>>,
+    Error,
+    Parameters<typeof regenerateWithSide>[0]
+  >({
+    mutationFn: regenerateWithSide,
+    ...options,
+  });
+
+// --- NEW COMPLETE COIN GENERATION HOOK ---
+// Generate both front and back sides in a single API call
+export const useGenerateCompleteCoin = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCompleteCoin>>,
+    Error,
+    Parameters<typeof generateCompleteCoin>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof generateCompleteCoin>>,
+    Error,
+    Parameters<typeof generateCompleteCoin>[0]
+  >({
+    mutationFn: generateCompleteCoin,
     ...options,
   });

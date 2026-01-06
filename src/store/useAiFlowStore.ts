@@ -30,6 +30,7 @@ interface AiFlowStore {
   goBack: () => void;
   setUploadData: (data: Partial<UploadData>) => void;
   reset: () => void;
+  clearPersistedState: () => void; // Clear localStorage
 }
 
 export const useAiFlowStore = create<AiFlowStore>()(
@@ -91,13 +92,25 @@ export const useAiFlowStore = create<AiFlowStore>()(
           uploadData: { image: null },
           historyStack: ["main"],
         }),
+
+      clearPersistedState: () => {
+        // Clear localStorage for this store
+        localStorage.removeItem("ai-flow-storage");
+        set({
+          state: initialGeneratorState,
+          uploadData: { image: null },
+          historyStack: ["main"],
+        });
+      },
     }),
     {
       name: "ai-flow-storage",
-      // Selective persistence: only persist uploadData, not navigation state
-      // This prevents stale navigation state from being restored
+      // Persist both uploadData and current screen state
+      // This allows users to refresh and stay on the same page
       partialize: (state) => ({
         uploadData: state.uploadData,
+        state: state.state,
+        historyStack: state.historyStack,
       }),
     },
   ),

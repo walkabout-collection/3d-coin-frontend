@@ -34,10 +34,16 @@ interface TabState {
 }
 
 interface CoinDesignStore {
+  // Design ID from backend
+  designId: string | null;
+
   // Tab states
   front: TabState;
   back: TabState;
   additionalVariants: Image[]; // Extra variants from initial generation
+
+  // Actions - Design ID
+  setDesignId: (id: string) => void;
 
   // Actions - Front Tab
   setFrontImage: (imageUrl: string) => void;
@@ -71,9 +77,13 @@ const initialTabState: TabState = {
 export const useCoinDesignStore = create<CoinDesignStore>()(
   persist(
     (set) => ({
+      designId: null,
       front: initialTabState,
       back: initialTabState,
       additionalVariants: [],
+
+      // ============ DESIGN ID ACTION ============
+      setDesignId: (id: string) => set({ designId: id }),
 
       // ============ FRONT TAB ACTIONS ============
       setFrontImage: (imageUrl: string) =>
@@ -232,6 +242,7 @@ export const useCoinDesignStore = create<CoinDesignStore>()(
       // ============ UTILITY ============
       reset: () =>
         set({
+          designId: null,
           front: initialTabState,
           back: initialTabState,
           additionalVariants: [],
@@ -241,6 +252,7 @@ export const useCoinDesignStore = create<CoinDesignStore>()(
       name: "coin-design-storage",
       // Persist everything except File objects (can't be serialized)
       partialize: (state) => ({
+        designId: state.designId,
         front: {
           ...state.front,
           attachedImage: null, // Don't persist File objects

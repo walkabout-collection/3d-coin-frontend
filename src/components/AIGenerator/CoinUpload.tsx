@@ -1,104 +1,10 @@
-// "use client";
-// import React, { useState } from "react";
-// import ImageUpload from "../common/imageUpload";
-// import Button from "../common/button/Button";
-// import { z } from "zod";
-// import { useUploadImage } from "@/src/hooks/useQueries";
-// import { toast } from "react-toastify";
-// import { useCoinStore } from "@/src/store/useCoinStore";
-
-// interface CoinUploadScreenProps {
-//   onFileChange: (file: File | null) => void;
-//   image: File | null;
-//   onGenerate: () => void;
-// }
-
-// const imageSchema = z.instanceof(File, { message: "Please upload an image" });
-
-// const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({
-//   onFileChange,
-//   image,
-//   onGenerate,
-// }) => {
-//   const [error, setError] = useState<{ message: string } | undefined>(
-//     undefined
-//   );
-//   const { setAIImages, addAIImage, aiImages } = useCoinStore();
-
-//   const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage(
-//     {
-//       onSuccess: (data) => {
-//         toast.success("Generated successfully!");
-//         console.log(data);
-//         const bufferArray = data?.data?.buffer?.data;
-//         if (bufferArray) {
-//           const base64 = Buffer.from(bufferArray).toString("base64");
-//           const imageUrl = `data:image/png;base64,${base64}`;
-
-//           // Add to Zustand
-//           addAIImage(imageUrl);
-//         }
-//         setError(undefined);
-//         onGenerate();
-//       },
-//       onError: () => {
-//         setError({
-//           message: "Failed to generate from prompt. Please try again.",
-//         });
-//         toast.error("Failed to generate from prompt.");
-//       },
-//     }
-//   );
-
-//   const handleGenerateClick = () => {
-//     if (image) {
-//       uploadImageMutate(image);
-//     } else {
-//       setError({
-//         message: "Please provide a prompt or upload an image to generate.",
-//       });
-//     }
-//   };
-
-//   return (
-//     <div className="py-16 min-h-screen text-center max-w-2xl mx-auto">
-//       <h2 className="text-4xl font-semibold mb-6 mt-8">
-//         START YOUR JOURNEY OF COLLECTING UNIQUE COINS, ONE POCKET AT A TIME
-//       </h2>
-//       <div className="mx-auto py-8">
-//         <ImageUpload
-//           onChange={onFileChange}
-//           value={image}
-//           error={error?.message}
-//           className="py-16"
-//           id="image"
-//         />
-//         <p className="text-sm text-gray-700 font-medium mt-8">
-//           LOREM IPSUM IS SIMPLY DUMMY TEXT OF THE PRINTING AND TYPESETTING
-//           INDUSTRY. LOREM IPSUM HAS BEEN THE INDUSTRY STANDARD
-//         </p>
-//         <Button
-//           onClick={handleGenerateClick}
-//           type="button"
-//           variant="primary"
-//           className="mt-6 max-w-[200px] w-full text-xl font-medium items-center justify-center flex mx-auto"
-//         >
-//           GENERATE
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default CoinUploadScreen;
-
 "use client";
 import React, { useState } from "react";
 import ImageUpload from "../common/imageUpload";
 import Button from "../common/button/Button";
 import { z } from "zod";
 import { toast } from "react-toastify";
-import { useUploadImage } from "@/src/hooks/useQueries";
+import { useGenerateCompleteCoin } from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
 
 interface CoinUploadScreenProps {
@@ -115,55 +21,51 @@ const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({
   onGenerate,
 }) => {
   const [error, setError] = useState<string | undefined>(undefined);
-  const { setVariants } = useCoinDesignStore();
+  const { setDesignId, setFrontImage, setBackImage } = useCoinDesignStore();
 
-  const { mutate: uploadImageMutate, isPending } = useUploadImage({
-    onSuccess: (data) => {
-      console.log("API Response:", data);
+  const { mutate: generateCompleteCoinMutate, isPending } =
+    useGenerateCompleteCoin({
+      onSuccess: (res) => {
+        console.log("Complete Coin API Response:", res);
 
-      // Try different possible response structures
-      const response = data as {
-        data?: { data?: { buffer?: string }; buffer?: string };
-        buffer?: string;
-      };
-      let base64String =
-        response?.data?.data?.buffer || // { data: { data: { buffer: "..." } } }
-        response?.data?.buffer || // { data: { buffer: "..." } }
-        response?.buffer; // { buffer: "..." }
+        if (res.success && res.data) {
+          const { designId, front, back } = res.data;
 
-      if (base64String) {
-        toast.success("Images generated successfully!");
-        setError(undefined);
+          toast.success("Both sides generated successfully! 🎉");
+          setError(undefined);
 
-        // Create data URI from base64 string
-        const imageUrl = `data:image/png;base64,${base64String}`;
+          // Store design ID for later use
+          setDesignId(designId);
 
-        // Create 3 variants (placeholder until API returns multiple)
-        // Variant 1 → Front, Variant 2 → Back, Variant 3 → Additional
-        const generatedVariants = [imageUrl, imageUrl, imageUrl];
+          // Create data URIs from base64 strings
+          const frontImageUrl = `data:image/png;base64,${front.imageBase64}`;
+          const backImageUrl = `data:image/png;base64,${back.imageBase64}`;
 
-        // Store in Zustand with proper allocation
-        // setVariants will automatically assign: [0]→front, [1]→back, [2+]→additional
-        setVariants(generatedVariants);
+          // Set both front and back images in the store
+          setFrontImage(frontImageUrl);
+          setBackImage(backImageUrl);
 
-        // Navigate to design interface with generated images
-        onGenerate(generatedVariants);
-      } else {
-        console.error("No buffer returned from API. Full response:", data);
-        toast.error("Failed to process image from API");
-      }
-    },
-    onError: (error) => {
-      console.error("API Error:", error);
-      setError("Failed to generate images. Please try again.");
-      toast.error("Failed to generate images.");
-    },
-  });
+          // Navigate to design interface with both generated images
+          onGenerate([frontImageUrl, backImageUrl]);
+        } else {
+          console.error("Invalid response from Complete Coin API:", res);
+          toast.error("Failed to process images from API");
+        }
+      },
+      onError: (error) => {
+        console.error("Complete Coin API Error:", error);
+        setError("Failed to generate coin. Please try again.");
+        toast.error("Failed to generate coin.");
+      },
+    });
 
   const handleGenerateClick = () => {
     const validation = imageSchema.safeParse(image);
     if (validation.success && image) {
-      uploadImageMutate({ image });
+      // Generate BOTH sides from uploaded image in a single call! 🚀
+      generateCompleteCoinMutate({
+        image: image,
+      });
     } else {
       setError(validation.error?.issues[0].message);
     }
