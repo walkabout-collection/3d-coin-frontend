@@ -1,104 +1,82 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Paperclip } from "lucide-react";
+import React, { useState } from "react";
+import { Paperclip, X } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useUploadImage } from "@/src/hooks/useQueries";
-import { z } from "zod";
-import { useDesignCoinStore, useCoinStore } from "@/src/store/useCoinStore";
-
-interface UIState {
-  previewImage: string | null;
-  selectedThumbnail: number | null;
-  isLoggedIn: boolean;
-}
-
-interface ImageData {
-  file: File | null;
-}
+import { useCoinDesignStore } from "@/src/store/useCoinStore";
 
 interface CoinDesignInterfaceProps {
   onContinue: (frontImages: string[], backImages: string[]) => void;
-  variants?: string[];
+  initialImages?: string[]; // Images from upload flow (ignored - handled by store)
 }
-
-const initialUIState: UIState = {
-  previewImage: null,
-  selectedThumbnail: null,
-  isLoggedIn: true,
-};
-
-const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   onContinue,
-  variants = [],
 }) => {
-  const [state, setState] = useState<UIState>(initialUIState);
-  const [imageData, setImageData] = useState<ImageData>({ file: null });
   const [activeTab, setActiveTab] = useState<"front" | "back">("front");
-  const [prompt, setPrompt] = useState("");
-  const [error, setError] = useState<{ message: string } | undefined>(
-    undefined,
-  );
-  const { frontImages, backImages, addFrontImage, addBackImage } =
-    useDesignCoinStore();
-  const { coinImages } = useCoinStore();
 
-  // If an image was uploaded on the previous screen (stored in `coinImages`),
-  // sync it into the design store so it appears in the preview/thumbnails.
-  useEffect(() => {
-    if (coinImages && coinImages.length > 0) {
-      const first = coinImages[0];
-      // only add if not already present
-      if (first && !frontImages.includes(first)) {
-        addFrontImage(first);
-        setState((prev) => ({
-          ...prev,
-          previewImage: first,
-          selectedThumbnail: frontImages.length,
-        }));
-      }
-    }
-  }, [coinImages]);
+  const {
+    front,
+    back,
+    additionalVariants,
+    setFrontImage,
+    setBackImage,
+    removeFrontImage,
+    removeBackImage,
+    setFrontPrompt,
+    setBackPrompt,
+    setFrontAttachedImage,
+    setBackAttachedImage,
+    replaceFrontImage,
+    replaceBackImage,
+    removeAdditionalVariant,
+  } = useCoinDesignStore();
+
+  const currentTab = activeTab === "front" ? front : back;
+  const setPrompt = activeTab === "front" ? setFrontPrompt : setBackPrompt;
+  const setAttachedImage =
+    activeTab === "front" ? setFrontAttachedImage : setBackAttachedImage;
+  const removeImage =
+    activeTab === "front" ? removeFrontImage : removeBackImage;
+  const replaceImage =
+    activeTab === "front" ? replaceFrontImage : replaceBackImage;
+  const setImage = activeTab === "front" ? setFrontImage : setBackImage;
 
   const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage(
     {
       onSuccess: (res) => {
-        toast.success("Generated successfully!");
-        setError(undefined);
+        console.log("API Response:", res);
 
-        const file = res.data?.data?.buffer;
-        if (file instanceof File) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = reader.result as string;
-            if (activeTab === "front") {
-              addFrontImage(base64);
-              setState((prev) => ({
-                ...prev,
-                previewImage: base64,
-                selectedThumbnail: frontImages.length,
-              }));
-            } else {
-              addBackImage(base64);
-              setState((prev) => ({
-                ...prev,
-                previewImage: base64,
-                selectedThumbnail: backImages.length,
-              }));
-            }
-          };
-          reader.readAsDataURL(file);
+        // Try different possible response structures
+        const response = res as {
+          data?: { data?: { buffer?: string }; buffer?: string };
+          buffer?: string;
+        };
+        let base64String =
+          response?.data?.data?.buffer || // { data: { data: { buffer: "..." } } }
+          response?.data?.buffer || // { data: { buffer: "..." } }
+          response?.buffer; // { buffer: "..." }
+
+        if (base64String) {
+          toast.success("Generated successfully!");
+
+          // Create data URI from base64 string
+          const imageUrl = `data:image/png;base64,${base64String}`;
+
+          // Replace the current tab's image with the new one
+          replaceImage(imageUrl);
         } else {
-          console.error("No buffer returned from uploadImage API");
+          console.error(
+            "No buffer returned from uploadImage API. Full response:",
+            res,
+          );
+          toast.error("Failed to process image from API");
         }
       },
-      onError: () => {
-        setError({
-          message: "Failed to generate from prompt. Please try again.",
-        });
+      onError: (error) => {
+        console.error("API Error:", error);
         toast.error("Failed to generate from prompt.");
       },
     },
@@ -107,33 +85,33 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      if (activeTab === "front") {
-        addFrontImage(imageUrl);
-        setState((prev) => ({
-          ...prev,
-          previewImage: imageUrl,
-          selectedThumbnail: frontImages.length,
-        }));
-      } else {
-        addBackImage(imageUrl);
-        setState((prev) => ({
-          ...prev,
-          previewImage: imageUrl,
-          selectedThumbnail: backImages.length,
-        }));
-      }
-      setImageData({ file });
-      setError(undefined);
+      setAttachedImage(file);
+      toast.success("Image attached to prompt");
     }
   };
 
-  const handleThumbnailClick = (imageUrl: string, index: number) => {
-    setState((prev) => ({
-      ...prev,
-      previewImage: imageUrl,
-      selectedThumbnail: index,
-    }));
+  const handleRemoveAttachedImage = () => {
+    setAttachedImage(null);
+  };
+
+  const handleRemoveCurrentImage = () => {
+    removeImage();
+    toast.success("Image removed");
+  };
+
+  const handleSelectAdditionalVariant = (imageUrl: string) => {
+    // Set the selected additional variant as the current tab's image
+    setImage(imageUrl);
+    toast.success(`Image set as ${activeTab} image`);
+  };
+
+  const handleRemoveAdditionalVariant = (
+    imageId: string,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    removeAdditionalVariant(imageId);
+    toast.success("Variant removed");
   };
 
   const base64ToFile = (base64String: string, fileName: string): File => {
@@ -155,31 +133,43 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     return new File([u8arr], fileName, { type: mime });
   };
 
-  const handleGenerate = () => {
-    let fileToSend;
-    if (state.previewImage) {
-      fileToSend = base64ToFile(state.previewImage, `${activeTab}-preview.png`);
+  const handleRegenerate = () => {
+    if (!currentTab.prompt && !currentTab.attachedImage && !currentTab.image) {
+      toast.error("Please provide a prompt or attach an image");
+      return;
+    }
+
+    let fileToSend: File | undefined = currentTab.attachedImage || undefined;
+
+    // If no attached image, use the current tab's image
+    if (!fileToSend && currentTab.image) {
+      fileToSend = base64ToFile(
+        currentTab.image.url,
+        `${activeTab}-preview.png`,
+      );
     }
 
     uploadImageMutate({
       image: fileToSend,
-      prompt,
+      prompt: currentTab.prompt,
     });
   };
 
-  const handleSaveDraft = () => {};
-
   const handleContinueClick = () => {
-    if (frontImages.length === 0 || backImages.length === 0) {
+    if (!front.image || !back.image) {
       toast.error(
         "Please generate or upload both front and back images before continuing.",
       );
       return;
     }
-    onContinue(frontImages, backImages);
+    const frontUrls = [front.image.url];
+    const backUrls = [back.image.url];
+    onContinue(frontUrls, backUrls);
   };
 
-  const displayedImages = activeTab === "front" ? frontImages : backImages;
+  const handleSaveDraft = () => {
+    toast.info("Draft saved!");
+  };
 
   return (
     <div className="min-h-screen">
@@ -211,28 +201,39 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
               </button>
             </div>
 
+            {/* ChatGPT-style Prompt Box */}
             <div className="relative mb-8">
               <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
-                {state.previewImage && (
-                  <div className="mb-3">
+                {/* Attached Image Preview */}
+                {currentTab.attachedImage && (
+                  <div className="mb-3 relative inline-block">
                     <Image
-                      src={state.previewImage}
-                      alt={`${activeTab} Preview`}
+                      src={URL.createObjectURL(currentTab.attachedImage)}
+                      alt="Attached"
                       width={64}
                       height={64}
                       className="object-cover rounded-md border border-gray-300 shadow"
                     />
+                    <button
+                      onClick={handleRemoveAttachedImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                    >
+                      <X size={12} />
+                    </button>
                   </div>
                 )}
+
+                {/* Prompt Textarea */}
                 <textarea
                   className="w-full bg-transparent outline-none resize-none text-lg placeholder-gray-400"
                   placeholder={`Enter prompt for ${activeTab} image…`}
                   rows={10}
-                  value={prompt}
+                  value={currentTab.prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                 />
               </div>
 
+              {/* Action Buttons Inside Prompt Box */}
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                 <button
                   className="flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
@@ -254,7 +255,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
                 <Button
                   className="px-6 py-2 text-sm max-w-[140px] text-white"
-                  onClick={handleGenerate}
+                  onClick={handleRegenerate}
                   variant="primary"
                   disabled={isGenerating}
                 >
@@ -263,59 +264,73 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
               </div>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mt-1 text-red-500 text-sm" aria-live="polite">
-                <span>{error.message}</span>
+            {/* Additional Variants Section */}
+            {additionalVariants.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  Additional Variants (Click to use)
+                </h3>
+                <div className="grid grid-cols-4 gap-4">
+                  {additionalVariants.map((variant) => (
+                    <div
+                      key={variant.id}
+                      className="relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-105 ring-2 ring-gray-200 hover:ring-yellow-300"
+                      onClick={() => handleSelectAdditionalVariant(variant.url)}
+                    >
+                      <Image
+                        src={variant.url}
+                        alt="Additional Variant"
+                        width={200}
+                        height={200}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Remove Icon */}
+                      <button
+                        onClick={(e) =>
+                          handleRemoveAdditionalVariant(variant.id, e)
+                        }
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition"
+                        title="Remove variant"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Thumbnail Images Section */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-4">
-                {displayedImages.map((imageUrl, index) => (
-                  <div
-                    key={index}
-                    className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                      state.selectedThumbnail === index
-                        ? "ring-4 ring-yellow-400 shadow-lg"
-                        : "ring-2 ring-gray-200 hover:ring-yellow-300"
-                    }`}
-                    onClick={() => handleThumbnailClick(imageUrl, index)}
-                  >
-                    <Image
-                      src={imageUrl}
-                      alt={`${activeTab} Thumbnail ${index + 1}`}
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-sm text-gray-500 leading-relaxed">
-                <p className="uppercase tracking-wide">
-                  Lorem ipsum is simply dummy text of the printing and
-                  typesetting industry. Lorem ipsum has been the industry
-                  standard
-                </p>
-              </div>
+            <div className="text-sm text-gray-500 leading-relaxed mt-4">
+              <p className="uppercase tracking-wide">
+                Each tab shows one image. Use the regenerate button to create a
+                new version for the current tab. Additional variants can be
+                clicked to replace the current image.
+              </p>
             </div>
           </div>
 
           {/* Right Section - Preview */}
           <div className="flex flex-col">
             <div className="flex-1 flex items-center justify-center">
-              <div className="w-full max-w-lg aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shadow-xl">
-                {state.previewImage ? (
-                  <Image
-                    src={state.previewImage}
-                    alt={`${activeTab} Preview`}
-                    width={600}
-                    height={600}
-                    className="w-full h-full object-cover"
-                  />
+              <div className="w-full max-w-lg aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shadow-xl relative">
+                {currentTab.image ? (
+                  <>
+                    <Image
+                      src={currentTab.image.url}
+                      alt={`${activeTab} Preview`}
+                      width={600}
+                      height={600}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Remove Icon on Preview */}
+                    <button
+                      onClick={handleRemoveCurrentImage}
+                      className="absolute top-4 right-4 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition shadow-lg"
+                      title="Remove this image"
+                    >
+                      <X size={18} />
+                    </button>
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <div className="text-center">
@@ -346,7 +361,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                 type="button"
                 variant="primary"
                 className="max-w-[180px] w-full text-lg font-medium"
-                disabled={frontImages.length === 0 || backImages.length === 0}
+                disabled={!front.image || !back.image}
               >
                 CONTINUE
               </Button>
@@ -354,15 +369,6 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
           </div>
         </div>
       </div>
-
-      {error && (
-        <div
-          className="mt-1 text-red-500 text-sm text-center"
-          aria-live="polite"
-        >
-          <span>{error.message}</span>
-        </div>
-      )}
     </div>
   );
 };

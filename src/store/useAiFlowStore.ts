@@ -23,7 +23,10 @@ interface AiFlowStore {
   historyStack: Screen[];
 
   // actions
-  goTo: (screen: Screen, options?: { variants?: string[]; file?: File | null }) => void;
+  goTo: (
+    screen: Screen,
+    options?: { variants?: string[]; file?: File | null },
+  ) => void;
   goBack: () => void;
   setUploadData: (data: Partial<UploadData>) => void;
   reset: () => void;
@@ -82,15 +85,20 @@ export const useAiFlowStore = create<AiFlowStore>()(
           uploadData: { ...prev.uploadData, ...data },
         })),
 
-      reset: () => ({
-        state: initialGeneratorState,
-        uploadData: { image: null },
-        historyStack: ["main"],
-      }),
+      reset: () =>
+        set({
+          state: initialGeneratorState,
+          uploadData: { image: null },
+          historyStack: ["main"],
+        }),
     }),
     {
       name: "ai-flow-storage",
-      // skipHydration: true,
-    }
-  )
+      // Selective persistence: only persist uploadData, not navigation state
+      // This prevents stale navigation state from being restored
+      partialize: (state) => ({
+        uploadData: state.uploadData,
+      }),
+    },
+  ),
 );

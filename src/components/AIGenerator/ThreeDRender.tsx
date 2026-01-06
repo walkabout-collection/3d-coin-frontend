@@ -6,7 +6,7 @@ import PaymentModal from "../PaymentMethodModal.tsx";
 import { buttonTexts } from "./data";
 import { ThreeDRenderProps } from "./types";
 import {
-  useDesignCoinStore,
+  useCoinDesignStore,
   useQAPromptsStore,
 } from "@/src/store/useCoinStore";
 import { useCreateDesign } from "@/src/hooks/useQueries";
@@ -29,10 +29,10 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   loading = false,
 }) => {
   const router = useRouter();
-  const { frontImages, backImages } = useDesignCoinStore();
-  const { formData, isInProgress } = useQAPromptsStore();
-  const frontImage = frontImages.at(-1) || "/images/home/front-side.png";
-  const backImage = backImages.at(-1) || "/images/home/front-side.png";
+  const { front, back } = useCoinDesignStore();
+  const { formData } = useQAPromptsStore();
+  const frontImage = front.image?.url || "/images/home/front-side.png";
+  const backImage = back.image?.url || "/images/home/front-side.png";
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [frontImageLoaded, setFrontImageLoaded] = useState(false);
@@ -41,7 +41,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   const [backImageError, setBackImageError] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(
-    null
+    null,
   );
   const [amount, setAmount] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -87,11 +87,10 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   const handleSubmitForQuote = (
     paymentOption?: PaymentOption,
     amountValue?: number,
-    email?: string
+    email?: string,
   ) => {
     const payment = paymentOption || selectedPayment;
     const qty = amountValue !== undefined ? amountValue : amount;
-
 
     if (!payment || qty === null) {
       setShowPaymentModal(true);
@@ -151,7 +150,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   const handlePaymentSelect = (
     option: PaymentOption,
     amount: number,
-    email?: string
+    email?: string,
   ) => {
     setSelectedPayment(option);
     setAmount(amount);

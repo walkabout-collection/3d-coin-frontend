@@ -447,7 +447,6 @@
 
 "use client";
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Button from "../common/button/Button";
 import { QAFormData } from "./types";
 import CoinUploadScreen from "./CoinUpload";
@@ -455,17 +454,26 @@ import CoinDesignInterface from "./CoinDesignInterface";
 import CoinPromptBox from "./CoinPromptBox";
 import QAPromptsForm from "./QAPromptsForm";
 import { ThreeDRender } from "./ThreeDRender";
-import DesignSummarySection from "@/src/containers/design-summary";
 import { useAiFlowStore } from "@/src/store/useAiFlowStore";
+import {
+  useCoinDesignStore,
+  useQAPromptsStore,
+} from "@/src/store/useCoinStore";
 
 const AIGenerator: React.FC = () => {
-  const router = useRouter();
   const { state, uploadData, goTo, goBack, setUploadData, reset } =
     useAiFlowStore();
+  const { reset: resetDesignCoin } = useCoinDesignStore();
+  const { resetFormData } = useQAPromptsStore();
 
+  // Reset all state on component mount to ensure fresh start
+  // This prevents stale navigation/data from being restored when
+  // returning to Custom Shapes from homepage
   useEffect(() => {
     reset();
-  }, [reset]);
+    resetDesignCoin();
+    resetFormData();
+  }, [reset, resetDesignCoin, resetFormData]); // Run only once on mount
 
   useEffect(() => {
     const handlePopState = () => goBack();
@@ -487,17 +495,20 @@ const AIGenerator: React.FC = () => {
     setUploadData({ image: file, variants: undefined });
   };
 
-  const handleGenerate = (variants?: string[]) => {
-    goTo("design", { variants });
+  const handleGenerate = (generatedImages: string[]) => {
+    // Images are already stored in useCoinDesignStore by CoinUploadScreen
+    goTo("design", { variants: generatedImages });
     window.history.pushState({ screen: "design" }, "", window.location.href);
   };
 
-  const handlePromptGenerate = (variants?: string[]) => {
-    goTo("design", { variants });
+  const handlePromptGenerate = (generatedImages?: string[]) => {
+    // Images are already stored in useCoinDesignStore
+    goTo("design", { variants: generatedImages });
     window.history.pushState({ screen: "design" }, "", window.location.href);
   };
 
   const handleContinue = () => {
+    // Images are already persisted in useCoinDesignStore
     goTo("qaPrompts");
     window.history.pushState({ screen: "qaPrompts" }, "", window.location.href);
   };
@@ -527,7 +538,7 @@ const AIGenerator: React.FC = () => {
     return (
       <CoinDesignInterface
         onContinue={handleContinue}
-        variants={uploadData.variants}
+        initialImages={uploadData.variants}
       />
     );
   }

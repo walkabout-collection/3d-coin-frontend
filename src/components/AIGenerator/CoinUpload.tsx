@@ -99,12 +99,12 @@ import Button from "../common/button/Button";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import { useUploadImage } from "@/src/hooks/useQueries";
-import { useCoinStore } from "@/src/store/useCoinStore";
+import { useCoinDesignStore } from "@/src/store/useCoinStore";
 
 interface CoinUploadScreenProps {
   onFileChange: (file: File | null) => void;
   image: File | null;
-  onGenerate: () => void;
+  onGenerate: (generatedImages: string[]) => void;
 }
 
 const imageSchema = z.instanceof(File, { message: "Please upload an image" });
@@ -115,33 +115,55 @@ const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({
   onGenerate,
 }) => {
   const [error, setError] = useState<string | undefined>(undefined);
-  const {addCoinImage} = useCoinStore()
+  const { setVariants } = useCoinDesignStore();
 
-  const { mutate: uploadImageMutate, isPending} = useUploadImage({
+  const { mutate: uploadImageMutate, isPending } = useUploadImage({
     onSuccess: (data) => {
-      toast.success("Image uploaded successfully!");
-      setError(undefined);
-       const bufferArray = data?.data?.buffer?.data;
-        if (bufferArray) {
-          const base64 = Buffer.from(bufferArray).toString("base64");
-          const imageUrl = `data:image/png;base64,${base64}`;
+      console.log("API Response:", data);
 
-          // Add to Zustand
-          addCoinImage(imageUrl);
-        }
+      // Try different possible response structures
+      const response = data as {
+        data?: { data?: { buffer?: string }; buffer?: string };
+        buffer?: string;
+      };
+      let base64String =
+        response?.data?.data?.buffer || // { data: { data: { buffer: "..." } } }
+        response?.data?.buffer || // { data: { buffer: "..." } }
+        response?.buffer; // { buffer: "..." }
+
+      if (base64String) {
+        toast.success("Images generated successfully!");
         setError(undefined);
-      onGenerate();
+
+        // Create data URI from base64 string
+        const imageUrl = `data:image/png;base64,${base64String}`;
+
+        // Create 3 variants (placeholder until API returns multiple)
+        // Variant 1 → Front, Variant 2 → Back, Variant 3 → Additional
+        const generatedVariants = [imageUrl, imageUrl, imageUrl];
+
+        // Store in Zustand with proper allocation
+        // setVariants will automatically assign: [0]→front, [1]→back, [2+]→additional
+        setVariants(generatedVariants);
+
+        // Navigate to design interface with generated images
+        onGenerate(generatedVariants);
+      } else {
+        console.error("No buffer returned from API. Full response:", data);
+        toast.error("Failed to process image from API");
+      }
     },
-    onError: () => {
-      setError("Failed to upload image. Please try again.");
-      toast.error("Failed to upload image.");
+    onError: (error) => {
+      console.error("API Error:", error);
+      setError("Failed to generate images. Please try again.");
+      toast.error("Failed to generate images.");
     },
   });
 
   const handleGenerateClick = () => {
     const validation = imageSchema.safeParse(image);
     if (validation.success && image) {
-      uploadImageMutate({image});
+      uploadImageMutate({ image });
     } else {
       setError(validation.error?.issues[0].message);
     }
@@ -161,8 +183,8 @@ const CoinUploadScreen: React.FC<CoinUploadScreenProps> = ({
           id="image"
         />
         <p className="text-sm text-gray-700 font-medium mt-8">
-          LOREM IPSUM IS SIMPLY DUMMY TEXT OF THE PRINTING AND TYPESETTING INDUSTRY. LOREM IPSUM HAS BEEN THE
-          INDUSTRY STANDARD
+          LOREM IPSUM IS SIMPLY DUMMY TEXT OF THE PRINTING AND TYPESETTING
+          INDUSTRY. LOREM IPSUM HAS BEEN THE INDUSTRY STANDARD
         </p>
         <Button
           onClick={handleGenerateClick}

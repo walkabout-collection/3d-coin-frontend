@@ -17,41 +17,243 @@ export const useCoinStore = create<CoinStore>((set) => ({
   clearCoinImages: () => set({ coinImages: [] }),
 }));
 
-// coin design interface
-interface CoinStoreState {
-  frontImages: string[];
-  backImages: string[];
-  addFrontImage: (image: string) => void;
-  addBackImage: (image: string) => void;
-  setInitialImages: (variants: string[]) => void;
+// ============================================
+// COIN DESIGN INTERFACE STORE - VARIANT ALLOCATION ARCHITECTURE
+// ============================================
+
+interface Image {
+  id: string;
+  url: string;
+  timestamp: number;
+}
+
+interface TabState {
+  image: Image | null; // Single image for this side (Front or Back)
+  prompt: string; // Current prompt text
+  attachedImage: File | null; // Manually attached image in prompt box
+}
+
+interface CoinDesignStore {
+  // Tab states
+  front: TabState;
+  back: TabState;
+  additionalVariants: Image[]; // Extra variants from initial generation
+
+  // Actions - Front Tab
+  setFrontImage: (imageUrl: string) => void;
+  removeFrontImage: () => void;
+  setFrontPrompt: (prompt: string) => void;
+  setFrontAttachedImage: (file: File | null) => void;
+  replaceFrontImage: (newImageUrl: string) => void;
+
+  // Actions - Back Tab
+  setBackImage: (imageUrl: string) => void;
+  removeBackImage: () => void;
+  setBackPrompt: (prompt: string) => void;
+  setBackAttachedImage: (file: File | null) => void;
+  replaceBackImage: (newImageUrl: string) => void;
+
+  // Actions - Variants
+  setVariants: (variants: string[]) => void; // Set Front, Back, and additional from API
+  addAdditionalVariant: (imageUrl: string) => void;
+  removeAdditionalVariant: (imageId: string) => void;
+
+  // Utility
   reset: () => void;
 }
 
-export const useDesignCoinStore = create<CoinStoreState>((set) => ({
-  frontImages: [],
-  backImages: [],
-  addFrontImage: (image) =>
-    set((state) => ({
-      frontImages: [...state.frontImages, image].slice(-4),
-    })),
-  addBackImage: (image) =>
-    set((state) => ({
-      backImages: [...state.backImages, image].slice(-4),
-    })),
-  setInitialImages: (variants) => {
-    const front = variants.filter((_, i) => i % 2 === 0).slice(-4);
-    const back = variants.filter((_, i) => i % 2 === 1).slice(-4);
-    set({
-      frontImages: front,
-      backImages: back,
-    });
-  },
-  reset: () =>
-    set({
-      frontImages: [],
-      backImages: [],
+const initialTabState: TabState = {
+  image: null,
+  prompt: "",
+  attachedImage: null,
+};
+
+export const useCoinDesignStore = create<CoinDesignStore>()(
+  persist(
+    (set) => ({
+      front: initialTabState,
+      back: initialTabState,
+      additionalVariants: [],
+
+      // ============ FRONT TAB ACTIONS ============
+      setFrontImage: (imageUrl: string) =>
+        set((state) => ({
+          front: {
+            ...state.front,
+            image: {
+              id: `front-${Date.now()}`,
+              url: imageUrl,
+              timestamp: Date.now(),
+            },
+          },
+        })),
+
+      removeFrontImage: () =>
+        set((state) => ({
+          front: { ...state.front, image: null },
+        })),
+
+      setFrontPrompt: (prompt: string) =>
+        set((state) => ({
+          front: { ...state.front, prompt },
+        })),
+
+      setFrontAttachedImage: (file: File | null) =>
+        set((state) => ({
+          front: { ...state.front, attachedImage: file },
+        })),
+
+      replaceFrontImage: (newImageUrl: string) =>
+        set((state) => ({
+          front: {
+            ...state.front,
+            image: state.front.image
+              ? {
+                  ...state.front.image,
+                  url: newImageUrl,
+                  timestamp: Date.now(),
+                }
+              : {
+                  id: `front-${Date.now()}`,
+                  url: newImageUrl,
+                  timestamp: Date.now(),
+                },
+          },
+        })),
+
+      // ============ BACK TAB ACTIONS ============
+      setBackImage: (imageUrl: string) =>
+        set((state) => ({
+          back: {
+            ...state.back,
+            image: {
+              id: `back-${Date.now()}`,
+              url: imageUrl,
+              timestamp: Date.now(),
+            },
+          },
+        })),
+
+      removeBackImage: () =>
+        set((state) => ({
+          back: { ...state.back, image: null },
+        })),
+
+      setBackPrompt: (prompt: string) =>
+        set((state) => ({
+          back: { ...state.back, prompt },
+        })),
+
+      setBackAttachedImage: (file: File | null) =>
+        set((state) => ({
+          back: { ...state.back, attachedImage: file },
+        })),
+
+      replaceBackImage: (newImageUrl: string) =>
+        set((state) => ({
+          back: {
+            ...state.back,
+            image: state.back.image
+              ? {
+                  ...state.back.image,
+                  url: newImageUrl,
+                  timestamp: Date.now(),
+                }
+              : {
+                  id: `back-${Date.now()}`,
+                  url: newImageUrl,
+                  timestamp: Date.now(),
+                },
+          },
+        })),
+
+      // ============ VARIANT ALLOCATION ============
+      setVariants: (variants: string[]) =>
+        set(() => {
+          const timestamp = Date.now();
+
+          // Variant 1 → Front Image
+          const frontImage = variants[0]
+            ? {
+                id: `front-${timestamp}`,
+                url: variants[0],
+                timestamp,
+              }
+            : null;
+
+          // Variant 2 → Back Image
+          const backImage = variants[1]
+            ? {
+                id: `back-${timestamp}`,
+                url: variants[1],
+                timestamp,
+              }
+            : null;
+
+          // Variant 3+ → Additional variants
+          const additional = variants.slice(2).map((url, index) => ({
+            id: `additional-${timestamp}-${index}`,
+            url,
+            timestamp,
+          }));
+
+          return {
+            front: {
+              ...initialTabState,
+              image: frontImage,
+            },
+            back: {
+              ...initialTabState,
+              image: backImage,
+            },
+            additionalVariants: additional,
+          };
+        }),
+
+      addAdditionalVariant: (imageUrl: string) =>
+        set((state) => ({
+          additionalVariants: [
+            ...state.additionalVariants,
+            {
+              id: `additional-${Date.now()}`,
+              url: imageUrl,
+              timestamp: Date.now(),
+            },
+          ],
+        })),
+
+      removeAdditionalVariant: (imageId: string) =>
+        set((state) => ({
+          additionalVariants: state.additionalVariants.filter(
+            (img) => img.id !== imageId,
+          ),
+        })),
+
+      // ============ UTILITY ============
+      reset: () =>
+        set({
+          front: initialTabState,
+          back: initialTabState,
+          additionalVariants: [],
+        }),
     }),
-}));
+    {
+      name: "coin-design-storage",
+      // Persist everything except File objects (can't be serialized)
+      partialize: (state) => ({
+        front: {
+          ...state.front,
+          attachedImage: null, // Don't persist File objects
+        },
+        back: {
+          ...state.back,
+          attachedImage: null,
+        },
+        additionalVariants: state.additionalVariants,
+      }),
+    },
+  ),
+);
 
 // QA PROMPTS
 interface QAPromptsState {
@@ -70,13 +272,13 @@ export const useQAPromptsStore = create<QAPromptsState>()(
       setFormData: (data) =>
         set((state) => ({
           formData: { ...state.formData, ...data },
-          isInProgress: true, 
+          isInProgress: true,
         })),
       setInProgress: (status) => set({ isInProgress: status }),
       resetFormData: () => set({ formData: {}, isInProgress: false }),
     }),
     {
       name: "qa-prompts-storage",
-    }
-  )
+    },
+  ),
 );

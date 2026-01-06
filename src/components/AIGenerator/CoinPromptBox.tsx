@@ -187,8 +187,6 @@
 
 // export default CoinPromptBox;
 
-
-
 "use client";
 import React, { useState } from "react";
 import Button from "../common/button/Button";
@@ -199,7 +197,7 @@ import { chatbotQuestions, initialChatbotState } from "./data";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import { useUploadImage } from "@/src/hooks/useQueries";
-import { useCoinStore } from "@/src/store/useCoinStore";
+import { useCoinDesignStore } from "@/src/store/useCoinStore";
 
 interface CoinPromptBoxProps {
   onGenerate?: (variants?: string[]) => void;
@@ -208,8 +206,6 @@ interface CoinPromptBoxProps {
 interface ChatbotState {
   isDrawerOpen: boolean;
 }
-
-const imageSchema = z.instanceof(File, { message: "Please upload an image" });
 
 const base64ToFile = (base64String: string, fileName: string): File => {
   const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
@@ -230,39 +226,60 @@ const base64ToFile = (base64String: string, fileName: string): File => {
 };
 
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
-  const { coinImages, addCoinImage } = useCoinStore();
+  const { setVariants } = useCoinDesignStore();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [chatbotState, setChatbotState] =
     useState<ChatbotState>(initialChatbotState);
-  const [error, setError] = useState<{ message: string } | undefined>(undefined);
+  const [error, setError] = useState<{ message: string } | undefined>(
+    undefined,
+  );
   const [prompt, setPrompt] = useState("");
 
   const { mutate: uploadImageMutate, isPending: isGenerating } = useUploadImage(
     {
       onSuccess: (res) => {
-        toast.success("Generated successfully!");
-        setError(undefined);
+        console.log("API Response:", res);
 
-        const file = res.data?.data?.buffer;
-        if (file instanceof File) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = reader.result as string;
-            addCoinImage(base64);
-            setPreviewImage(base64);
-            if (onGenerate) onGenerate([base64]); 
-          };
-          reader.readAsDataURL(file);
+        // Try different possible response structures
+        const response = res as {
+          data?: { data?: { buffer?: string }; buffer?: string };
+          buffer?: string;
+        };
+        let base64String =
+          response?.data?.data?.buffer || // { data: { data: { buffer: "..." } } }
+          response?.data?.buffer || // { data: { buffer: "..." } }
+          response?.buffer; // { buffer: "..." }
+
+        if (base64String) {
+          toast.success("Images generated successfully!");
+          setError(undefined);
+
+          // Create data URI from base64 string
+          const imageUrl = `data:image/png;base64,${base64String}`;
+
+          // Create 3 variants (placeholder until API returns multiple)
+          // Variant 1 → Front, Variant 2 → Back, Variant 3 → Additional
+          const generatedVariants = [imageUrl, imageUrl, imageUrl];
+
+          // Store in Zustand with proper allocation
+          setVariants(generatedVariants);
+          setPreviewImage(imageUrl);
+
+          if (onGenerate) onGenerate(generatedVariants);
         } else {
-          console.error("No buffer returned from API");
+          console.error("No buffer returned from API. Full response:", res);
+          toast.error("Failed to process image from API");
         }
       },
-      onError: () => {
-        setError({ message: "Failed to generate from prompt. Please try again." });
+      onError: (error) => {
+        console.error("API Error:", error);
+        setError({
+          message: "Failed to generate from prompt. Please try again.",
+        });
         toast.error("Failed to generate from prompt.");
       },
-    }
+    },
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -326,7 +343,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
               )}
 
               <textarea
-                className="w-full bg-transparent outline-none resize-none text-lg placeholder-gray-400"
+                className="w-full bg-transparent outline-none  text-lg placeholder-gray-400"
                 placeholder="Ask anything…"
                 rows={4}
                 value={prompt}
