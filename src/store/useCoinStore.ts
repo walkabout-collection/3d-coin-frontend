@@ -291,6 +291,17 @@ export const useQAPromptsStore = create<QAPromptsState>()(
     }),
     {
       name: "qa-prompts-storage",
+      // Exclude large image URLs from persistence to avoid localStorage quota exceeded error
+      // Images are already stored in useCoinDesignStore
+      partialize: (state) => ({
+        formData: {
+          ...state.formData,
+          // Exclude image URLs (they can be very large base64 strings)
+          frontReferenceImage: undefined,
+          backReferenceImage: undefined,
+        },
+        isInProgress: state.isInProgress,
+      }),
     },
   ),
 );

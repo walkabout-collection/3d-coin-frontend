@@ -102,6 +102,11 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       return;
     }
 
+    // Get reference images from formData, fallback to design store images if not persisted
+    const frontReference =
+      formData.frontReferenceImage || frontImage || undefined;
+    const backReference = formData.backReferenceImage || backImage || undefined;
+
     const designData = {
       name: name,
       status: "SUBMITTED" as const,
@@ -114,7 +119,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       frontDescription: formData.frontDescription || undefined,
       frontText: formData.frontTextInsideArtwork || undefined,
       frontTextStyle: formData.frontTextStyle || undefined,
-      frontReference: formData.frontReferenceImage || undefined,
+      frontReference: frontReference,
       frontReferenceImpact: formData.frontReferenceImageImpact || undefined,
       frontComposition: formData.frontComposition || undefined,
 
@@ -123,7 +128,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       backDescription: formData.backDescription || undefined,
       backText: formData.backTextInsideArtwork || undefined,
       backTextStyle: formData.backTextStyle || undefined,
-      backReference: formData.backReferenceImage || undefined,
+      backReference: backReference,
       backReferenceImpact: formData.backReferenceImageImpact || undefined,
       backComposition: formData.backComposition || undefined,
 
@@ -176,7 +181,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
             <h3 className="text-md text-start font-semibold text-gray-800 tracking-wide uppercase">
               Front Design
             </h3>
-            <div className="relative flex items-center justify-center w-full max-w-[500px] h-[400px]">
+            <div className="relative flex items-center justify-center w-full max-w-[800px] h-[400px]">
               {!frontImageLoaded && !frontImageError && (
                 <div className="animate-pulse text-gray-400">Loading...</div>
               )}
@@ -230,29 +235,31 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
 
         {/* Buttons */}
         <div className="flex justify-center space-x-6 mt-8">
-          <Button
-            type="button"
-            variant="ternary"
-            onClick={handleSaveAsDraft}
-            disabled={loading || isProcessing || isPending}
-            className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none min-w-[140px]"
-          >
-            {isProcessing && !onContinue ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                <span>{buttonTexts.loading}</span>
-              </div>
-            ) : (
-              buttonTexts.saveAsDraft
-            )}
-          </Button>
+          {isLoggedIn && (
+            <Button
+              type="button"
+              variant="ternary"
+              onClick={handleSaveAsDraft}
+              disabled={loading || isProcessing || isPending}
+              className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none min-w-[140px]"
+            >
+              {isProcessing && !onContinue ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span>{buttonTexts.loading}</span>
+                </div>
+              ) : (
+                buttonTexts.saveAsDraft
+              )}
+            </Button>
+          )}
 
           <Button
             type="button"
             variant="primary"
             onClick={() => setShowPaymentModal(true)}
             disabled={loading || isProcessing || isPending}
-            className="rounded-full font-base text-md max-w-[140px]"
+            className="rounded-full font-base text-md max-w-[300px]"
           >
             {isPending ? (
               <div className="flex items-center justify-center space-x-2">

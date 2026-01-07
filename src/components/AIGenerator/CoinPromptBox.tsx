@@ -54,7 +54,7 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
         if (res.success && res.data) {
           const { designId, front, back } = res.data;
 
-          toast.success("Both sides generated successfully! 🎉");
+          toast.success("Generated successfully!");
           setError(undefined);
 
           // Store design ID for later use
@@ -126,87 +126,125 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
     setChatbotState({ ...chatbotState, isDrawerOpen: false });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // If Enter is pressed without Shift, trigger generate
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // Prevent default new line
+      handleGenerateClick();
+    }
+    // Shift+Enter will allow new line (default behavior)
+  };
+
   return (
     <div className="relative">
-      <div className="py-16 min-h-screen text-center max-w-2xl mx-auto">
-        <h2 className="text-4xl font-semibold mb-6 mt-8">
-          START YOUR JOURNEY OF COLLECTING UNIQUE COINS, ONE POCKET AT A TIME
-        </h2>
+      <div className="py-16 min-h-screen bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          {/* Title */}
+          <h2 className="text-center text-4xl md:text-5xl font-serif text-gray-900 mb-12 mt-8 leading-tight">
+            START YOUR JOURNEY OF
+            <br />
+            COLLECTING UNIQUE COINS, ONE
+            <br />
+            POCKET AT A TIME
+          </h2>
 
-        <div className="flex flex-col">
-          <div className="relative mb-8 mt-10">
-            <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
+          {/* Prompt Box Container */}
+          <div className="relative max-w-3xl mx-auto">
+            {/* Yellow Border Box */}
+            <div className="relative w-full border-2 border-yellow-400 rounded-xl p-6 bg-white shadow-sm">
+              {/* Preview Image */}
               {previewImage && (
-                <div className="mb-3">
+                <div className="mb-4">
                   <Image
                     src={previewImage}
                     alt="Attached Preview"
-                    width={64}
-                    height={64}
-                    className="object-cover rounded-md border border-gray-300 shadow"
+                    width={80}
+                    height={80}
+                    className="object-cover rounded-lg border border-gray-300 shadow-sm"
                   />
                 </div>
               )}
 
+              {/* Textarea */}
               <textarea
-                className="w-full bg-transparent outline-none  text-lg placeholder-gray-400"
-                placeholder="Ask anything…"
-                rows={4}
+                className="w-full bg-transparent outline-none resize-none text-base placeholder-gray-400 text-gray-800 leading-relaxed pr-4"
+                placeholder="Enter your prompt here... (Press Enter to generate, Shift+Enter for new line)"
+                rows={6}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-              <button
-                className="mt-5 flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
-                onClick={() => document.getElementById("image-upload")?.click()}
-              >
-                <Paperclip size={16} />
-                <span className="text-sm font-medium">Attach</span>
-              </button>
-
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-                id="image-upload"
+                onKeyDown={handleKeyDown}
+                style={{ minHeight: "120px", maxHeight: "300px" }}
               />
 
-              <div className="flex items-center gap-2">
+              {/* Action Buttons Container */}
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+                {/* Attach Button - Left */}
                 <button
-                  onClick={handleChatbotClick}
-                  className="hover:scale-105 transition-transform duration-200"
+                  className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2.5 rounded-full transition-all duration-200 cursor-pointer font-medium text-sm"
+                  onClick={() =>
+                    document.getElementById("image-upload")?.click()
+                  }
+                  type="button"
                 >
-                  <Image
-                    src="/images/home/bot-icon.svg"
-                    alt="Chatbot Assistant"
-                    width={48}
-                    height={48}
-                    className="cursor-pointer mt-5"
-                  />
+                  <Paperclip size={18} className="text-gray-600" />
+                  <span>ATTACH</span>
                 </button>
 
-                <Button
-                  onClick={handleGenerateClick}
-                  type="button"
-                  variant="primary"
-                  className="mt-5 max-w-[120px] w-full text-sm font-base items-center justify-center flex mx-auto"
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? "Processing..." : "GENERATE"}
-                </Button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="image-upload"
+                />
+
+                {/* Generate Button with AI Icon - Right */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleChatbotClick}
+                    className="hover:opacity-80 transition-opacity duration-200 p-1"
+                    type="button"
+                    aria-label="AI Assistant"
+                  >
+                    <Image
+                      src="/images/home/bot-icon.svg"
+                      alt="Chatbot Assistant"
+                      width={40}
+                      height={40}
+                      className="cursor-pointer"
+                    />
+                  </button>
+
+                  <Button
+                    onClick={handleGenerateClick}
+                    type="button"
+                    variant="primary"
+                    className="!bg-blue-900 hover:!bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold text-sm min-w-[140px] flex items-center justify-center gap-2"
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      "GENERATE"
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="mt-1 text-red-500 text-sm" aria-live="polite">
-              <span>{error.message}</span>
-            </div>
-          )}
+            {/* Error Message */}
+            {error && (
+              <div
+                className="mt-4 text-red-500 text-sm text-center"
+                aria-live="polite"
+              >
+                <span>{error.message}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

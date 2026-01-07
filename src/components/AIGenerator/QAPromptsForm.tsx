@@ -138,13 +138,19 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({
   }, [frontImageUrl, backImageUrl, setValue]);
 
   const onFormSubmit = async (data: QAFormData) => {
-    // console.log("QA Proceed clicked – Final form data:", data);
-
+    // Store complete form data in Zustand (also sets isInProgress to true)
     setFormData(data);
-    setInProgress(true);
+
+    // Call parent's onSubmit handler
     onSubmit(data);
+
+    // Navigate to ThreeDRender screen
     goTo("threeDRender");
-    // console.log("Stored in Zustand:", useQAPromptsStore.getState().formData);
+    window.history.pushState(
+      { screen: "threeDRender" },
+      "",
+      window.location.href,
+    );
   };
 
   return (

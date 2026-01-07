@@ -1,11 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Paperclip, X } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useGenerateCoinSide } from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
+
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
 
 interface CoinDesignInterfaceProps {
   onContinue: (frontImages: string[], backImages: string[]) => void;
@@ -16,6 +24,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   onContinue,
 }) => {
   const [activeTab, setActiveTab] = useState<"front" | "back">("front");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const {
     designId,
@@ -45,6 +54,19 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const replaceImage =
     activeTab === "front" ? replaceFrontImage : replaceBackImage;
   const setImage = activeTab === "front" ? setFrontImage : setBackImage;
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = getCookie("token");
+      setIsLoggedIn(!!token);
+    };
+
+    checkAuth();
+    window.addEventListener("authChanged", checkAuth);
+    return () => {
+      window.removeEventListener("authChanged", checkAuth);
+    };
+  }, []);
 
   const { mutate: generateCoinSideMutate, isPending: isGenerating } =
     useGenerateCoinSide({
@@ -155,6 +177,15 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // If Enter is pressed without Shift, trigger regenerate
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // Prevent default new line
+      handleRegenerate();
+    }
+    // Shift+Enter will allow new line (default behavior)
+  };
+
   const handleContinueClick = () => {
     if (!front.image || !back.image) {
       toast.error(
@@ -202,8 +233,8 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
             </div>
 
             {/* ChatGPT-style Prompt Box */}
-            <div className="relative mb-8">
-              <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-4 text-left">
+            <div className="mb-8">
+              <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-6 text-left flex flex-col">
                 {/* Attached Image Preview */}
                 {currentTab.attachedImage && (
                   <div className="mb-3 relative inline-block">
@@ -225,42 +256,52 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
                 {/* Prompt Textarea */}
                 <textarea
-                  className="w-full bg-transparent outline-none resize-none text-lg placeholder-gray-400"
-                  placeholder={`Enter prompt for ${activeTab} image…`}
-                  rows={10}
+                  className="w-full bg-transparent outline-none resize-none text-base placeholder-gray-400 text-gray-800 leading-relaxed flex-1 min-h-[200px] pr-4 mb-4"
+                  placeholder={`Enter prompt for ${activeTab} image… `}
                   value={currentTab.prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                />
-              </div>
-
-              {/* Action Buttons Inside Prompt Box */}
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-                <button
-                  className="flex items-center gap-2 bg-gray-200 hover:bg-yellow-400 hover:text-black text-gray-700 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
-                  onClick={() =>
-                    document.getElementById("image-upload")?.click()
-                  }
-                >
-                  <Paperclip size={16} />
-                  <span className="text-sm font-medium">Attach</span>
-                </button>
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="image-upload"
+                  onKeyDown={handleKeyDown}
+                  style={{ maxHeight: "400px" }}
                 />
 
-                <Button
-                  className="px-6 py-2 text-sm max-w-[140px] text-white"
-                  onClick={handleRegenerate}
-                  variant="primary"
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? "Processing..." : "REGENERATE"}
-                </Button>
+                {/* Action Buttons Inside Prompt Box */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                  <button
+                    className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2.5 rounded-full transition-all duration-200 cursor-pointer font-medium text-sm"
+                    onClick={() =>
+                      document.getElementById("image-upload")?.click()
+                    }
+                    type="button"
+                  >
+                    <Paperclip size={18} className="text-gray-600" />
+                    <span>ATTACH</span>
+                  </button>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="image-upload"
+                  />
+
+                  <Button
+                    className="!bg-blue-900 hover:!bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold text-sm max-w-[140px] flex items-center justify-center gap-2"
+                    onClick={handleRegenerate}
+                    variant="primary"
+                    disabled={isGenerating}
+                    type="button"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      "REGENERATE"
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -303,8 +344,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
             <div className="text-sm text-gray-500 leading-relaxed mt-4">
               <p className="uppercase tracking-wide">
                 Each tab shows one image. Use the regenerate button to create a
-                new version for the current tab. Additional variants can be
-                clicked to replace the current image.
+                new version for the current tab.
               </p>
             </div>
           </div>
@@ -347,14 +387,16 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
             {/* Action Buttons */}
             <div className="flex justify-between gap-6 mt-8">
-              <Button
-                type="button"
-                variant="ternary"
-                onClick={handleSaveDraft}
-                className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
-              >
-                SAVE AS DRAFT
-              </Button>
+              {isLoggedIn && (
+                <Button
+                  type="button"
+                  variant="ternary"
+                  onClick={handleSaveDraft}
+                  className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
+                >
+                  SAVE AS DRAFT
+                </Button>
+              )}
 
               <Button
                 onClick={handleContinueClick}
