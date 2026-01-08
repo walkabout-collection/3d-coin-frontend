@@ -52,10 +52,31 @@ const Login = () => {
     //   router.push("/dashboard");
     // },
     onSuccess: (response) => {
-      const {  accessToken, refreshToken } = response;
+      console.log("Login response:", response);
 
-      document.cookie = `token=${accessToken}; path=/; max-age=86400`; // 1 day
-      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800`; // 7 days
+      const { accessToken, refreshToken } = response;
+
+      if (!accessToken) {
+        console.error("No access token in response");
+        setError("Login failed: No access token received");
+        return;
+      }
+
+      if (!refreshToken) {
+        console.error("No refresh token in response:", response);
+        setError("Login failed: No refresh token received");
+        return;
+      }
+
+      // Set cookies with proper encoding
+      const setCookie = (name: string, value: string, maxAge: number) => {
+        const encodedValue = encodeURIComponent(value);
+        document.cookie = `${name}=${encodedValue}; path=/; max-age=${maxAge}; SameSite=Lax`;
+      };
+
+      setCookie("token", accessToken, 86400); // 1 day
+      setCookie("refreshToken", refreshToken, 604800); // 7 days
+
       window.dispatchEvent(new Event("authChanged"));
 
       router.push("/dashboard");

@@ -12,52 +12,82 @@ export function middleware(req: NextRequest) {
 
   // 1️⃣ Read JWT token from cookies
   const token = req.cookies.get("token")?.value;
-  console.log("Token:", token);
 
-  if (token) {
+  // 2️⃣ Allow public routes without authentication
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname === "/"
+  ) {
+    // If user is already logged in, redirect away from login/signup
+    if (
+      token &&
+      (pathname.startsWith("/login") || pathname.startsWith("/signup"))
+    ) {
+      try {
+        const payload = jwtDecode<TokenPayload>(token);
+        if (payload.role) {
+          const redirectPath =
+            payload.role === "ADMIN" ? "/admin" : "/dashboard";
+          return NextResponse.redirect(new URL(redirectPath, req.url));
+        }
+      } catch (err) {
+        // Invalid token, allow access to login/signup
+      }
+    }
+    return NextResponse.next();
+  }
+
+  // 3️⃣ Protect admin routes - require authentication and ADMIN role
+  if (pathname.startsWith("/admin")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
     try {
       const payload = jwtDecode<TokenPayload>(token);
-      console.log("Payload:", payload);
 
-      // 2️⃣ If token expired, clear it
-      // if (payload.exp && Date.now() >= payload.exp * 1000) {
-      //   console.log("Token expired, clearing cookie");
-      //   return NextResponse.redirect(new URL("/login", req.url));
-      // }
-
-      // 3️⃣ Redirect logged-in users away from login/signup
-      if (
-        (pathname.startsWith("/login") || pathname.startsWith("/signup")) &&
-        payload.role
-      ) {
-        const redirectPath = payload.role === "ADMIN" ? "/admin" : "/dashboard";
-        return NextResponse.redirect(new URL(redirectPath, req.url));
+      // Check if token is expired
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        return NextResponse.redirect(new URL("/login", req.url));
       }
 
-      // 4️⃣ Role-based access control
-      if (payload.role === "USER" && pathname.startsWith("/admin")) {
+      // Require ADMIN role for admin routes
+      if (payload.role !== "ADMIN") {
+        // Redirect non-admin users to their appropriate dashboard
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
+    } catch (err) {
+      // Invalid token, redirect to login
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
 
-      if (payload.role === "ADMIN" && pathname.startsWith("/dashboard")) {
+  // 4️⃣ Protect dashboard routes - require authentication
+  if (pathname.startsWith("/dashboard")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
+    try {
+      const payload = jwtDecode<TokenPayload>(token);
+
+      // Check if token is expired
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+
+      // Redirect ADMIN users away from user dashboard
+      if (payload.role === "ADMIN") {
         return NextResponse.redirect(new URL("/admin", req.url));
       }
     } catch (err) {
-      // invalid token
+      // Invalid token, redirect to login
       return NextResponse.redirect(new URL("/login", req.url));
     }
-  } else {
-    if (
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/signup") ||
-      pathname.startsWith("/_next") ||
-      pathname.startsWith("/api") ||
-      pathname.startsWith("/favicon.ico")
-    ) {
-      return NextResponse.next();
-    }
-
-    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();

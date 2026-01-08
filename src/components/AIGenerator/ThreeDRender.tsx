@@ -13,6 +13,7 @@ import { useCreateDesign } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import { useRouter } from "next/navigation";
+import { uploadBase64ToS3 } from "@/src/services/apiServices";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -68,7 +69,8 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       router.push("/success");
     },
     onError: (err) => {
-      toast.error("Failed to submit design: " + err.message);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Failed to submit design: " + msg);
       console.error("CreateDesign error:", err);
     },
   });
@@ -84,7 +86,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
     }
   };
 
-  const handleSubmitForQuote = (
+  const handleSubmitForQuote = async (
     paymentOption?: PaymentOption,
     amountValue?: number,
     email?: string,
@@ -102,53 +104,174 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       return;
     }
 
-    // Get reference images from formData, fallback to design store images if not persisted
-    const frontReference =
-      formData.frontReferenceImage || frontImage || undefined;
-    const backReference = formData.backReferenceImage || backImage || undefined;
+    try {
+      // Helper function to check if a string is a base64 data URL
+      const isBase64Image = (str: string | null | undefined): boolean => {
+        return !!(
+          str &&
+          typeof str === "string" &&
+          str.startsWith("data:image/")
+        );
+      };
 
-    const designData = {
-      name: name,
-      status: "SUBMITTED" as const,
-      totalCoins: qty,
-      email: email,
-      method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
+      // Helper function to check if it's a blob URL
+      const isBlobUrl = (str: string | null | undefined): boolean => {
+        return !!(str && typeof str === "string" && str.startsWith("blob:"));
+      };
 
-      // FRONT
-      frontImage: frontImage || undefined,
-      frontDescription: formData.frontDescription || undefined,
-      frontText: formData.frontTextInsideArtwork || undefined,
-      frontTextStyle: formData.frontTextStyle || undefined,
-      frontReference: frontReference,
-      frontReferenceImpact: formData.frontReferenceImageImpact || undefined,
-      frontComposition: formData.frontComposition || undefined,
+      // Helper function to upload base64 image to S3 and return the key
+      const getS3KeyOrOriginal = async (
+        image: string | null | undefined,
+        defaultFileName: string,
+      ): Promise<string | undefined> => {
+        if (!image) return undefined;
 
-      // BACK
-      backImage: backImage || undefined,
-      backDescription: formData.backDescription || undefined,
-      backText: formData.backTextInsideArtwork || undefined,
-      backTextStyle: formData.backTextStyle || undefined,
-      backReference: backReference,
-      backReferenceImpact: formData.backReferenceImageImpact || undefined,
-      backComposition: formData.backComposition || undefined,
+        console.log(`[getS3KeyOrOriginal] Processing ${defaultFileName}:`, {
+          imageType: isBase64Image(image)
+            ? "base64"
+            : isBlobUrl(image)
+              ? "blob"
+              : "other",
+          imagePreview: image.substring(0, 50) + "...",
+        });
 
-      coinShape: formData.coinShape || undefined,
-      subject: formData.subject || undefined,
-      materialFinish: formData.metalFinishes || undefined,
-      detailLevel: formData.detailLevel || undefined,
-      prohibitedContent: formData.prohibitedContent || undefined,
-    };
+        // If it's a blob URL, convert it to base64 first
+        if (isBlobUrl(image)) {
+          console.log(
+            `[getS3KeyOrOriginal] Converting blob URL to base64 for ${defaultFileName}`,
+          );
+          try {
+            const response = await fetch(image);
+            const blob = await response.blob();
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (typeof reader.result === "string") {
+                  resolve(reader.result);
+                } else {
+                  reject(new Error("Failed to convert blob to base64"));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            // Now upload the base64 image
+            const s3Key = await uploadBase64ToS3(base64, defaultFileName);
+            return s3Key;
+          } catch (error) {
+            const errMsg =
+              error instanceof Error ? error.message : String(error);
+            console.error(
+              `Failed to convert/upload blob URL for ${defaultFileName}:`,
+              error,
+            );
+            toast.error(
+              `Failed to upload ${defaultFileName}: ${errMsg || "Unknown error"}`,
+            );
+            throw error;
+          }
+        }
 
-    console.log("Submitting design:", designData);
-    createDesign(designData);
+        // If it's a file path or external URL (not base64), return as is (assume it's already an S3 key or URL)
+        if (!isBase64Image(image)) {
+          // If it looks like a file path (starts with /), it's probably a default placeholder
+          if (image.startsWith("/images/") || image.startsWith("/")) {
+            console.log(
+              `[getS3KeyOrOriginal] File path detected for ${defaultFileName}, skipping (placeholder)`,
+            );
+            return undefined; // Don't upload placeholder images
+          }
+          // Assume it's already an S3 key or valid URL
+          return image;
+        }
 
-    if (onContinue) {
-      setIsProcessing(true);
-      try {
-        onContinue();
-      } finally {
-        setIsProcessing(false);
+        // It's a base64 image, upload to S3
+        try {
+          const s3Key = await uploadBase64ToS3(image, defaultFileName);
+          return s3Key;
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          console.error(`Failed to upload ${defaultFileName} to S3:`, error);
+          toast.error(
+            `Failed to upload ${defaultFileName}: ${errMsg || "Unknown error"}`,
+          );
+          throw error;
+        }
+      };
+
+      // Get reference images from formData, fallback to design store images if not persisted
+      const frontReferenceRaw =
+        formData.frontReferenceImage || frontImage || undefined;
+      const backReferenceRaw =
+        formData.backReferenceImage || backImage || undefined;
+
+      // Upload images to S3 if they are base64
+      const [frontImageKey, backImageKey, frontReferenceKey, backReferenceKey] =
+        await Promise.all([
+          getS3KeyOrOriginal(
+            frontImage || undefined,
+            `front-${Date.now()}.png`,
+          ),
+          getS3KeyOrOriginal(backImage || undefined, `back-${Date.now()}.png`),
+          getS3KeyOrOriginal(
+            frontReferenceRaw,
+            `front-reference-${Date.now()}.png`,
+          ),
+          getS3KeyOrOriginal(
+            backReferenceRaw,
+            `back-reference-${Date.now()}.png`,
+          ),
+        ]);
+
+      const designData = {
+        name: name,
+        status: "SUBMITTED" as const,
+        totalCoins: qty,
+        email: email,
+        method: payment.name.toUpperCase() as
+          | "STRIPE"
+          | "QUICKBOOKS"
+          | "MANUAL",
+
+        // FRONT
+        frontImage: frontImageKey,
+        frontDescription: formData.frontDescription || undefined,
+        frontText: formData.frontTextInsideArtwork || undefined,
+        frontTextStyle: formData.frontTextStyle || undefined,
+        frontReference: frontReferenceKey,
+        frontReferenceImpact: formData.frontReferenceImageImpact || undefined,
+        frontComposition: formData.frontComposition || undefined,
+
+        // BACK
+        backImage: backImageKey,
+        backDescription: formData.backDescription || undefined,
+        backText: formData.backTextInsideArtwork || undefined,
+        backTextStyle: formData.backTextStyle || undefined,
+        backReference: backReferenceKey,
+        backReferenceImpact: formData.backReferenceImageImpact || undefined,
+        backComposition: formData.backComposition || undefined,
+
+        coinShape: formData.coinShape || undefined,
+        subject: formData.subject || undefined,
+        materialFinish: formData.metalFinishes || undefined,
+        detailLevel: formData.detailLevel || undefined,
+        prohibitedContent: formData.prohibitedContent || undefined,
+      };
+
+      console.log("Submitting design with S3 keys:", designData);
+      createDesign(designData);
+
+      if (onContinue) {
+        setIsProcessing(true);
+        try {
+          onContinue();
+        } finally {
+          setIsProcessing(false);
+        }
       }
+    } catch (error) {
+      console.error("Error uploading images to S3:", error);
+      // Error toast is already shown in getS3KeyOrOriginal
     }
   };
 

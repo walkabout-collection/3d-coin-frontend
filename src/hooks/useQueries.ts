@@ -12,6 +12,7 @@ import {
   createContact,
   createDesign,
   createUserPayment,
+  createStripeCheckout,
   deleteAdminQuote,
   generateFromPrompt,
   getAdminOrders,
@@ -38,6 +39,16 @@ import {
   getCoinSides,
   regenerateWithSide,
   generateCompleteCoin,
+  getPendingManualPayments,
+  getUserOrderHistory,
+  getAdminOrderHistory,
+  getPaymentPreferences,
+  updatePreferredPaymentMethod,
+  savePaymentMethod,
+  getSavedPaymentMethods,
+  setDefaultPaymentMethod,
+  deleteSavedPaymentMethod,
+  getPaymentMethodFromSession,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -448,16 +459,16 @@ export const useGetUserStats = (
 
 export const useCreateUserPayment = (
   options?: UseMutationOptions<
-    void,
+    Awaited<ReturnType<typeof createUserPayment>>,
     Error,
-    {
-      orderId: string;
-      amount: number;
-      method: "MANUAL" | "STRIPE" | "QUICKBOOKS";
-    }
+    Parameters<typeof createUserPayment>[0]
   >,
 ) =>
-  useMutation({
+  useMutation<
+    Awaited<ReturnType<typeof createUserPayment>>,
+    Error,
+    Parameters<typeof createUserPayment>[0]
+  >({
     mutationFn: createUserPayment,
     ...options,
   });
@@ -541,5 +552,176 @@ export const useGenerateCompleteCoin = (
     Parameters<typeof generateCompleteCoin>[0]
   >({
     mutationFn: generateCompleteCoin,
+    ...options,
+  });
+
+// --- PAYMENT FLOW HOOKS ---
+
+// Create Stripe checkout session
+export const useCreateStripeCheckout = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof createStripeCheckout>>,
+    Error,
+    Parameters<typeof createStripeCheckout>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof createStripeCheckout>>,
+    Error,
+    Parameters<typeof createStripeCheckout>[0]
+  >({
+    mutationFn: createStripeCheckout,
+    ...options,
+  });
+
+// Get pending manual payments (admin)
+export const usePendingManualPayments = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPendingManualPayments>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getPendingManualPayments>>, Error>({
+    queryKey: ["pendingManualPayments"],
+    queryFn: getPendingManualPayments,
+    ...options,
+  });
+
+// Get user order history
+export const useUserOrderHistory = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getUserOrderHistory>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getUserOrderHistory>>, Error>({
+    queryKey: ["userOrderHistory"],
+    queryFn: getUserOrderHistory,
+    ...options,
+  });
+
+// Get admin order history
+export const useAdminOrderHistory = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminOrderHistory>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>({
+    queryKey: ["adminOrderHistory"],
+    queryFn: getAdminOrderHistory,
+    ...options,
+  });
+
+// --- Payment Preferences Hooks ---
+
+// Get payment preferences
+export const usePaymentPreferences = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPaymentPreferences>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getPaymentPreferences>>, Error>({
+    queryKey: ["paymentPreferences"],
+    queryFn: getPaymentPreferences,
+    ...options,
+  });
+
+// Update preferred payment method
+export const useUpdatePreferredPaymentMethod = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePreferredPaymentMethod>>,
+    Error,
+    Parameters<typeof updatePreferredPaymentMethod>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof updatePreferredPaymentMethod>>,
+    Error,
+    Parameters<typeof updatePreferredPaymentMethod>[0]
+  >({
+    mutationFn: updatePreferredPaymentMethod,
+    ...options,
+  });
+
+// Save payment method
+export const useSavePaymentMethod = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof savePaymentMethod>>,
+    Error,
+    Parameters<typeof savePaymentMethod>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof savePaymentMethod>>,
+    Error,
+    Parameters<typeof savePaymentMethod>[0]
+  >({
+    mutationFn: savePaymentMethod,
+    ...options,
+  });
+
+// Get saved payment methods
+export const useSavedPaymentMethods = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSavedPaymentMethods>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getSavedPaymentMethods>>, Error>({
+    queryKey: ["savedPaymentMethods"],
+    queryFn: getSavedPaymentMethods,
+    ...options,
+  });
+
+// Set default payment method
+export const useSetDefaultPaymentMethod = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof setDefaultPaymentMethod>>,
+    Error,
+    string
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof setDefaultPaymentMethod>>,
+    Error,
+    string
+  >({
+    mutationFn: (paymentMethodId: string) =>
+      setDefaultPaymentMethod(paymentMethodId),
+    ...options,
+  });
+
+// Delete saved payment method
+export const useDeleteSavedPaymentMethod = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSavedPaymentMethod>>,
+    Error,
+    string
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof deleteSavedPaymentMethod>>,
+    Error,
+    string
+  >({
+    mutationFn: (paymentMethodId: string) =>
+      deleteSavedPaymentMethod(paymentMethodId),
+    ...options,
+  });
+
+// Get payment method from Stripe session
+export const usePaymentMethodFromSession = (
+  sessionId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPaymentMethodFromSession>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getPaymentMethodFromSession>>, Error>({
+    queryKey: ["paymentMethodFromSession", sessionId],
+    queryFn: () => getPaymentMethodFromSession(sessionId!),
+    enabled: !!sessionId,
     ...options,
   });

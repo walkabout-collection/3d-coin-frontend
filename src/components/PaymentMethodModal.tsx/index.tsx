@@ -7,7 +7,11 @@ import { paymentOptions } from "./data";
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPaymentSelect: (option: PaymentOption, amount: number, email?: string) => void;
+  onPaymentSelect: (
+    option: PaymentOption,
+    amount: number,
+    email?: string,
+  ) => void;
 }
 
 const getCookie = (name: string): string | null => {
@@ -122,14 +126,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         {/* Amount Input */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Enter Total Coin Amount
+            Enter Quantity of Coins
           </label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
-            placeholder="Enter amount"
+            className="w-full border lowercase border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
+            placeholder="e.g. 10"
           />
         </div>
 

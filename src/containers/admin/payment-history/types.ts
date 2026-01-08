@@ -1,6 +1,9 @@
 export interface PaymentDataItem {
   paymentMethod: string;
-  order: string;
-  total: string;
+  orderTotal: string;
   date: string;
+  orderId: string;
+  customer: string;
+  customerEmail: string;
+  status: string;
 }

@@ -10,6 +10,7 @@ import ApproveQuoteModal from "@/src/components/admin/ApproveQuoteModal";
 import { useAdminQuotes, useDeleteAdminQuote } from "@/src/hooks/useQueries";
 import { quotesCards } from "./data";
 import { toast } from "react-toastify";
+import { AxiosError } from "axios";
 import ViewQuoteModal from "@/src/components/admin/ViewQuoteModal/ViewQuoteModal";
 
 const AdminQuotes: React.FC = () => {
@@ -17,7 +18,7 @@ const AdminQuotes: React.FC = () => {
   const [internalSort, setInternalSort] = useState("newest");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<Quote  | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
 
   const {
@@ -33,10 +34,14 @@ const AdminQuotes: React.FC = () => {
 
   const { mutate: deleteQuote, isPending: isDeleting } = useDeleteAdminQuote({
     onSuccess: () => {
+      toast.success("Quote deleted successfully");
       refetch();
     },
-    onError: (err: Error) => {
-      toast.error(`Failed to delete quote: ${err.message}`);
+    onError: (error: unknown) => {
+      const err = error as AxiosError<{ message?: string }>;
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to delete quote";
+      toast.error(errorMessage);
     },
   });
 
@@ -95,7 +100,27 @@ const AdminQuotes: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteQuote(id);
+    const quote = filteredData.find((q) => q.id === id);
+    if (quote) {
+      // Check if quote can be deleted (client-side validation)
+      if (quote.status === "APPROVED") {
+        toast.error(
+          "Approved quote cannot be deleted. It has been converted to an order.",
+        );
+        return;
+      }
+      if (quote.orderId) {
+        toast.error("Quote cannot be deleted. It is linked to an order.");
+        return;
+      }
+      // Proceed with deletion
+      deleteQuote(id);
+    }
+  };
+
+  // Check if quote can be deleted
+  const canDeleteQuote = (quote: Quote): boolean => {
+    return quote.status !== "APPROVED" && !quote.orderId;
   };
 
   const handleApproveClose = () => {
@@ -106,12 +131,12 @@ const AdminQuotes: React.FC = () => {
   const handleApproveConfirm = (price: number) => {
     if (selectedQuote) {
       console.log(
-        `Approved quote ${selectedQuote.id} with total price ${price}`
+        `Approved quote ${selectedQuote.id} with total price ${price}`,
       );
       setSortedDataState((prev) =>
         prev.map((q) =>
-          q.id === selectedQuote.id ? { ...q, label: "Approved" } : q
-        )
+          q.id === selectedQuote.id ? { ...q, label: "Approved" } : q,
+        ),
       );
     }
     handleApproveClose();
@@ -208,7 +233,13 @@ const AdminQuotes: React.FC = () => {
                     Order No:
                   </span>
                   <span className="text-sm text-gray-900">
-                    {quote.orderId || "-"}
+                    {quote.orderId ? (
+                      quote.orderId
+                    ) : (
+                      <span className="text-gray-500 italic">
+                        Pending Order Number
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -227,9 +258,20 @@ const AdminQuotes: React.FC = () => {
               </span>
               <div className="flex gap-2">
                 <button
-                  className="p-2 text-xs rounded-full bg-gray-200 cursor-pointer"
+                  className={`p-2 text-xs rounded-full bg-gray-200 ${
+                    canDeleteQuote(quote)
+                      ? "cursor-pointer hover:bg-gray-300"
+                      : "cursor-not-allowed opacity-50"
+                  }`}
                   onClick={() => handleDelete(quote.id)}
-                  disabled={isDeleting}
+                  disabled={isDeleting || !canDeleteQuote(quote)}
+                  title={
+                    !canDeleteQuote(quote)
+                      ? quote.status === "APPROVED"
+                        ? "Approved quotes cannot be deleted"
+                        : "Quote linked to an order cannot be deleted"
+                      : "Delete quote"
+                  }
                 >
                   <Image
                     src="/images/dashboard/delete.svg"

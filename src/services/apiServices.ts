@@ -1,5 +1,11 @@
 import { Api } from "./api/apiTypes";
 import apiClient from "./axiosInstance";
+import type {
+  PaymentPreferences,
+  PaymentMethod,
+  SavedPaymentMethod,
+  ApiResponse,
+} from "@/src/types/paymentPreferences";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const api = new Api();
@@ -248,6 +254,170 @@ export const createDesign = async (
   return res.data;
 };
 
+// --- S3 Upload ---
+// Get presigned URL for uploading to S3
+export const getS3UploadUrl = async (data: {
+  fileName: string;
+  mimeType: string;
+}): Promise<{
+  url?: string;
+  key?: string;
+}> => {
+  const res = await apiClient.post("/s3/upload-url", data);
+  return res.data;
+};
+
+// Convert blob URL to base64
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+const _blobUrlToBase64 = async (blobUrl: string): Promise<string> => {
+  const response = await fetch(blobUrl);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Failed to convert blob to base64"));
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+// Upload base64 image to S3 and return the S3 key
+export const uploadBase64ToS3 = async (
+  base64Image: string,
+  fileName: string = `image-${Date.now()}.png`,
+): Promise<string> => {
+  try {
+    // Extract mime type from base64 string
+    const matches = base64Image.match(/^data:(.*?);base64,(.*)$/);
+    if (!matches) {
+      throw new Error("Invalid base64 string format");
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    console.log(
+      `[S3 Upload] Starting upload for ${fileName}, mimeType: ${mimeType}`,
+    );
+
+    // Get presigned URL
+    let presignedResponse;
+    try {
+      presignedResponse = await getS3UploadUrl({
+        fileName,
+        mimeType,
+      });
+      console.log("[S3 Upload] Presigned URL received:", {
+        hasUrl: !!presignedResponse.url,
+        hasKey: !!presignedResponse.key,
+        key: presignedResponse.key,
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("[S3 Upload] Failed to get presigned URL:", error);
+      throw new Error(
+        `Failed to get presigned URL: ${errMsg || "Unknown error"}`,
+      );
+    }
+
+    const { url, key } = presignedResponse;
+
+    if (!url || !key) {
+      console.error(
+        "[S3 Upload] Missing url or key in response:",
+        presignedResponse,
+      );
+      throw new Error(
+        "Failed to get presigned URL from S3 - missing url or key",
+      );
+    }
+
+    // Convert base64 to blob
+    const byteString = atob(base64Data);
+    const n = byteString.length;
+    const u8arr = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      u8arr[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([u8arr], { type: mimeType });
+
+    console.log(
+      `[S3 Upload] Uploading blob to S3 (size: ${blob.size} bytes, type: ${mimeType})`,
+    );
+
+    // Upload to S3 using presigned URL
+    // CRITICAL: Use raw fetch ONLY with Content-Type header
+    // DO NOT use axios or any wrapper that might add headers
+    // DO NOT add any x-amz-* headers manually
+    let uploadResponse;
+    try {
+      uploadResponse = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": mimeType, // ONLY header allowed - must match what backend signed
+        },
+        body: blob,
+      });
+    } catch (fetchError) {
+      const errMsg =
+        fetchError instanceof Error ? fetchError.message : String(fetchError);
+      console.error("[S3 Upload] Fetch error (network/CORS):", fetchError);
+      throw new Error(
+        `Network error during upload: ${errMsg || "Unknown fetch error"}. Check CORS configuration.`,
+      );
+    }
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse
+        .text()
+        .catch(() => "Could not read error response");
+      const errorDetails = {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        error: errorText,
+        url: url.substring(0, 150) + "...",
+        mimeType,
+        fileName,
+      };
+      console.error("[S3 Upload] Upload failed:", errorDetails);
+
+      // Provide more specific error messages
+      if (uploadResponse.status === 403) {
+        throw new Error(
+          `S3 Access Denied (403). The presigned URL may be invalid or expired. Check if Content-Type is signed correctly in presigned URL.`,
+        );
+      } else if (uploadResponse.status === 400) {
+        throw new Error(
+          `S3 Bad Request (400). Content-Type mismatch or invalid request. Error: ${errorText}`,
+        );
+      }
+
+      throw new Error(
+        `Failed to upload to S3 (${uploadResponse.status}): ${uploadResponse.statusText}. ${errorText}`,
+      );
+    }
+
+    console.log(
+      `[S3 Upload] Successfully uploaded ${fileName} to S3 with key: ${key}`,
+    );
+    // Return the S3 key
+    return key;
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error(
+      `[S3 Upload] Error in uploadBase64ToS3 for ${fileName}: ${errMsg}`,
+      error,
+    );
+    // Re-throw with context
+    throw error;
+  }
+};
+
 // --- Contact ---
 export const createContact = async (data: {
   firstName: string;
@@ -295,11 +465,18 @@ export const deleteAdminQuote = async (
 // --- Approve Admin Quote ---
 export const approveAdminQuote = async (
   id: string,
-  amount: number,
+  amount: number | string,
 ): Promise<
   Awaited<ReturnType<typeof api.quote.adminApproveCreate>>["data"]
 > => {
-  const res = await apiClient.post(`/quote/admin/${id}/approve`, { amount });
+  const numericAmount =
+    typeof amount === "number" ? amount : parseFloat(String(amount));
+  if (Number.isNaN(numericAmount)) {
+    throw new Error("Invalid amount: must be a number");
+  }
+  const res = await apiClient.post(`/quote/admin/${id}/approve`, {
+    amount: numericAmount,
+  });
   return res.data;
 };
 // --- Get Admin Quote by ID ---
@@ -399,9 +576,161 @@ export const approveUserPayment = async (
 };
 
 export const createUserPayment = async (data: {
-  orderId: string;
+  quoteId: string;
   amount: number;
   method: "MANUAL" | "STRIPE" | "QUICKBOOKS";
-}): Promise<void> => {
-  await apiClient.post("/order/user/payment/create", data);
+  paymentProof?: string; // Base64 encoded image for manual payments
+}): Promise<{
+  success: boolean;
+  data: {
+    id: string;
+    status: string;
+    quoteId: string;
+    amount: number;
+    method: string;
+    paymentProof?: string;
+    createdAt: string;
+  };
+  message: string;
+}> => {
+  const res = await apiClient.post("/order/user/payment/create", data);
+  return res.data;
+};
+
+// Create Stripe checkout session
+export const createStripeCheckout = async (data: {
+  quoteId: string;
+  currency?: string;
+}): Promise<{
+  success: boolean;
+  data: {
+    sessionId: string;
+    url: string;
+    paymentId: string;
+  };
+}> => {
+  const res = await apiClient.post("/stripe/checkout/create", data);
+  return res.data;
+};
+
+// Get pending manual payments (admin)
+export const getPendingManualPayments = async (): Promise<{
+  success: boolean;
+  data: Array<{
+    paymentId: string;
+    quoteId: string;
+    amount: number;
+    paymentProof: string;
+    createdAt: string;
+    customer: string;
+    customerEmail: string;
+    quote: {
+      id: string;
+      totalCoins: number;
+      status: string;
+    };
+  }>;
+}> => {
+  const res = await apiClient.get("/order/admin/payments/pending");
+  return res.data;
+};
+
+// Get user order history
+export const getUserOrderHistory = async (): Promise<{
+  success: boolean;
+  data: Array<{
+    orderId: string;
+    paymentMethod: string;
+    total: number;
+    date: string;
+    status?: string;
+  }>;
+}> => {
+  const res = await apiClient.get("/order/user/history");
+  return res.data;
+};
+
+// Get admin order history
+export const getAdminOrderHistory = async (): Promise<{
+  success: boolean;
+  data: Array<{
+    orderId: string;
+    paymentMethod: string;
+    total: number;
+    date: string;
+    status: string;
+    customer: string;
+    customerEmail: string;
+  }>;
+}> => {
+  const res = await apiClient.get("/order/admin/history");
+  return res.data;
+};
+
+// --- Payment Preferences API ---
+
+// Get payment preferences
+export const getPaymentPreferences = async (): Promise<
+  ApiResponse<PaymentPreferences>
+> => {
+  const res = await apiClient.get("/payment-preferences");
+  return res.data;
+};
+
+// Update preferred payment method
+export const updatePreferredPaymentMethod = async (data: {
+  paymentMethod: PaymentMethod;
+}): Promise<ApiResponse<unknown>> => {
+  const res = await apiClient.post(
+    "/payment-preferences/preferred-method",
+    data,
+  );
+  return res.data;
+};
+
+// Save payment method
+export const savePaymentMethod = async (data: {
+  paymentMethodId: string;
+  setAsDefault?: boolean;
+}): Promise<ApiResponse<SavedPaymentMethod>> => {
+  const res = await apiClient.post("/payment-preferences/save-method", data);
+  return res.data;
+};
+
+// Get saved payment methods
+export const getSavedPaymentMethods = async (): Promise<
+  ApiResponse<SavedPaymentMethod[]>
+> => {
+  const res = await apiClient.get("/payment-preferences/saved-methods");
+  return res.data;
+};
+
+// Set default payment method
+export const setDefaultPaymentMethod = async (
+  paymentMethodId: string,
+): Promise<ApiResponse<SavedPaymentMethod>> => {
+  const res = await apiClient.put(
+    `/payment-preferences/default/${paymentMethodId}`,
+  );
+  return res.data;
+};
+
+// Delete saved payment method
+export const deleteSavedPaymentMethod = async (
+  paymentMethodId: string,
+): Promise<ApiResponse<unknown>> => {
+  const res = await apiClient.delete(
+    `/payment-preferences/saved-methods/${paymentMethodId}`,
+  );
+  return res.data;
+};
+
+// Get payment method from Stripe session
+export const getPaymentMethodFromSession = async (
+  sessionId: string,
+): Promise<ApiResponse<{ paymentMethodId: string; sessionId: string }>> => {
+  const res = await apiClient.get(
+    `/stripe/session/${sessionId}/payment-method`,
+  );
+  return res.data;
 };

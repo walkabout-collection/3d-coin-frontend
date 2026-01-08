@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useCreateDesign } from "@/src/hooks/useQueries";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
+import { uploadBase64ToS3 } from "@/src/services/apiServices";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -22,20 +23,26 @@ const getCookie = (name: string): string | null => {
 const DesignSummarySection = () => {
   const [selectedButton, setSelectedButton] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentOption | null>(
+    null,
+  );
   const [feedback, setFeedback] = useState<string>("");
   const [amount, setAmount] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const router = useRouter();
-  const { mutate: createDesign, isPending, error } = useCreateDesign({
+  const {
+    mutate: createDesign,
+    isPending,
+    error: _error,
+  } = useCreateDesign({
     onSuccess: () => {
       toast.success("Design submitted successfully!");
       setShowPaymentModal(false);
       setSelectedPayment(null);
       setAmount(null);
       setFeedback("");
-      router.push("/success");
+      router.push("/");
     },
     onError: (err) => {
       console.error("CreateDesign error:", err);
@@ -63,10 +70,10 @@ const DesignSummarySection = () => {
     setSelectedButton(selectedButton === id ? null : id);
   };
 
-  const handleSubmitForQuote = (
+  const handleSubmitForQuote = async (
     paymentOption?: PaymentOption,
     amountValue?: number,
-    email?: string
+    email?: string,
   ) => {
     const payment = paymentOption || selectedPayment;
     const qty = amountValue !== undefined ? amountValue : amount;
@@ -80,40 +87,169 @@ const DesignSummarySection = () => {
     }
 
     if (!isLoggedIn && !email) {
-      console.log("Opening PaymentModal due to missing email and not logged in");
+      console.log(
+        "Opening PaymentModal due to missing email and not logged in",
+      );
       setShowPaymentModal(true);
       return;
     }
 
-    const designData = {
-      name: "Custom Coin Design",
-      status: "SUBMITTED" as const,
-      totalCoins: qty,
-      email: email || undefined, 
-      method: payment.name.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL",
-      feedback: feedback || undefined,
-      generatorPrompt: artwork.front.prompt || artwork.back.prompt || undefined,
-      generatorImage: artwork.front.previewImage || artwork.back.previewImage || undefined,
-      frontImage: artwork.front.previewImage || undefined,
-      frontDescription: artwork.front.prompt || undefined,
-      frontText: textRings.front.top || textRings.front.bottom || undefined,
-      backImage: artwork.back.previewImage || undefined,
-      backDescription: artwork.back.prompt || undefined,
-      backText: textRings.back.top || textRings.back.bottom || undefined,
-      coinShape: dimensions.coinDiameter ? `Diameter: ${dimensions.coinDiameter}` : undefined,
-      materialFinish: material || undefined,
-      packaging: packaging.preferences ? true : false,
-      description: packaging.preferences || undefined,
-     text: packaging.backText || undefined,
+    try {
+      // Helper function to check if a string is a base64 data URL
+      const isBase64Image = (str: string | null | undefined): boolean => {
+        return !!(
+          str &&
+          typeof str === "string" &&
+          str.startsWith("data:image/")
+        );
+      };
 
-    };
+      // Helper function to check if it's a blob URL
+      const isBlobUrl = (str: string | null | undefined): boolean => {
+        return !!(str && typeof str === "string" && str.startsWith("blob:"));
+      };
 
-    console.log("Submitting designData:", designData);
+      // Helper function to upload base64 image to S3 and return the key
+      const getS3KeyOrOriginal = async (
+        image: string | null | undefined,
+        defaultFileName: string,
+      ): Promise<string | undefined> => {
+        if (!image) return undefined;
 
-    createDesign(designData);
+        console.log(`[getS3KeyOrOriginal] Processing ${defaultFileName}:`, {
+          imageType: isBase64Image(image)
+            ? "base64"
+            : isBlobUrl(image)
+              ? "blob"
+              : "other",
+          imagePreview: image.substring(0, 50) + "...",
+        });
+
+        // If it's a blob URL, convert it to base64 first
+        if (isBlobUrl(image)) {
+          console.log(
+            `[getS3KeyOrOriginal] Converting blob URL to base64 for ${defaultFileName}`,
+          );
+          try {
+            const response = await fetch(image);
+            const blob = await response.blob();
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (typeof reader.result === "string") {
+                  resolve(reader.result);
+                } else {
+                  reject(new Error("Failed to convert blob to base64"));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            // Now upload the base64 image
+            const s3Key = await uploadBase64ToS3(base64, defaultFileName);
+            return s3Key;
+          } catch (error) {
+            const errMsg =
+              error instanceof Error ? error.message : String(error);
+            console.error(
+              `Failed to convert/upload blob URL for ${defaultFileName}:`,
+              error,
+            );
+            toast.error(
+              `Failed to upload ${defaultFileName}: ${errMsg || "Unknown error"}`,
+            );
+            throw error;
+          }
+        }
+
+        // If it's a file path or external URL (not base64), return as is (assume it's already an S3 key or URL)
+        if (!isBase64Image(image)) {
+          // If it looks like a file path (starts with /), it's probably a default placeholder
+          if (image.startsWith("/images/") || image.startsWith("/")) {
+            console.log(
+              `[getS3KeyOrOriginal] File path detected for ${defaultFileName}, skipping (placeholder)`,
+            );
+            return undefined; // Don't upload placeholder images
+          }
+          // Assume it's already an S3 key or valid URL
+          return image;
+        }
+
+        // It's a base64 image, upload to S3
+        try {
+          const s3Key = await uploadBase64ToS3(image, defaultFileName);
+          return s3Key;
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          console.error(`Failed to upload ${defaultFileName} to S3:`, error);
+          toast.error(
+            `Failed to upload ${defaultFileName}: ${errMsg || "Unknown error"}`,
+          );
+          throw error;
+        }
+      };
+
+      // Upload images to S3 if they are base64
+      const [generatorImageKey, frontImageKey, backImageKey] =
+        await Promise.all([
+          getS3KeyOrOriginal(
+            artwork.front.previewImage ||
+              artwork.back.previewImage ||
+              undefined,
+            `generator-${Date.now()}.png`,
+          ),
+          getS3KeyOrOriginal(
+            artwork.front.previewImage || undefined,
+            `front-${Date.now()}.png`,
+          ),
+          getS3KeyOrOriginal(
+            artwork.back.previewImage || undefined,
+            `back-${Date.now()}.png`,
+          ),
+        ]);
+
+      const designData = {
+        name: "Custom Coin Design",
+        status: "SUBMITTED" as const,
+        totalCoins: qty,
+        email: email || undefined,
+        method: payment.name.toUpperCase() as
+          | "STRIPE"
+          | "QUICKBOOKS"
+          | "MANUAL",
+        feedback: feedback || undefined,
+        generatorPrompt:
+          artwork.front.prompt || artwork.back.prompt || undefined,
+        generatorImage: generatorImageKey,
+        frontImage: frontImageKey,
+        frontDescription: artwork.front.prompt || undefined,
+        frontText: textRings.front.top || textRings.front.bottom || undefined,
+        backImage: backImageKey,
+        backDescription: artwork.back.prompt || undefined,
+        backText: textRings.back.top || textRings.back.bottom || undefined,
+        coinShape: dimensions.coinDiameter
+          ? `Diameter: ${dimensions.coinDiameter}`
+          : undefined,
+        materialFinish: material || undefined,
+        packaging: packaging.preferences ? true : false,
+        description: packaging.preferences || undefined,
+        text: packaging.backText || undefined,
+      };
+
+      console.log("Submitting designData with S3 keys:", designData);
+
+      createDesign(designData);
+    } catch (error) {
+      console.error("Error uploading images to S3:", error);
+      // Error toast is already shown in getS3KeyOrOriginal
+    }
   };
 
-  const handlePaymentSelect = (option: PaymentOption, amount: number, email?: string) => {
+  const handlePaymentSelect = (
+    option: PaymentOption,
+    amount: number,
+    email?: string,
+  ) => {
     console.log("handlePaymentSelect called with:", { option, amount, email });
     setSelectedPayment(option);
     setAmount(amount);
@@ -125,25 +261,8 @@ const DesignSummarySection = () => {
   };
 
   const handleFirstButtonAction = async () => {
-    try {
-      const response = await fetch("https://dummyapi.example.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          standardBuilderData: JSON.parse(localStorage.getItem("standard-builder-data") || "{}"),
-        }),
-      });
-
-      if (response.ok) {
-        console.log("Dummy API call successful");
-      } else {
-        throw new Error("Dummy API call failed");
-      }
-    } catch (error) {
-      console.error("Error in dummy API call:", error);
-    }
+    // Placeholder function - can be implemented when needed
+    // Removed dummy API call to prevent console errors
   };
 
   const summaryOptions = [

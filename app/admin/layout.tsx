@@ -1,14 +1,68 @@
 "use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
 import { sidebarItems } from "@/src/containers/admin/dashboard/data";
 import { AdminLayoutProps } from "@/src/containers/admin/dashboard/types";
 import { useLogout } from "@/src/hooks/useQueries";
 
+interface TokenPayload {
+  role?: "USER" | "ADMIN";
+  exp?: number;
+}
+
+// Helper function to get cookie value
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(";").shift() || null;
+  }
+  return null;
+};
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+
+  // Client-side authorization check
+  useEffect(() => {
+    const checkAuthorization = () => {
+      const token = getCookie("token");
+
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        const payload = jwtDecode<TokenPayload>(token);
+
+        // Check if token is expired
+        if (payload.exp && Date.now() >= payload.exp * 1000) {
+          router.push("/login");
+          return;
+        }
+
+        // Require ADMIN role
+        if (payload.role !== "ADMIN") {
+          router.push("/dashboard");
+          return;
+        }
+
+        setIsAuthorized(true);
+      } catch (err) {
+        // Invalid token
+        router.push("/login");
+      }
+    };
+
+    checkAuthorization();
+  }, [router]);
 
   const { mutate: logout } = useLogout({
     onSuccess: () => {
@@ -24,11 +78,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   });
 
   const mainItems = sidebarItems.filter(
-    (item) => item.name !== "Account Setting" && item.name !== "Log Out"
+    (item) => item.name !== "Account Setting" && item.name !== "Log Out",
   );
   const bottomItems = sidebarItems.filter(
-    (item) => item.name === "Account Setting" || item.name === "Log Out"
+    (item) => item.name === "Account Setting" || item.name === "Log Out",
   );
+
+  // Show loading state while checking authorization
+  if (isAuthorized === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render if not authorized (redirect will happen)
+  if (!isAuthorized) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen">

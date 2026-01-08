@@ -33,8 +33,6 @@
 //     },
 //   });
 
-
-
 //   const onSubmit = (data: FormData) => {
 //     console.log('Form Data:', data);
 //     reset();
@@ -44,7 +42,6 @@
 //    <div className=" max-w-2xl min-h-screen mb-20">
 //       <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
 //       <p className="text-gray-600 font-semibold mb-6">USER ID: 12345 </p>
-
 
 //       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-5">
 //         <div className="grid grid-cols-2 gap-4">
@@ -80,7 +77,7 @@
 //           bg="bg-gray-100"
 //           labelClassName="text-md !font-semibold text-gray-900"
 //         />
-        
+
 //        <Input
 //             label="CHANGE PASSWORD"
 //             placeholder="************"
@@ -108,34 +105,56 @@
 //           variant="primary"
 //           className="max-w-[100px]  rounded-full py-3 font-semibold mt-6 mb-20"
 //         >
-//           Save      
+//           Save
 //             </Button>
 //       </form>
 //     </div>
 //   );
 // };
 
-
 // export default AccountSetting;
 
+"use client";
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQueryClient } from "@tanstack/react-query";
+import Input from "@/src/components/common/input";
+import Button from "@/src/components/common/button/Button";
+import Image from "next/image";
+import {
+  useGetUserProfile,
+  useUpdateCurrentUserProfile,
+  useUpdateCurrentUserPassword,
+} from "@/src/hooks/useQueries";
+import { toast } from "react-toastify";
+import { AxiosError } from "axios";
 
-'use client';
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import Input from '@/src/components/common/input';
-import Button from '@/src/components/common/button/Button';
+// Helper function to get user initials
+const getUserInitials = (firstName?: string, lastName?: string): string => {
+  const first = firstName?.charAt(0).toUpperCase() || "";
+  const last = lastName?.charAt(0).toUpperCase() || "";
+  return first + last || "U";
+};
+
+// Helper function to get full name
+const getUserFullName = (firstName?: string, lastName?: string): string => {
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  }
+  return firstName || lastName || "User";
+};
 
 // Account Settings Schema
 const formSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
   contactNumber: z
     .string()
-    .min(10, 'Contact number must be at least 10 digits')
-    .max(15, 'Contact number too long'),
+    .min(10, "Contact number must be at least 10 digits")
+    .max(15, "Contact number too long"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -143,19 +162,68 @@ type FormData = z.infer<typeof formSchema>;
 // Password Reset Schema
 const passwordSchema = z
   .object({
-    currentPassword: z.string().min(6, 'Current password is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
-    confirmPassword: z.string().min(6, 'Confirm password is required'),
+    currentPassword: z.string().min(6, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(6, "New password must be at least 6 characters"),
+    confirmPassword: z.string().min(6, "Confirm password is required"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
   });
 
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const AccountSetting: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch user profile
+  const { data: profile, isLoading, error } = useGetUserProfile();
+
+  // Update user profile mutation
+  const { mutate: updateUserProfile, isPending: isProfileUpdating } =
+    useUpdateCurrentUserProfile({
+      onSuccess(data: unknown) {
+        // Invalidate and refetch user profile to update navbar
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+
+        if (data && typeof data === "object" && "data" in data) {
+          const res = data as {
+            message: string;
+            data: FormData & { id: string };
+          };
+          toast.success(res.message);
+          reset(res.data);
+        } else {
+          toast.success("Profile updated");
+        }
+      },
+      onError(error: unknown) {
+        const err = error as AxiosError<{ message?: string }>;
+        toast.error(err.response?.data?.message || "Failed to update profile");
+      },
+    });
+
+  // Change password mutation
+  const { mutate: changePassword, isPending: isChangePasswordPending } =
+    useUpdateCurrentUserPassword({
+      onSuccess(data: unknown) {
+        if (data && typeof data === "object" && "data" in data) {
+          const res = data as { data: { message: string } };
+          toast.success(res.data.message);
+        } else {
+          toast.success("Password updated");
+        }
+        setIsModalOpen(false);
+        resetPasswordForm();
+      },
+      onError(error: unknown) {
+        const err = error as AxiosError<{ message?: string }>;
+        toast.error(err.response?.data?.message || "Failed to change password");
+      },
+    });
 
   // Main Form
   const {
@@ -166,10 +234,10 @@ const AccountSetting: React.FC = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      contactNumber: '',
+      firstName: "",
+      lastName: "",
+      email: "",
+      contactNumber: "",
     },
   });
 
@@ -183,21 +251,64 @@ const AccountSetting: React.FC = () => {
     resolver: zodResolver(passwordSchema),
   });
 
+  // Prefill profile data
+  useEffect(() => {
+    if (profile) {
+      reset({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        email: profile.email || "",
+        contactNumber: profile.contactNumber || "",
+      });
+    }
+  }, [profile, reset]);
+
   const onSubmit = (data: FormData) => {
-    console.log('Form Data:', data);
-    reset();
+    updateUserProfile(data);
   };
 
   const onPasswordSubmit = (data: PasswordFormData) => {
-    console.log('Password Reset:', data);
-    resetPasswordForm();
-    setIsModalOpen(false);
+    changePassword({
+      oldPassword: data.currentPassword,
+      newPassword: data.newPassword,
+    });
   };
+
+  if (isLoading) {
+    return <div className="p-6 text-gray-600">Loading profile...</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-600">Error loading profile</div>;
+  }
 
   return (
     <div className="max-w-2xl min-h-screen mb-20">
-      <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
-      <p className="text-gray-600 font-semibold mb-6">USER ID: 12345 </p>
+      <div className="flex items-center gap-4 mb-6">
+        {/* Profile Avatar */}
+        <div className="w-16 h-16 rounded-full relative overflow-hidden border-2 border-gray-300 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 flex-shrink-0">
+          {profile?.image ? (
+            <Image
+              src={profile.image}
+              alt={getUserFullName(profile.firstName, profile.lastName)}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <span className="text-white font-semibold text-2xl">
+              {getUserInitials(profile?.firstName, profile?.lastName)}
+            </span>
+          )}
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-1">
+            Welcome, {profile?.firstName || "User"}!
+          </h2>
+          <p className="text-gray-600 font-semibold">
+            USER ID: {profile?.id || "N/A"}
+          </p>
+        </div>
+      </div>
 
       {/* Main Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-5">
@@ -206,7 +317,7 @@ const AccountSetting: React.FC = () => {
             label="First Name"
             placeholder="First Name"
             inputSize="md"
-            {...register('firstName')}
+            {...register("firstName")}
             error={errors.firstName?.message}
             className="border-none py-4 px-6 rounded-xl"
             bg="bg-gray-100"
@@ -216,7 +327,7 @@ const AccountSetting: React.FC = () => {
             label="Last Name"
             placeholder="Last Name"
             inputSize="md"
-            {...register('lastName')}
+            {...register("lastName")}
             error={errors.lastName?.message}
             className="border-none py-4 px-6 rounded-xl"
             bg="bg-gray-100"
@@ -229,7 +340,7 @@ const AccountSetting: React.FC = () => {
           placeholder="Email"
           type="email"
           inputSize="md"
-          {...register('email')}
+          {...register("email")}
           error={errors.email?.message}
           className="border-none py-4 px-6 rounded-xl"
           bg="bg-gray-100"
@@ -238,7 +349,9 @@ const AccountSetting: React.FC = () => {
 
         {/* Change Password Button */}
         <div>
-          <label className="text-md font-semibold text-gray-900">Password</label>
+          <label className="text-md font-semibold text-gray-900">
+            Password
+          </label>
           <Button
             type="button"
             variant="secondary"
@@ -254,7 +367,7 @@ const AccountSetting: React.FC = () => {
           placeholder="Contact Number"
           type="tel"
           inputSize="md"
-          {...register('contactNumber')}
+          {...register("contactNumber")}
           error={errors.contactNumber?.message}
           className="border-none py-4 px-6 rounded-xl"
           bg="bg-gray-100"
@@ -264,9 +377,10 @@ const AccountSetting: React.FC = () => {
         <Button
           type="submit"
           variant="primary"
+          disabled={isProfileUpdating}
           className="max-w-[100px] rounded-full py-3 font-semibold mt-6 mb-20"
         >
-          Save
+          {isProfileUpdating ? "Saving..." : "Save"}
         </Button>
       </form>
 
@@ -283,7 +397,7 @@ const AccountSetting: React.FC = () => {
                 label="Current Password"
                 placeholder="********"
                 type="password"
-                {...registerPassword('currentPassword')}
+                {...registerPassword("currentPassword")}
                 error={passwordErrors.currentPassword?.message}
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
@@ -293,7 +407,7 @@ const AccountSetting: React.FC = () => {
                 label="New Password"
                 placeholder="********"
                 type="password"
-                {...registerPassword('newPassword')}
+                {...registerPassword("newPassword")}
                 error={passwordErrors.newPassword?.message}
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
@@ -303,7 +417,7 @@ const AccountSetting: React.FC = () => {
                 label="Confirm Password"
                 placeholder="********"
                 type="password"
-                {...registerPassword('confirmPassword')}
+                {...registerPassword("confirmPassword")}
                 error={passwordErrors.confirmPassword?.message}
                 className="border-none py-4 px-6 rounded-xl"
                 bg="bg-gray-100"
@@ -315,16 +429,20 @@ const AccountSetting: React.FC = () => {
                   type="button"
                   variant="secondary"
                   className="rounded-full px-5 py-2"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    resetPasswordForm();
+                    setIsModalOpen(false);
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   variant="primary"
+                  disabled={isChangePasswordPending}
                   className="rounded-full px-5 py-2"
                 >
-                  Reset Password
+                  {isChangePasswordPending ? "Saving..." : "Reset Password"}
                 </Button>
               </div>
             </form>
