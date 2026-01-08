@@ -6,11 +6,12 @@ import { dashboardCards } from "./data";
 import { DashboardProps } from "./types";
 import { useGetAdminStats } from "@/src/hooks/useQueries";
 
-export default function AdminDashboard({ cards = dashboardCards }: DashboardProps) {
+export default function AdminDashboard({
+  cards = dashboardCards,
+}: DashboardProps) {
+  const { data: stats } = useGetAdminStats();
 
-  const {data: stats, isPending} = useGetAdminStats()
-
-  const getCardValue = (title : string) => {
+  const getCardValue = (title: string) => {
     switch (title) {
       case "Lifetime Orders":
         return stats?.totalOrders || 0;
@@ -23,7 +24,7 @@ export default function AdminDashboard({ cards = dashboardCards }: DashboardProp
       default:
         return 0;
     }
-  }
+  };
   return (
     <div className="min-h-screen">
       <div className="mb-8">
@@ -50,7 +51,9 @@ export default function AdminDashboard({ cards = dashboardCards }: DashboardProp
                 <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
                   {card.title}
                 </h2>
-                <p className="text-2xl font-bold text-gray-900">{getCardValue(card.title)}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {getCardValue(card.title)}
+                </p>
               </div>
             </div>
           </div>

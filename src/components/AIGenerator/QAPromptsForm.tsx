@@ -124,7 +124,7 @@ export const QAPromptsForm: React.FC<QAPromptsFormProps> = ({
     },
   });
 
-  const { setFormData, setInProgress } = useQAPromptsStore();
+  const { setFormData } = useQAPromptsStore();
 
   const { goTo } = useAiFlowStore();
 

@@ -54,17 +54,16 @@ const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderDataItem | null>(
     null,
   );
-  const { mutate: createUserPayment, isPending: isCreatingPayment } =
-    useCreateUserPayment({
-      onSuccess: () => {
-        toast.success("Payment created successfully");
-        setIsModalOpen(false);
-      },
-      onError: (error) => {
-        console.error("Error creating payment:", error);
-        toast.error("Payment creation failed");
-      },
-    });
+  const { mutate: createUserPayment } = useCreateUserPayment({
+    onSuccess: () => {
+      toast.success("Payment created successfully");
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      console.error("Error creating payment:", error);
+      toast.error("Payment creation failed");
+    },
+  });
 
   // Use order history data if available, otherwise transform order data
   interface DisplayDataItem {

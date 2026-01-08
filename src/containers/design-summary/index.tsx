@@ -31,11 +31,7 @@ const DesignSummarySection = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const router = useRouter();
-  const {
-    mutate: createDesign,
-    isPending,
-    error: _error,
-  } = useCreateDesign({
+  const { mutate: createDesign, isPending } = useCreateDesign({
     onSuccess: () => {
       toast.success("Design submitted successfully!");
       setShowPaymentModal(false);

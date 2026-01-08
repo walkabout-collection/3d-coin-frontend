@@ -422,9 +422,11 @@ export const useUpdateCurrentUserPassword = (
   });
 
 export const useGetUserProfile = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof api.api.getProfile>>["data"],
-    Error
+  options?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof api.api.getProfile>>["data"],
+      Error
+    >
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.api.getProfile>>["data"], Error>({
@@ -434,9 +436,11 @@ export const useGetUserProfile = (
   });
 
 export const useGetAdminStats = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof api.api.adminStats>>["data"],
-    Error
+  options?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof api.api.adminStats>>["data"],
+      Error
+    >
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.api.adminStats>>["data"], Error>({
@@ -446,9 +450,11 @@ export const useGetAdminStats = (
   });
 
 export const useGetUserStats = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof api.api.userStats>>["data"],
-    Error
+  options?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof api.api.userStats>>["data"],
+      Error
+    >
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof api.api.userStats>>["data"], Error>({
@@ -511,7 +517,9 @@ export const useGenerateCoinSide = (
 // Get both sides of a coin
 export const useGetCoinSides = (
   designId: string,
-  options?: UseQueryOptions<Awaited<ReturnType<typeof getCoinSides>>, Error>,
+  options?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof getCoinSides>>, Error>
+  >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getCoinSides>>, Error>({
     queryKey: ["coinSides", designId],
@@ -602,9 +610,8 @@ export const useUserOrderHistory = (
 
 // Get admin order history
 export const useAdminOrderHistory = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getAdminOrderHistory>>,
-    Error
+  options?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>({
@@ -617,9 +624,8 @@ export const useAdminOrderHistory = (
 
 // Get payment preferences
 export const usePaymentPreferences = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getPaymentPreferences>>,
-    Error
+  options?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof getPaymentPreferences>>, Error>
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getPaymentPreferences>>, Error>({

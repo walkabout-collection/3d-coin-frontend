@@ -21,13 +21,7 @@ const getUserInitials = (firstName?: string, lastName?: string): string => {
   return first + last || "U";
 };
 
-// Helper function to get full name
-const getUserFullName = (firstName?: string, lastName?: string): string => {
-  if (firstName && lastName) {
-    return `${firstName} ${lastName}`;
-  }
-  return firstName || lastName || "User";
-};
+// (removed unused getUserFullName helper)
 
 const Navbar: React.FC<NavbarProps> = ({
   transparent = false,
@@ -42,6 +36,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
   // Fetch user profile
   const { data: userProfile } = useGetUserProfile({
+    queryKey: ["userProfile"],
     enabled: isLoggedIn,
   });
 

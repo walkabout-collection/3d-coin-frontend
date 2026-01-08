@@ -462,7 +462,7 @@ import {
 } from "@/src/store/useCoinStore";
 
 const AIGenerator: React.FC = () => {
-  const pathname = usePathname();
+  // removed unused `pathname`
   const hasResetRef = useRef(false);
   const {
     state,

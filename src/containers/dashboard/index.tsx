@@ -6,24 +6,22 @@ import { DashboardProps } from "./types";
 import { useGetUserStats } from "@/src/hooks/useQueries";
 
 export default function Dashboard({ cards = dashboardCards }: DashboardProps) {
+  const { data: stats } = useGetUserStats();
 
-
-   const {data: stats, isPending} = useGetUserStats()
-  
-    const getCardValue = (title : string) => {
-      switch (title) {
-        case "Lifetime Orders":
-          return stats?.totalOrders || 0;
-        case "Pending Quotes":
-          return stats?.pendingQuotes || 0;
-        case "Approve Quotes":
-          return stats?.approvedQuotes || 0;
-        case "Payment":
-          return stats?.totalPayments || 0;
-        default:
-          return 0;
-      }
+  const getCardValue = (title: string) => {
+    switch (title) {
+      case "Lifetime Orders":
+        return stats?.totalOrders || 0;
+      case "Pending Quotes":
+        return stats?.pendingQuotes || 0;
+      case "Approve Quotes":
+        return stats?.approvedQuotes || 0;
+      case "Payment":
+        return stats?.totalPayments || 0;
+      default:
+        return 0;
     }
+  };
 
   return (
     <div className="min-h-screen">
@@ -51,7 +49,9 @@ export default function Dashboard({ cards = dashboardCards }: DashboardProps) {
                 <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
                   {card.title}
                 </h2>
-                <p className="text-2xl font-bold text-gray-900">{getCardValue(card.title)}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {getCardValue(card.title)}
+                </p>
               </div>
             </div>
           </div>
