@@ -7,9 +7,11 @@ import {
   usePaymentReceipt,
   useGeneratePaymentReceipt,
   useEmailPaymentReceipt,
+  usePaymentTimeline,
 } from "@/src/hooks/useQueries";
 import { usePaymentStatusWebSocket } from "@/src/hooks/usePaymentStatusWebSocket";
 import Button from "@/src/components/common/button/Button";
+import PaymentTimeline from "@/src/components/PaymentTimeline";
 import { toast } from "react-toastify";
 
 interface PaymentHistoryItem {
@@ -152,9 +154,52 @@ const ReceiptButton: React.FC<ReceiptButtonProps> = ({
   );
 };
 
+const PaymentTimelineModal: React.FC<{
+  paymentId: string;
+  isOpen: boolean;
+  onClose: () => void;
+}> = ({ paymentId, isOpen, onClose }) => {
+  const { data: timelineData, isLoading } = usePaymentTimeline(
+    isOpen ? paymentId : null,
+  );
+
+  if (!isOpen) return null;
+
+  const events = timelineData?.data || [];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Payment Timeline</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading timeline...</span>
+          </div>
+        ) : (
+          <PaymentTimeline events={events} currentStatus={events[0]?.status} />
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PaymentHistory = () => {
   // Connect to WebSocket for real-time updates
-  usePaymentStatusWebSocket(true);
+  const { isConnected } = usePaymentStatusWebSocket(true);
+
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(
+    null,
+  );
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
 
   const {
     data: orderHistoryData,
@@ -162,6 +207,27 @@ const PaymentHistory = () => {
     isError,
     refetch,
   } = useUserOrderHistory();
+
+  // Polling fallback when WebSocket is disconnected
+  React.useEffect(() => {
+    if (!isConnected && orderHistoryData?.data) {
+      // Poll every 30 seconds for pending payments when WebSocket is disconnected
+      const pendingPayments = orderHistoryData.data.filter(
+        (payment) =>
+          payment.status === "PENDING" ||
+          payment.status === "SUBMITTED" ||
+          payment.status === "UPLOADED",
+      );
+
+      if (pendingPayments.length > 0) {
+        const interval = setInterval(() => {
+          refetch();
+        }, 30000); // Poll every 30 seconds
+
+        return () => clearInterval(interval);
+      }
+    }
+  }, [isConnected, orderHistoryData, refetch]);
 
   // Transform API data to table format
   const paymentData: PaymentHistoryItem[] = orderHistoryData?.data
@@ -187,21 +253,57 @@ const PaymentHistory = () => {
     },
     { key: "date", label: "Date", width: "w-32" },
     {
-      key: "receipt",
-      label: "Receipt",
+      key: "status",
+      label: "Status",
       width: "w-24",
       render: (_value, row) => {
-        // Only show receipt button for successful payments
-        if (row.status === "SUCCESS" || row.status === "APPROVED") {
-          return row.paymentId ? (
-            <ReceiptButton
-              paymentId={row.paymentId}
-              paymentStatus={row.status}
-              variant="both"
-            />
-          ) : null;
-        }
-        return null;
+        const statusColors: Record<string, string> = {
+          SUCCESS: "bg-green-100 text-green-800",
+          APPROVED: "bg-green-100 text-green-800",
+          PENDING: "bg-yellow-100 text-yellow-800",
+          REJECTED: "bg-red-100 text-red-800",
+          FAILED: "bg-red-100 text-red-800",
+        };
+        const colorClass =
+          statusColors[row.status || ""] || "bg-gray-100 text-gray-800";
+        return (
+          <span
+            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}
+          >
+            {row.status || "N/A"}
+          </span>
+        );
+      },
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: "w-32",
+      render: (_value, row) => {
+        return (
+          <div className="flex gap-2 items-center">
+            {row.paymentId && (
+              <Button
+                variant="ternary"
+                onClick={() => {
+                  setSelectedPaymentId(row.paymentId!);
+                  setIsTimelineModalOpen(true);
+                }}
+                className="text-xs px-2 py-1"
+              >
+                Timeline
+              </Button>
+            )}
+            {(row.status === "SUCCESS" || row.status === "APPROVED") &&
+              row.paymentId && (
+                <ReceiptButton
+                  paymentId={row.paymentId}
+                  paymentStatus={row.status}
+                  variant="download"
+                />
+              )}
+          </div>
+        );
       },
     },
   ];
@@ -242,13 +344,34 @@ const PaymentHistory = () => {
           <p className="text-gray-500 text-lg">No payment history found</p>
         </div>
       ) : (
-        <Table
-          columns={paymentColumns}
-          data={paymentData}
-          alternatingRows={true}
-          searchable={true}
-          searchPlaceholder="Search payments..."
-        />
+        <>
+          {!isConnected && (
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                <span className="font-medium">Connection Status:</span>{" "}
+                Reconnecting... Status updates may be delayed. Payments are
+                being checked every 30 seconds.
+              </p>
+            </div>
+          )}
+          <Table
+            columns={paymentColumns}
+            data={paymentData}
+            alternatingRows={true}
+            searchable={true}
+            searchPlaceholder="Search payments..."
+          />
+          {selectedPaymentId && (
+            <PaymentTimelineModal
+              paymentId={selectedPaymentId}
+              isOpen={isTimelineModalOpen}
+              onClose={() => {
+                setIsTimelineModalOpen(false);
+                setSelectedPaymentId(null);
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

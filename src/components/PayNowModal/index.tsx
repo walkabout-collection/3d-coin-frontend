@@ -4,7 +4,8 @@ import { OrderDataItem } from "@/src/containers/orders/types";
 import { Quote } from "@/src/containers/quotes/types";
 import { useCreateUserPayment } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
-import Image from "next/image";
+import { PaymentProofPreview } from "./PaymentProofPreview";
+import { validateFile, validatePaymentAmount } from "@/src/utils/validation";
 
 interface ModalProps {
   isOpen: boolean;
@@ -80,10 +81,15 @@ const PayNowModal: React.FC<ModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error || "Invalid file");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
         return;
       }
+
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -103,8 +109,28 @@ const PayNowModal: React.FC<ModalProps> = ({
     setShowConfirmModal(true);
   };
 
+  const validateAmount = (): boolean => {
+    // Validate amount matches quote amount if quote is available
+    if (quote && quote.amount) {
+      const validation = validatePaymentAmount(price, quote.amount);
+      if (!validation.valid) {
+        toast.warning(validation.error || "Amount validation failed");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleFinalConfirm = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      toast.error("Please upload a payment proof screenshot");
+      return;
+    }
+
+    // Validate amount
+    if (!validateAmount()) {
+      return;
+    }
 
     setUploading(true);
     try {
@@ -188,32 +214,15 @@ const PayNowModal: React.FC<ModalProps> = ({
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
           {preview && (
-            <div className="mt-4 relative">
-              <Image
-                src={preview}
-                alt="Payment proof preview"
-                width={400}
-                height={300}
-                className="rounded-lg border border-gray-300 object-contain"
+            <div className="mt-4">
+              <PaymentProofPreview
+                proof={preview}
+                onRemove={handleRemoveFile}
+                onError={(error) => {
+                  toast.error(error);
+                  handleRemoveFile();
+                }}
               />
-              <button
-                onClick={handleRemoveFile}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                title="Remove image"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
             </div>
           )}
         </div>

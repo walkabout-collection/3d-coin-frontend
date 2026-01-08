@@ -5,9 +5,18 @@ import { toast } from "react-toastify";
 
 interface PaymentStatusUpdate {
   paymentId: string;
-  status: "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
+  status:
+    | "PENDING"
+    | "SUCCESS"
+    | "FAILED"
+    | "CANCELLED"
+    | "APPROVED"
+    | "REJECTED"
+    | "SUBMITTED"
+    | "UPLOADED";
   message?: string;
   receiptUrl?: string;
+  adminNote?: string;
 }
 
 /**
@@ -70,18 +79,45 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
             queryClient.invalidateQueries({
               queryKey: ["paymentReceipt", data.paymentId],
             });
+            queryClient.invalidateQueries({
+              queryKey: ["paymentTimeline", data.paymentId],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["paymentNotifications"],
+            });
+
+            // Dispatch custom event for manual payment status updates
+            if (
+              data.status === "APPROVED" ||
+              data.status === "REJECTED" ||
+              data.status === "PENDING"
+            ) {
+              window.dispatchEvent(
+                new CustomEvent("paymentStatusUpdate", {
+                  detail: {
+                    paymentId: data.paymentId,
+                    status: data.status,
+                    message: data.message,
+                  },
+                }),
+              );
+            }
 
             // Show toast notifications based on status
-            if (data.status === "SUCCESS") {
+            if (data.status === "SUCCESS" || data.status === "APPROVED") {
               toast.success(data.message || "Payment completed successfully!", {
                 autoClose: 5000,
               });
-            } else if (data.status === "FAILED") {
+            } else if (data.status === "FAILED" || data.status === "REJECTED") {
               toast.error(data.message || "Payment failed. Please try again.", {
                 autoClose: 5000,
               });
             } else if (data.status === "CANCELLED") {
               toast.info(data.message || "Payment was cancelled.", {
+                autoClose: 3000,
+              });
+            } else if (data.status === "PENDING") {
+              toast.info(data.message || "Payment is being processed...", {
                 autoClose: 3000,
               });
             }

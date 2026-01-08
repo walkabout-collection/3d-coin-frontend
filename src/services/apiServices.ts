@@ -794,6 +794,54 @@ export const emailPaymentReceipt = async (
   return res.data;
 };
 
+// --- Notification API Functions ---
+
+// Get payment notifications
+export const getPaymentNotifications = async (): Promise<{
+  success: boolean;
+  data: Array<{
+    id: string;
+    type: "PAYMENT_APPROVED" | "PAYMENT_REJECTED" | "PAYMENT_PENDING";
+    message: string;
+    paymentId: string;
+    orderId?: string;
+    read: boolean;
+    createdAt: string;
+  }>;
+  message?: string;
+}> => {
+  const res = await apiClient.get("/notifications/payment-status");
+  return res.data;
+};
+
+// Mark notification as read
+export const markNotificationAsRead = async (
+  notificationId: string,
+): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  const res = await apiClient.put(`/notifications/${notificationId}/read`);
+  return res.data;
+};
+
+// Get payment timeline/events
+export const getPaymentTimeline = async (
+  paymentId: string,
+): Promise<{
+  success: boolean;
+  data: Array<{
+    status: "PENDING" | "SUBMITTED" | "APPROVED" | "REJECTED" | "COMPLETED";
+    timestamp: string;
+    message?: string;
+    adminNote?: string;
+  }>;
+  message?: string;
+}> => {
+  const res = await apiClient.get(`/payments/${paymentId}/timeline`);
+  return res.data;
+};
+
 // --- QuickBooks Integration API ---
 
 // Initiate QuickBooks OAuth flow

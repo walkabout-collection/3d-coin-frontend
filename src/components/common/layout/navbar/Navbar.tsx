@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps } from "./types";
 import { useLogout, useGetUserProfile } from "@/src/hooks/useQueries";
+import NotificationBadge from "@/src/components/NotificationBadge";
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
@@ -160,6 +161,12 @@ const Navbar: React.FC<NavbarProps> = ({
                   height={25}
                 />
               </button>
+
+              {/* Notification Badge */}
+              <NotificationBadge
+                onClick={() => router.push("/dashboard/payment-history")}
+                className="text-white"
+              />
 
               <div className="flex items-center space-x-3 relative">
                 {/* User Name */}

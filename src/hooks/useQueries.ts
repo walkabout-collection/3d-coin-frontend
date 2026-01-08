@@ -1,6 +1,7 @@
 import {
   useQuery,
   useMutation,
+  useQueryClient,
   UseMutationOptions,
   UseQueryOptions,
 } from "@tanstack/react-query";
@@ -61,6 +62,9 @@ import {
   generatePaymentReceipt,
   getPaymentIdFromSession,
   emailPaymentReceipt,
+  getPaymentNotifications,
+  markNotificationAsRead,
+  getPaymentTimeline,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -934,5 +938,62 @@ export const useEmailPaymentReceipt = (
 ) =>
   useMutation<Awaited<ReturnType<typeof emailPaymentReceipt>>, Error, string>({
     mutationFn: (paymentId: string) => emailPaymentReceipt(paymentId),
+    ...options,
+  });
+
+// --- Notification Hooks ---
+
+// Get payment notifications
+export const usePaymentNotifications = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPaymentNotifications>>,
+    Error
+  >,
+) => {
+  const queryClient = useQueryClient();
+  return useQuery<Awaited<ReturnType<typeof getPaymentNotifications>>, Error>({
+    queryKey: ["paymentNotifications"],
+    queryFn: getPaymentNotifications,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    ...options,
+  });
+};
+
+// Mark notification as read mutation
+export const useMarkNotificationAsRead = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof markNotificationAsRead>>,
+    Error,
+    string
+  >,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Awaited<ReturnType<typeof markNotificationAsRead>>,
+    Error,
+    string
+  >({
+    mutationFn: (notificationId: string) =>
+      markNotificationAsRead(notificationId),
+    onSuccess: () => {
+      // Invalidate notifications query
+      queryClient.invalidateQueries({ queryKey: ["paymentNotifications"] });
+    },
+    ...options,
+  });
+};
+
+// Get payment timeline
+export const usePaymentTimeline = (
+  paymentId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPaymentTimeline>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getPaymentTimeline>>, Error>({
+    queryKey: ["paymentTimeline", paymentId],
+    queryFn: () => getPaymentTimeline(paymentId!),
+    enabled: !!paymentId,
     ...options,
   });
