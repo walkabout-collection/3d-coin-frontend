@@ -1013,3 +1013,164 @@ export const getQuickBooksInvoiceStatus = async (
   const res = await apiClient.get(`/quickbooks/invoice/${invoiceId}/status`);
   return res.data;
 };
+
+// --- Admin QuickBooks API Functions ---
+
+export interface QuickBooksConnection {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  companyId: string;
+  connectedAt: string;
+  expiresAt: string | null;
+  isExpired: boolean;
+  recentPayments: number;
+  lastPaymentSync: string | null;
+}
+
+export interface QuickBooksSyncStatus {
+  total: number;
+  statusCounts: {
+    SYNCED: number;
+    PENDING: number;
+    FAILED: number;
+    NOT_SYNCED: number;
+  };
+  payments: Array<{
+    paymentId: string;
+    userId: string;
+    userName: string;
+    userEmail: string | null;
+    quoteId: string | null;
+    amount: number;
+    status: string;
+    syncStatus: string;
+    invoiceId: string | null;
+    lastSyncAt: string | null;
+    createdAt: string;
+  }>;
+}
+
+export interface QuickBooksSyncError {
+  paymentId: string;
+  userId: string;
+  userName: string;
+  userEmail: string | null;
+  quoteId: string | null;
+  amount: number;
+  invoiceId: string | null;
+  lastSyncAttempt: string | null;
+  createdAt: string;
+  error: string;
+}
+
+export interface MapTransactionRequest {
+  transactionId: string;
+  orderId: string;
+}
+
+// Get all QuickBooks connections (admin)
+export const getAdminQuickBooksConnections = async (): Promise<{
+  success: boolean;
+  data: QuickBooksConnection[];
+  message?: string;
+}> => {
+  const res = await apiClient.get("/admin/quickbooks/connections");
+  return res.data;
+};
+
+// Get QuickBooks sync status (admin)
+export const getAdminQuickBooksSyncStatus = async (): Promise<{
+  success: boolean;
+  data: QuickBooksSyncStatus;
+  message?: string;
+}> => {
+  const res = await apiClient.get("/admin/quickbooks/sync-status");
+  return res.data;
+};
+
+// Manual sync for specific payment (admin)
+export const syncAdminQuickBooksPayment = async (
+  paymentId: string,
+): Promise<{
+  success: boolean;
+  data: {
+    paymentId: string;
+    invoiceId: string;
+    syncStatus: string;
+    paymentStatus: string;
+    syncedAt: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post(`/admin/quickbooks/sync/${paymentId}`);
+  return res.data;
+};
+
+// Get QuickBooks sync errors (admin)
+export const getAdminQuickBooksErrors = async (): Promise<{
+  success: boolean;
+  data: QuickBooksSyncError[];
+  message?: string;
+}> => {
+  const res = await apiClient.get("/admin/quickbooks/errors");
+  return res.data;
+};
+
+// Get all QuickBooks transactions (admin)
+export const getAdminQuickBooksTransactions = async (): Promise<{
+  success: boolean;
+  data: {
+    transactions: unknown[];
+    count: number;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get("/admin/quickbooks/transactions");
+  return res.data;
+};
+
+// Get unmapped QuickBooks transactions (admin)
+export const getAdminQuickBooksUnmappedTransactions = async (): Promise<{
+  success: boolean;
+  data: {
+    transactions: unknown[];
+    count: number;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get("/admin/quickbooks/unmapped-transactions");
+  return res.data;
+};
+
+// Map QuickBooks transaction to order (admin)
+export const mapAdminQuickBooksTransaction = async (
+  data: MapTransactionRequest,
+): Promise<{
+  success: boolean;
+  data: {
+    transactionId: string;
+    orderId: string;
+    paymentId: string;
+    mappedAt: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/admin/quickbooks/map-transaction", data);
+  return res.data;
+};
+
+// Retry all failed syncs (admin)
+export const retryAdminQuickBooksFailedSyncs = async (): Promise<{
+  success: boolean;
+  data: {
+    attempted: number;
+    succeeded: number;
+    failed: number;
+    errors: Array<{ paymentId: string; error: string }>;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/admin/quickbooks/retry-failed-syncs");
+  return res.data;
+};

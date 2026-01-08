@@ -65,6 +65,14 @@ import {
   getPaymentNotifications,
   markNotificationAsRead,
   getPaymentTimeline,
+  getAdminQuickBooksConnections,
+  getAdminQuickBooksSyncStatus,
+  syncAdminQuickBooksPayment,
+  getAdminQuickBooksErrors,
+  getAdminQuickBooksTransactions,
+  getAdminQuickBooksUnmappedTransactions,
+  mapAdminQuickBooksTransaction,
+  retryAdminQuickBooksFailedSyncs,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -950,15 +958,13 @@ export const usePaymentNotifications = (
     Awaited<ReturnType<typeof getPaymentNotifications>>,
     Error
   >,
-) => {
-  const queryClient = useQueryClient();
-  return useQuery<Awaited<ReturnType<typeof getPaymentNotifications>>, Error>({
+) =>
+  useQuery<Awaited<ReturnType<typeof getPaymentNotifications>>, Error>({
     queryKey: ["paymentNotifications"],
     queryFn: getPaymentNotifications,
     refetchInterval: 30000, // Refetch every 30 seconds
     ...options,
   });
-};
 
 // Mark notification as read mutation
 export const useMarkNotificationAsRead = (
@@ -998,3 +1004,144 @@ export const usePaymentTimeline = (
     enabled: !!paymentId,
     ...options,
   });
+
+// --- Admin QuickBooks Hooks ---
+
+// Get all QuickBooks connections (admin)
+export const useAdminQuickBooksConnections = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminQuickBooksConnections>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getAdminQuickBooksConnections>>, Error>({
+    queryKey: ["admin", "quickbooks", "connections"],
+    queryFn: getAdminQuickBooksConnections,
+    staleTime: 30000, // 30 seconds
+    ...options,
+  });
+
+// Get QuickBooks sync status (admin)
+export const useAdminQuickBooksSyncStatus = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminQuickBooksSyncStatus>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getAdminQuickBooksSyncStatus>>, Error>({
+    queryKey: ["admin", "quickbooks", "sync-status"],
+    queryFn: getAdminQuickBooksSyncStatus,
+    staleTime: 10000, // 10 seconds
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    ...options,
+  });
+
+// Get QuickBooks sync errors (admin)
+export const useAdminQuickBooksErrors = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminQuickBooksErrors>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getAdminQuickBooksErrors>>, Error>({
+    queryKey: ["admin", "quickbooks", "errors"],
+    queryFn: getAdminQuickBooksErrors,
+    staleTime: 30000,
+    ...options,
+  });
+
+// Get all QuickBooks transactions (admin)
+export const useAdminQuickBooksTransactions = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminQuickBooksTransactions>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getAdminQuickBooksTransactions>>, Error>({
+    queryKey: ["admin", "quickbooks", "transactions"],
+    queryFn: getAdminQuickBooksTransactions,
+    staleTime: 60000, // 1 minute
+    ...options,
+  });
+
+// Get unmapped QuickBooks transactions (admin)
+export const useAdminQuickBooksUnmappedTransactions = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminQuickBooksUnmappedTransactions>>,
+    Error
+  >,
+) =>
+  useQuery<
+    Awaited<ReturnType<typeof getAdminQuickBooksUnmappedTransactions>>,
+    Error
+  >({
+    queryKey: ["admin", "quickbooks", "unmapped-transactions"],
+    queryFn: getAdminQuickBooksUnmappedTransactions,
+    staleTime: 60000,
+    ...options,
+  });
+
+// Sync a payment (mutation)
+export const useSyncAdminQuickBooksPayment = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof syncAdminQuickBooksPayment>>,
+    Error,
+    string
+  >,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Awaited<ReturnType<typeof syncAdminQuickBooksPayment>>,
+    Error,
+    string
+  >({
+    mutationFn: syncAdminQuickBooksPayment,
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ["admin", "quickbooks"] });
+    },
+    ...options,
+  });
+};
+
+// Map a transaction to an order (mutation)
+export const useMapAdminQuickBooksTransaction = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof mapAdminQuickBooksTransaction>>,
+    Error,
+    Parameters<typeof mapAdminQuickBooksTransaction>[0]
+  >,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Awaited<ReturnType<typeof mapAdminQuickBooksTransaction>>,
+    Error,
+    Parameters<typeof mapAdminQuickBooksTransaction>[0]
+  >({
+    mutationFn: mapAdminQuickBooksTransaction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "quickbooks"] });
+    },
+    ...options,
+  });
+};
+
+// Retry failed syncs (mutation)
+export const useRetryAdminQuickBooksFailedSyncs = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof retryAdminQuickBooksFailedSyncs>>,
+    Error
+  >,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Awaited<ReturnType<typeof retryAdminQuickBooksFailedSyncs>>,
+    Error
+  >({
+    mutationFn: retryAdminQuickBooksFailedSyncs,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "quickbooks"] });
+    },
+    ...options,
+  });
+};
