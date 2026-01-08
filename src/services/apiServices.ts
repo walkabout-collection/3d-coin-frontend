@@ -637,7 +637,21 @@ export const getPendingManualPayments = async (): Promise<{
 };
 
 // Get user order history
-export const getUserOrderHistory = async (): Promise<{
+export interface GetUserOrderHistoryParams {
+  sortBy?: "date" | "amount" | "status";
+  sortOrder?: "asc" | "desc";
+  status?: "SUCCESS" | "PENDING" | "FAILED" | "APPROVED" | "REJECTED";
+  method?: "STRIPE" | "QUICKBOOKS" | "MANUAL";
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
+  page?: number;
+  limit?: number;
+  search?: string; // Search by order ID
+}
+
+export const getUserOrderHistory = async (
+  params?: GetUserOrderHistoryParams,
+): Promise<{
   success: boolean;
   data: Array<{
     orderId: string;
@@ -645,9 +659,31 @@ export const getUserOrderHistory = async (): Promise<{
     total: number;
     date: string;
     status?: string;
+    paymentId?: string;
   }>;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }> => {
-  const res = await apiClient.get("/order/user/history");
+  const queryParams = new URLSearchParams();
+
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  if (params?.status) queryParams.append("status", params.status);
+  if (params?.method) queryParams.append("method", params.method);
+  if (params?.startDate) queryParams.append("startDate", params.startDate);
+  if (params?.endDate) queryParams.append("endDate", params.endDate);
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.search) queryParams.append("search", params.search);
+
+  const queryString = queryParams.toString();
+  const url = `/order/user/history${queryString ? `?${queryString}` : ""}`;
+
+  const res = await apiClient.get(url);
   return res.data;
 };
 

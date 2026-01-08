@@ -613,14 +613,15 @@ export const usePendingManualPayments = (
 
 // Get user order history
 export const useUserOrderHistory = (
+  params?: Parameters<typeof getUserOrderHistory>[0],
   options?: UseQueryOptions<
     Awaited<ReturnType<typeof getUserOrderHistory>>,
     Error
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getUserOrderHistory>>, Error>({
-    queryKey: ["userOrderHistory"],
-    queryFn: getUserOrderHistory,
+    queryKey: ["userOrderHistory", params],
+    queryFn: () => getUserOrderHistory(params),
     ...options,
   });
 

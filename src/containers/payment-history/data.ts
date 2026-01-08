@@ -1,5 +1,10 @@
 import { PaymentDataItem } from "./types";
 
+/**
+ * @deprecated This mock data is no longer used.
+ * The payment history now fetches data from the API.
+ * This file is kept for reference only.
+ */
 export const paymentData: PaymentDataItem[] = [
   {
     paymentMethod: "CREDIT CARD",
@@ -13,12 +18,6 @@ export const paymentData: PaymentDataItem[] = [
     total: "$11.43",
     date: "14/09/2025",
   },
-  // {
-  //   paymentMethod: 'QUICKBOOKS',
-  //   order: '103',
-  //   total: '$6.43',
-  //   date: '13/09/2025',
-  // },
   {
     paymentMethod: "CREDIT CARD",
     order: "104",

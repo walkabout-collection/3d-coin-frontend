@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
 import { useUserOrderHistory } from "@/src/hooks/useQueries";
@@ -12,16 +12,13 @@ import {
 import { usePaymentStatusWebSocket } from "@/src/hooks/usePaymentStatusWebSocket";
 import Button from "@/src/components/common/button/Button";
 import PaymentTimeline from "@/src/components/PaymentTimeline";
+import SortDropdown from "@/src/components/common/SortDropdown";
+import FilterDropdown from "@/src/components/common/FilterDropdown";
+import Pagination from "@/src/components/common/Pagination";
+import Search from "@/src/components/common/search";
 import { toast } from "react-toastify";
-
-interface PaymentHistoryItem {
-  orderId: string;
-  paymentMethod: string;
-  total: number;
-  date: string;
-  status?: string;
-  paymentId?: string;
-}
+import { GetUserOrderHistoryParams } from "@/src/services/apiServices";
+import { PaymentHistoryItem } from "./types";
 
 // Format date as DD/MM/YYYY
 const formatDate = (dateString: string | number | undefined): string => {
@@ -201,12 +198,21 @@ const PaymentHistory = () => {
   );
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
 
+  // Filter and sort state
+  const [filters, setFilters] = useState<GetUserOrderHistoryParams>({
+    page: 1,
+    limit: 20,
+    sortBy: "date",
+    sortOrder: "desc",
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+
   const {
     data: orderHistoryData,
     isPending,
     isError,
     refetch,
-  } = useUserOrderHistory();
+  } = useUserOrderHistory(filters);
 
   // Polling fallback when WebSocket is disconnected
   React.useEffect(() => {
@@ -228,6 +234,79 @@ const PaymentHistory = () => {
       }
     }
   }, [isConnected, orderHistoryData, refetch]);
+
+  // Handle filter changes
+  const handleFilterChange = useCallback(
+    (
+      key: keyof GetUserOrderHistoryParams,
+      value: string | number | undefined,
+    ) => {
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value || undefined,
+        page: 1, // Reset to first page when filters change
+      }));
+    },
+    [],
+  );
+
+  // Handle sort change
+  const handleSortChange = useCallback((sortValue: string) => {
+    if (sortValue === "newest" || sortValue === "oldest") {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "date",
+        sortOrder: sortValue === "newest" ? "desc" : "asc",
+        page: 1,
+      }));
+    } else if (sortValue === "amount_asc" || sortValue === "amount_desc") {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "amount",
+        sortOrder: sortValue === "amount_asc" ? "asc" : "desc",
+        page: 1,
+      }));
+    } else if (sortValue === "status_asc" || sortValue === "status_desc") {
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: "status",
+        sortOrder: sortValue === "status_asc" ? "asc" : "desc",
+        page: 1,
+      }));
+    }
+  }, []);
+
+  // Handle search
+  const handleSearch = useCallback((search: string) => {
+    setSearchTerm(search);
+    setFilters((prev) => ({
+      ...prev,
+      search: search || undefined,
+      page: 1,
+    }));
+  }, []);
+
+  // Handle pagination
+  const handlePageChange = useCallback((page: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      page,
+    }));
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  // Get current sort value for SortDropdown
+  const getCurrentSortValue = () => {
+    if (filters.sortBy === "date") {
+      return filters.sortOrder === "desc" ? "newest" : "oldest";
+    } else if (filters.sortBy === "amount") {
+      return filters.sortOrder === "asc" ? "amount_asc" : "amount_desc";
+    } else if (filters.sortBy === "status") {
+      return filters.sortOrder === "asc" ? "status_asc" : "status_desc";
+    }
+    return "newest";
+  };
 
   // Transform API data to table format
   const paymentData: PaymentHistoryItem[] = orderHistoryData?.data
@@ -329,6 +408,10 @@ const PaymentHistory = () => {
     );
   }
 
+  const pagination = orderHistoryData?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+  const currentPage = filters.page || 1;
+
   return (
     <div className="min-h-screen">
       <div className="flex items-center justify-between mb-6">
@@ -339,28 +422,151 @@ const PaymentHistory = () => {
           Refresh
         </Button>
       </div>
-      {paymentData.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No payment history found</p>
+
+      {/* Filters and Search Section */}
+      <div className="mb-6 space-y-4">
+        {/* Search */}
+        <div className="flex items-center gap-4">
+          <Search
+            placeholder="Search by order ID..."
+            onSearch={handleSearch}
+            value={searchTerm}
+            className="flex-1 max-w-md"
+          />
+        </div>
+
+        {/* Filters Row */}
+        <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 rounded-lg">
+          <FilterDropdown
+            label="Status"
+            options={[
+              { value: "SUCCESS", label: "Success" },
+              { value: "APPROVED", label: "Approved" },
+              { value: "PENDING", label: "Pending" },
+              { value: "REJECTED", label: "Rejected" },
+              { value: "FAILED", label: "Failed" },
+            ]}
+            value={filters.status || ""}
+            onChange={(value) => handleFilterChange("status", value)}
+            placeholder="All Statuses"
+          />
+
+          <FilterDropdown
+            label="Method"
+            options={[
+              { value: "STRIPE", label: "Credit Card" },
+              { value: "QUICKBOOKS", label: "QuickBooks" },
+              { value: "MANUAL", label: "Manual" },
+            ]}
+            value={filters.method || ""}
+            onChange={(value) => handleFilterChange("method", value)}
+            placeholder="All Methods"
+          />
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Date Range:
+            </label>
+            <input
+              type="date"
+              value={filters.startDate || ""}
+              onChange={(e) => handleFilterChange("startDate", e.target.value)}
+              className="px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-gray-500">to</span>
+            <input
+              type="date"
+              value={filters.endDate || ""}
+              onChange={(e) => handleFilterChange("endDate", e.target.value)}
+              className="px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="ml-auto">
+            <SortDropdown
+              options={[
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+                { value: "amount_desc", label: "Amount (High to Low)" },
+                { value: "amount_asc", label: "Amount (Low to High)" },
+                { value: "status_asc", label: "Status (A-Z)" },
+                { value: "status_desc", label: "Status (Z-A)" },
+              ]}
+              value={getCurrentSortValue()}
+              onChange={handleSortChange}
+              showLabel={true}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Connection Status */}
+      {!isConnected && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p className="text-sm text-yellow-800">
+            <span className="font-medium">Connection Status:</span>{" "}
+            Reconnecting... Status updates may be delayed. Payments are being
+            checked every 30 seconds.
+          </p>
+        </div>
+      )}
+
+      {/* Table */}
+      {isPending ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading payment history...</p>
+          </div>
+        </div>
+      ) : isError ? (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Failed to load payment history</p>
+            <Button variant="primary" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </div>
+        </div>
+      ) : paymentData.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500 text-lg mb-2">No payment history found</p>
+          <p className="text-gray-400 text-sm">
+            {searchTerm || filters.status || filters.method
+              ? "Try adjusting your filters"
+              : "You haven't made any payments yet"}
+          </p>
         </div>
       ) : (
         <>
-          {!isConnected && (
-            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
-                <span className="font-medium">Connection Status:</span>{" "}
-                Reconnecting... Status updates may be delayed. Payments are
-                being checked every 30 seconds.
-              </p>
-            </div>
-          )}
           <Table
             columns={paymentColumns}
             data={paymentData}
             alternatingRows={true}
-            searchable={true}
-            searchPlaceholder="Search payments..."
+            searchable={false} // We have our own search
           />
+
+          {/* Pagination */}
+          {pagination && totalPages > 1 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+
+          {/* Results Count */}
+          {pagination && (
+            <div className="mt-4 text-sm text-gray-600 text-center">
+              Showing {(currentPage - 1) * (filters.limit || 20) + 1} to{" "}
+              {Math.min(currentPage * (filters.limit || 20), pagination.total)}{" "}
+              of {pagination.total} payments
+            </div>
+          )}
+
+          {/* Timeline Modal */}
           {selectedPaymentId && (
             <PaymentTimelineModal
               paymentId={selectedPaymentId}
