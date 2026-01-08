@@ -668,9 +668,9 @@ export const usePendingManualPayments = (
 // Get user order history
 export const useUserOrderHistory = (
   params?: Parameters<typeof getUserOrderHistory>[0],
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getUserOrderHistory>>,
-    Error
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof getUserOrderHistory>>, Error>,
+    "queryKey" | "queryFn"
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getUserOrderHistory>>, Error>({
@@ -839,9 +839,12 @@ export const useHandleQuickBooksCallback = (
 
 // Get QuickBooks connection status
 export const useQuickBooksConnectionStatus = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getQuickBooksConnectionStatus>>,
-    Error
+  options?: Omit<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof getQuickBooksConnectionStatus>>,
+      Error
+    >,
+    "queryKey" | "queryFn"
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getQuickBooksConnectionStatus>>, Error>({
@@ -853,9 +856,12 @@ export const useQuickBooksConnectionStatus = (
 // Get QuickBooks transactions
 export const useQuickBooksTransactions = (
   params?: Parameters<typeof getQuickBooksTransactions>[0],
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getQuickBooksTransactions>>,
-    Error
+  options?: Omit<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof getQuickBooksTransactions>>,
+      Error
+    >,
+    "queryKey" | "queryFn"
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getQuickBooksTransactions>>, Error>({
@@ -914,9 +920,12 @@ export const useSyncQuickBooksTransactions = (
 // Get QuickBooks invoice status
 export const useQuickBooksInvoiceStatus = (
   invoiceId: string | null,
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getQuickBooksInvoiceStatus>>,
-    Error
+  options?: Omit<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof getQuickBooksInvoiceStatus>>,
+      Error
+    >,
+    "queryKey" | "queryFn" | "enabled" | "refetchInterval"
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getQuickBooksInvoiceStatus>>, Error>({
@@ -939,9 +948,9 @@ export const useQuickBooksInvoiceStatus = (
 // Get payment receipt
 export const usePaymentReceipt = (
   paymentId: string | null,
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof getPaymentReceipt>>,
-    Error
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof getPaymentReceipt>>, Error>,
+    "queryKey" | "queryFn" | "enabled"
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof getPaymentReceipt>>, Error>({

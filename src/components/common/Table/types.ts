@@ -5,18 +5,22 @@ export interface OrderDataItem {
   packaging: string;
   order: string;
   date: string;
-  paymentMethod: 'MANUAL' | 'QUICKBOOKS' | 'PAYPAL';
-  status: 'PENDING' | 'APPROVED' | 'CANCEL';
+  paymentMethod: "MANUAL" | "QUICKBOOKS" | "PAYPAL";
+  status: "PENDING" | "APPROVED" | "CANCEL";
   price: number;
 }
 
 export interface TableColumn<T> {
-  key: keyof T;
+  key: keyof T | string; // Allow string for virtual columns like "actions"
   label: string;
   width?: string;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   sortable?: boolean;
-  render?: (value: T[keyof T], row: T, index: number) => React.ReactNode;
+  render?: (
+    value: T[keyof T] | undefined,
+    row: T,
+    index: number,
+  ) => React.ReactNode;
 }
 
 export interface TableProps<T extends { date?: string; order?: string }> {
@@ -29,7 +33,7 @@ export interface TableProps<T extends { date?: string; order?: string }> {
     label: string;
     onClick?: (row: T) => void;
     icon?: string;
-    variant?: 'primary' | 'secondary' | 'danger' | 'success';
+    variant?: "primary" | "secondary" | "danger" | "success";
     show?: (row: T) => boolean;
   }[];
   pagination?: {
@@ -55,6 +59,6 @@ export interface TableProps<T extends { date?: string; order?: string }> {
 
 export interface StatusBadgeProps {
   status: string;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  variant?: "default" | "success" | "warning" | "danger" | "info";
   className?: string;
 }

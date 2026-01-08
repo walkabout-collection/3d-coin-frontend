@@ -6,13 +6,15 @@ import { TrackingData } from "./data";
 import { TrackingDataItem } from "./types";
 import PaymentGate from "@/src/components/PaymentGate";
 import OrderStatus from "@/src/components/OrderStatus";
-import { useUserOrders } from "@/src/hooks/useQueries";
-import { useProceedToNextStep } from "@/src/hooks/useQueries";
+import {
+  useUserOrdersLegacy,
+  useProceedToNextStep,
+} from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
 import Button from "@/src/components/common/button/Button";
 
 const Tracking = () => {
-  const { data: orderData, isLoading } = useUserOrders();
+  const { data: orderData, isLoading } = useUserOrdersLegacy();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const proceedToNextStepMutation = useProceedToNextStep({
     onSuccess: (data) => {
@@ -27,25 +29,27 @@ const Tracking = () => {
   });
 
   // Map order data to tracking items if available
-  const trackingData: TrackingDataItem[] = orderData
-    ? orderData.map((order) => ({
-        trackingNo: order.orderId || "N/A",
-        carrier: order.carrier || "N/A",
-        status: order.status,
-        weightsG: order.weight ? `${order.weight}g` : "N/A",
-        order: order.totalCoins?.toString() || "0",
-        date: order.orderDate
-          ? new Date(order.orderDate).toLocaleDateString()
-          : "N/A",
-        orderId: order.orderId, // Store orderId for payment gate
-      }))
-    : TrackingData.map((item) => ({
-        ...item,
-        weightsG:
-          typeof item.weightsG === "number"
-            ? `${item.weightsG}g`
-            : item.weightsG,
-      })); // Fallback to mock data with formatted weights
+  const ordersArray = Array.isArray(orderData) ? orderData : [];
+  const trackingData: TrackingDataItem[] =
+    ordersArray.length > 0
+      ? ordersArray.map((order) => ({
+          trackingNo: order.orderId || "N/A",
+          carrier: order.carrier || "N/A",
+          status: order.status,
+          weightsG: order.weight ? `${order.weight}g` : "N/A",
+          order: order.totalCoins?.toString() || "0",
+          date: order.orderDate
+            ? new Date(order.orderDate).toLocaleDateString()
+            : "N/A",
+          orderId: order.orderId, // Store orderId for payment gate
+        }))
+      : TrackingData.map((item) => ({
+          ...item,
+          weightsG:
+            typeof item.weightsG === "number"
+              ? `${item.weightsG}g`
+              : item.weightsG,
+        })); // Fallback to mock data with formatted weights
 
   const orderColumns: TableColumn<TrackingDataItem>[] = [
     { key: "trackingNo", label: "Tracking No.", width: "w-32" },
@@ -130,7 +134,7 @@ const Tracking = () => {
         alternatingRows={true}
         searchable={true}
         searchPlaceholder="Search orders..."
-        showActions={!!orderData}
+        showActions={ordersArray.length > 0}
         actions={actions}
       />
     </div>

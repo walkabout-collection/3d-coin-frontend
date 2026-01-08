@@ -2,7 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { usePaymentStatusWebSocket } from "@/src/hooks/usePaymentStatusWebSocket";
-import { usePaymentNotifications } from "@/src/hooks/useQueries";
+import {
+  usePaymentNotifications,
+  useMarkNotificationAsRead,
+} from "@/src/hooks/useQueries";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface NotificationBadgeProps {
   className?: string;
@@ -14,13 +18,20 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
   onClick,
 }) => {
   const [hasNewNotification, setHasNewNotification] = useState(false);
+  const queryClient = useQueryClient();
 
   // Connect to WebSocket for payment status updates
   const { isConnected } = usePaymentStatusWebSocket(true);
 
   // Get payment notifications
-  const { data: notificationsData } = usePaymentNotifications({
-    enabled: true,
+  const { data: notificationsData } = usePaymentNotifications();
+
+  // Mark notification as read mutation
+  const markAsRead = useMarkNotificationAsRead({
+    onSuccess: () => {
+      // Invalidate notifications query to refresh unread count
+      queryClient.invalidateQueries({ queryKey: ["paymentNotifications"] });
+    },
   });
 
   // Calculate unread count from API
@@ -57,8 +68,15 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
   }, []);
 
   const handleClick = () => {
-    setUnreadCount(0);
     setHasNewNotification(false);
+
+    // Mark all unread notifications as read
+    const unreadNotifications =
+      notificationsData?.data?.filter((n) => !n.read) || [];
+    unreadNotifications.forEach((notification) => {
+      markAsRead.mutate(notification.id);
+    });
+
     if (onClick) {
       onClick();
     }

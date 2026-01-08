@@ -826,7 +826,7 @@ export interface UserOrder {
  * Get user orders params
  */
 export interface GetUserOrdersParams {
-  paymentStatus?: "PAID" | "UNPAID" | "PENDING" | "FAILED";
+  paymentStatus?: "PAID" | "UNPAID" | "PENDING" | "FAILED" | "REFUNDED";
   sortBy?: "date" | "amount" | "paymentStatus" | "paymentDate";
   sortOrder?: "asc" | "desc";
   page?: number;

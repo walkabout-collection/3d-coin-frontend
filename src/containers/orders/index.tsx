@@ -62,10 +62,15 @@ const Orders = () => {
   const limit = 20;
 
   // Build params for API
-  const orderParams: GetUserOrdersParams | undefined =
+  const orderParams: GetUserOrdersParams =
     paymentStatusFilter !== "ALL"
       ? {
-          paymentStatus: paymentStatusFilter,
+          paymentStatus: paymentStatusFilter as
+            | "PAID"
+            | "UNPAID"
+            | "PENDING"
+            | "FAILED"
+            | "REFUNDED",
           sortBy,
           sortOrder,
           page,
@@ -174,7 +179,7 @@ const Orders = () => {
     }
 
     const firstQuote = maybeQuotes[0] as Record<string, unknown>;
-    const method =
+    const methodString =
       typeof firstQuote["method"] === "string"
         ? (firstQuote["method"] as string)
         : undefined;
@@ -187,8 +192,21 @@ const Orders = () => {
         ? (orig["totalPrice"] as number)
         : undefined;
 
-    if (totalPrice == null || !method) {
+    if (totalPrice == null || !methodString) {
       console.error("Missing payment details in quote.");
+      return;
+    }
+
+    // Validate and cast method to valid type
+    const validMethods = ["STRIPE", "QUICKBOOKS", "MANUAL"] as const;
+    const method = validMethods.includes(
+      methodString.toUpperCase() as (typeof validMethods)[number],
+    )
+      ? (methodString.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL")
+      : undefined;
+
+    if (!method) {
+      console.error(`Invalid payment method: ${methodString}`);
       return;
     }
 
@@ -272,7 +290,7 @@ const Orders = () => {
       key: "paymentDate",
       label: "Payment Date",
       width: "w-32",
-      render: (value) => (value ? value : "N/A"),
+      render: (value) => (value ? String(value) : "N/A"),
     },
   ];
 

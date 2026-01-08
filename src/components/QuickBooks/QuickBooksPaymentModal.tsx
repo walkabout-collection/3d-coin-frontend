@@ -53,9 +53,7 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
       },
     });
 
-  const { data: invoiceStatus } = useQuickBooksInvoiceStatus(createdInvoiceId, {
-    enabled: !!createdInvoiceId,
-  });
+  const { data: invoiceStatus } = useQuickBooksInvoiceStatus(createdInvoiceId);
 
   const isConnected = connectionStatus?.data?.connected ?? false;
 

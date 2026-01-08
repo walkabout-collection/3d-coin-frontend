@@ -62,8 +62,7 @@ const ReceiptButton: React.FC<ReceiptButtonProps> = ({
   variant = "download",
 }) => {
   const { data: receiptData, isLoading: isLoadingReceipt } = usePaymentReceipt(
-    paymentId,
-    paymentStatus === "SUCCESS",
+    paymentStatus === "SUCCESS" ? paymentId : null,
   );
   const { mutate: generateReceipt, isPending: isGenerating } =
     useGeneratePaymentReceipt({
@@ -512,23 +511,7 @@ const PaymentHistory = () => {
       )}
 
       {/* Table */}
-      {isPending ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading payment history...</p>
-          </div>
-        </div>
-      ) : isError ? (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Failed to load payment history</p>
-            <Button variant="primary" onClick={() => refetch()}>
-              Retry
-            </Button>
-          </div>
-        </div>
-      ) : paymentData.length === 0 ? (
+      {paymentData.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <p className="text-gray-500 text-lg mb-2">No payment history found</p>
           <p className="text-gray-400 text-sm">

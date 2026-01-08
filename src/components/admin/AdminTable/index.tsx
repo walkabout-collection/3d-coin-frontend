@@ -19,7 +19,7 @@ function AdminTable<
     packaging?: string;
     description?: string;
     text?: string;
-  }
+  },
 >({
   columns,
   data,
@@ -58,8 +58,8 @@ function AdminTable<
     if (!searchTerm) return sortedDataState;
     return sortedDataState.filter((row) =>
       Object.values(row as object).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+        String(value).toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
     );
   }, [sortedDataState, searchTerm]);
 
@@ -79,12 +79,12 @@ function AdminTable<
     if (sort === "newest") {
       sortedData.sort(
         (a, b) =>
-          new Date(b.date || "").getTime() - new Date(a.date || "").getTime()
+          new Date(b.date || "").getTime() - new Date(a.date || "").getTime(),
       );
     } else if (sort === "oldest") {
       sortedData.sort(
         (a, b) =>
-          new Date(a.date || "").getTime() - new Date(b.date || "").getTime()
+          new Date(a.date || "").getTime() - new Date(b.date || "").getTime(),
       );
     } else if (sort === "order_asc") {
       sortedData.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
@@ -113,9 +113,9 @@ function AdminTable<
 
   const renderCellContent = (
     column: TableColumn<T>,
-    value: T[keyof T],
+    value: T[keyof T] | undefined,
     row: T,
-    index: number
+    index: number,
   ) => {
     if (column.render) {
       return column.render(value, row, index);
@@ -152,7 +152,7 @@ function AdminTable<
                   onError: () => {
                     toast.error("Failed to update status");
                   },
-                }
+                },
               );
             }
           }}
@@ -297,7 +297,14 @@ function AdminTable<
                       className={`px-6 py-4 text-sm text-gray-900 ${cellClassName}`}
                       style={{ textAlign: column.align || "left" }}
                     >
-                      {renderCellContent(column, row[column.key], row, index)}
+                      {renderCellContent(
+                        column,
+                        column.key in row
+                          ? (row[column.key as keyof T] as T[keyof T])
+                          : undefined,
+                        row,
+                        index,
+                      )}
                     </td>
                   ))}
                   {showActions && actions.length > 0 && (
@@ -340,7 +347,7 @@ function AdminTable<
             {(pagination.currentPage - 1) * pagination.entriesPerPage + 1} to{" "}
             {Math.min(
               pagination.currentPage * pagination.entriesPerPage,
-              pagination.totalEntries
+              pagination.totalEntries,
             )}{" "}
             of {pagination.totalEntries} entries
           </div>
@@ -383,8 +390,8 @@ function AdminTable<
         <PackagingModal
           packagingDescription={
             selectedRow.description || "No description available"
-          } 
-          backText={selectedRow.text || "No text available"} 
+          }
+          backText={selectedRow.text || "No text available"}
           onClose={closeModal}
         />
       )}

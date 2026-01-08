@@ -58,10 +58,18 @@ const QuickBooksTransactionMapping: React.FC = () => {
       return;
     }
 
+    const transactionId =
+      selectedTransaction.transactionId || selectedTransaction.Id;
+    if (!transactionId) {
+      toast.error(
+        "Transaction ID is missing. Please select a valid transaction.",
+      );
+      return;
+    }
+
     try {
       await mapTransaction.mutateAsync({
-        transactionId:
-          selectedTransaction.transactionId || selectedTransaction.Id,
+        transactionId,
         orderId: orderIdToMap.trim(),
       });
     } catch {

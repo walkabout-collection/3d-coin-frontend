@@ -1,47 +1,46 @@
-'use client';
-import React, { useState, useMemo } from 'react';
-import Image from 'next/image';
-import { TableProps, TableColumn } from './types';
-import Search from '../search';
-import StatusBadge from '../StatusBadge';
-import SortDropdown from '../SortDropdown';
+"use client";
+import React, { useState, useMemo } from "react";
+import Image from "next/image";
+import { TableProps, TableColumn } from "./types";
+import Search from "../search";
+import StatusBadge from "../StatusBadge";
+import SortDropdown from "../SortDropdown";
 
 function Table<T extends Partial<{ date?: string; order?: string }> & object>({
   columns,
   data,
-  className = '',
+  className = "",
   alternatingRows = true,
   showActions = false,
   actions = [],
   sortable = false,
   sortOptions = [
-    { value: 'newest', label: 'Newest To Oldest' },
-    { value: 'oldest', label: 'Oldest To Newest' },
-    { value: 'order_asc', label: 'Order (Low to High)' },
-    { value: 'order_desc', label: 'Order (High to Low)' },
+    { value: "newest", label: "Newest To Oldest" },
+    { value: "oldest", label: "Oldest To Newest" },
+    { value: "order_asc", label: "Order (Low to High)" },
+    { value: "order_desc", label: "Order (High to Low)" },
   ],
   currentSort,
   onSortChange,
   searchable = false,
   onSearch,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = "Search...",
   loading = false,
-  emptyMessage = 'No data available',
-  headerClassName = '',
-  rowClassName = '',
-  cellClassName = '',
+  emptyMessage = "No data available",
+  headerClassName = "",
+  rowClassName = "",
+  cellClassName = "",
 }: TableProps<T>) {
-  const [internalSort, setInternalSort] = useState(currentSort || '');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [internalSort, setInternalSort] = useState(currentSort || "");
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortedDataState, setSortedDataState] = useState<T[]>(data);
-  
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
     return sortedDataState.filter((row) =>
       Object.values(row as object).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+        String(value).toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
     );
   }, [sortedDataState, searchTerm]);
 
@@ -65,20 +64,20 @@ function Table<T extends Partial<{ date?: string; order?: string }> & object>({
 
   const renderCellContent = (
     column: TableColumn<T>,
-    value: T[keyof T],
+    value: T[keyof T] | undefined,
     row: T,
-    index: number
+    index: number,
   ) => {
     if (column.render) {
       return column.render(value, row, index);
     }
-    if (String(column.key).toLowerCase().includes('status')) {
-      return <StatusBadge status={String(value)} />;
+    if (String(column.key).toLowerCase().includes("status")) {
+      return <StatusBadge status={String(value || "")} />;
     }
-    if (String(column.key).toLowerCase().includes('packaging')) {
-      return <span className="text-sm">{String(value)}</span>;
+    if (String(column.key).toLowerCase().includes("packaging")) {
+      return <span className="text-sm">{String(value || "")}</span>;
     }
-    return value as React.ReactNode;
+    return (value as React.ReactNode) || null;
   };
 
   return (
@@ -115,9 +114,9 @@ function Table<T extends Partial<{ date?: string; order?: string }> & object>({
                 <th
                   key={String(column.key)}
                   className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${
-                    column.width || ''
+                    column.width || ""
                   }`}
-                  style={{ textAlign: column.align || 'left' }}
+                  style={{ textAlign: column.align || "left" }}
                 >
                   {column.label}
                 </th>
@@ -154,17 +153,24 @@ function Table<T extends Partial<{ date?: string; order?: string }> & object>({
                   key={index}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                     alternatingRows && index % 2 === 1
-                      ? 'bg-gray-100'
-                      : 'bg-white'
+                      ? "bg-gray-100"
+                      : "bg-white"
                   } ${rowClassName}`}
                 >
                   {columns.map((column) => (
                     <td
                       key={`${index}-${String(column.key)}`}
                       className={`px-6 py-4 text-sm text-gray-900 ${cellClassName}`}
-                      style={{ textAlign: column.align || 'left' }}
+                      style={{ textAlign: column.align || "left" }}
                     >
-                      {renderCellContent(column, row[column.key], row, index)}
+                      {renderCellContent(
+                        column,
+                        column.key in row
+                          ? (row[column.key as keyof T] as T[keyof T])
+                          : undefined,
+                        row,
+                        index,
+                      )}
                     </td>
                   ))}
                   {showActions && actions.length > 0 && (
@@ -175,18 +181,20 @@ function Table<T extends Partial<{ date?: string; order?: string }> & object>({
                           return (
                             <button
                               key={actionIndex}
-                              onClick={() => action.onClick && action.onClick(row)}
+                              onClick={() =>
+                                action.onClick && action.onClick(row)
+                              }
                               className={`max-w-lg rounded-full py-2 px-6 font-base text-sm ${
-                                action.variant === 'primary'
-                                  ? 'bg-[#1a2a3a] text-white'
-                                  : action.variant === 'success'
-                                  ? 'text-green-600 font-bold text-lg'
-                                  : action.variant === 'secondary'
-                                  ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                                  : action.variant === 'danger'
-                                  ? 'bg-red-600 text-white hover:bg-red-700'
-                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                              } ${!action.onClick ? 'cursor-default' : ''}`}
+                                action.variant === "primary"
+                                  ? "bg-[#1a2a3a] text-white"
+                                  : action.variant === "success"
+                                    ? "text-green-600 font-bold text-lg"
+                                    : action.variant === "secondary"
+                                      ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                                      : action.variant === "danger"
+                                        ? "bg-red-600 text-white hover:bg-red-700"
+                                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                              } ${!action.onClick ? "cursor-default" : ""}`}
                               disabled={!action.onClick}
                             >
                               {action.icon && (

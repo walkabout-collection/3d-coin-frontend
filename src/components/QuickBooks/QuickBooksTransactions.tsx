@@ -34,17 +34,12 @@ const QuickBooksTransactions: React.FC<QuickBooksTransactionsProps> = ({
     isLoading,
     error,
     refetch,
-  } = useQuickBooksTransactions(
-    {
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      limit: pageSize,
-      offset: (currentPage - 1) * pageSize,
-    },
-    {
-      enabled: true,
-    },
-  );
+  } = useQuickBooksTransactions({
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    limit: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  });
 
   const transactions = transactionsData?.data?.transactions || [];
   const total = transactionsData?.data?.total || 0;
