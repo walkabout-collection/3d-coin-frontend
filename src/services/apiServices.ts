@@ -801,7 +801,101 @@ export const getAdminOrders = async (): Promise<
   return res.data.data;
 };
 
-export const getUserOrders = async (): Promise<
+/**
+ * User order with payment status
+ */
+export interface UserOrder {
+  id: string;
+  orderId: string;
+  paymentStatus: "PAID" | "UNPAID" | "PENDING" | "FAILED";
+  paymentMethod?: string;
+  paymentDate?: string;
+  paymentId?: string;
+  totalPrice: number;
+  orderDate: string;
+  status: string;
+  Quote?: {
+    id: string;
+    CoinDesign?: {
+      name: string;
+    };
+  };
+}
+
+/**
+ * Get user orders params
+ */
+export interface GetUserOrdersParams {
+  paymentStatus?: "PAID" | "UNPAID" | "PENDING" | "FAILED";
+  sortBy?: "date" | "amount" | "paymentStatus" | "paymentDate";
+  sortOrder?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Get user orders with payment status (enhanced)
+ */
+export const getUserOrders = async (
+  params?: GetUserOrdersParams,
+): Promise<{
+  data: UserOrder[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.paymentStatus) {
+    queryParams.append("paymentStatus", params.paymentStatus);
+  }
+  if (params?.sortBy) {
+    queryParams.append("sortBy", params.sortBy);
+  }
+  if (params?.sortOrder) {
+    queryParams.append("sortOrder", params.sortOrder);
+  }
+  if (params?.page) {
+    queryParams.append("page", params.page.toString());
+  }
+  if (params?.limit) {
+    queryParams.append("limit", params.limit.toString());
+  }
+
+  const queryString = queryParams.toString();
+  const url = `/order/user${queryString ? `?${queryString}` : ""}`;
+
+  const res = await apiClient.get<
+    ApiResponse<{
+      data: UserOrder[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+      };
+    }>
+  >(url, {
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+  });
+
+  return res.data.data;
+};
+
+/**
+ * Legacy getUserOrders for backward compatibility (without params)
+ */
+export const getUserOrdersLegacy = async (): Promise<
   Awaited<ReturnType<typeof api.order.userList>>["data"]
 > => {
   const res = await apiClient.get("/order/user", {
@@ -824,6 +918,129 @@ export const updateAdminOrderStatus = async (
 > => {
   const res = await apiClient.patch(`/order/admin/${orderId}/status`, data);
   return res.data;
+};
+
+// --- Payment Status Check ---
+/**
+ * Payment status values
+ */
+export type PaymentStatus =
+  | "PAID"
+  | "PENDING"
+  | "UNPAID"
+  | "FAILED"
+  | "REFUNDED";
+
+/**
+ * Order payment status response
+ */
+export interface OrderPaymentStatus {
+  orderId: string;
+  paymentStatus: PaymentStatus;
+  amount?: number;
+  paymentMethod?: string;
+  paymentDate?: string;
+  paymentDeadline?: string;
+  canProceed: boolean;
+}
+
+/**
+ * Quote can proceed response
+ */
+export interface QuoteCanProceed {
+  quoteId: string;
+  canProceed: boolean;
+  paymentStatus: PaymentStatus;
+  amount?: number;
+  reason?: string; // Reason if cannot proceed
+}
+
+/**
+ * Proceed to next step response
+ */
+export interface ProceedToNextStepResponse {
+  success: boolean;
+  message: string;
+  orderId?: string;
+  nextStep?: string;
+}
+
+/**
+ * Get payment status for an order
+ */
+export const getOrderPaymentStatus = async (
+  orderId: string,
+): Promise<OrderPaymentStatus> => {
+  const res = await apiClient.get<ApiResponse<OrderPaymentStatus>>(
+    `/order/${orderId}/payment-status`,
+  );
+  return res.data.data;
+};
+
+/**
+ * Check if a quote can proceed to next step
+ */
+export const checkQuoteCanProceed = async (
+  quoteId: string,
+): Promise<QuoteCanProceed> => {
+  const res = await apiClient.get<ApiResponse<QuoteCanProceed>>(
+    `/quote/${quoteId}/can-proceed`,
+  );
+  return res.data.data;
+};
+
+/**
+ * Proceed to next step (validates payment)
+ */
+export const proceedToNextStep = async (
+  orderId: string,
+): Promise<ProceedToNextStepResponse> => {
+  const res = await apiClient.post<ApiResponse<ProceedToNextStepResponse>>(
+    `/order/${orderId}/proceed`,
+    {},
+  );
+  return res.data.data;
+};
+
+/**
+ * Order payment details response
+ */
+export interface OrderPaymentDetails {
+  orderId: string;
+  orderNumber: string;
+  paymentStatus: "PAID" | "UNPAID" | "PENDING" | "FAILED";
+  paymentMethod?: string;
+  paymentDate?: string;
+  paymentId?: string;
+  amount: number;
+  payments: Array<{
+    id: string;
+    method: string;
+    status: string;
+    amount: number;
+    paidAt?: string;
+    createdAt: string;
+    receiptUrl?: string;
+    stripeCheckoutSessionId?: string;
+    quickbooksInvoiceId?: string;
+  }>;
+  quote: {
+    id: string;
+    amount?: number;
+    status: string;
+  } | null;
+}
+
+/**
+ * Get order payment details
+ */
+export const getOrderPaymentDetails = async (
+  orderId: string,
+): Promise<OrderPaymentDetails> => {
+  const res = await apiClient.get<ApiResponse<OrderPaymentDetails>>(
+    `/order/${orderId}/payment-details`,
+  );
+  return res.data.data;
 };
 
 export const updateCurrentUserProfile = async (

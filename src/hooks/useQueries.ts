@@ -48,6 +48,12 @@ import {
   savePaymentMethod,
   getSavedPaymentMethods,
   setDefaultPaymentMethod,
+  getOrderPaymentStatus,
+  checkQuoteCanProceed,
+  proceedToNextStep,
+  getOrderPaymentDetails,
+  GetUserOrdersParams,
+  getUserOrdersLegacy,
   deleteSavedPaymentMethod,
   getPaymentMethodFromSession,
   initiateQuickBooksOAuth,
@@ -391,15 +397,43 @@ export const useAdminOrders = (
     ...options,
   });
 
+/**
+ * Get user orders with payment status (enhanced with filtering, sorting, pagination)
+ */
 export const useUserOrders = (
+  params?: GetUserOrdersParams,
+  options?: UseQueryOptions<Awaited<ReturnType<typeof getUserOrders>>, Error>,
+) => {
+  return useQuery<Awaited<ReturnType<typeof getUserOrders>>, Error>({
+    queryKey: ["userOrders", params],
+    queryFn: () => getUserOrders(params),
+    staleTime: 10000, // 10 seconds
+    refetchInterval: (query) => {
+      // Poll every 30 seconds if there are pending orders
+      const data = query.state.data as
+        | Awaited<ReturnType<typeof getUserOrders>>
+        | undefined;
+      if (data?.data.some((order) => order.paymentStatus === "PENDING")) {
+        return 30000;
+      }
+      return false;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Legacy useUserOrders for backward compatibility (without params)
+ */
+export const useUserOrdersLegacy = (
   options?: UseQueryOptions<
-    Awaited<ReturnType<typeof api.order.userList>>["data"],
+    Awaited<ReturnType<typeof getUserOrdersLegacy>>,
     Error
   >,
 ) =>
-  useQuery<Awaited<ReturnType<typeof api.order.userList>>["data"], Error>({
-    queryKey: ["userOrders"],
-    queryFn: getUserOrders,
+  useQuery<Awaited<ReturnType<typeof getUserOrdersLegacy>>, Error>({
+    queryKey: ["userOrders", "legacy"],
+    queryFn: getUserOrdersLegacy,
     ...options,
   });
 // update admin order status
@@ -1397,3 +1431,101 @@ export const useSubmitDraft = (
     ...options,
   });
 };
+
+// --- Payment Status Hooks ---
+
+/**
+ * Get order payment status (query with polling if pending)
+ */
+export const useOrderPaymentStatus = (
+  orderId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getOrderPaymentStatus>>,
+    Error
+  >,
+) => {
+  return useQuery<Awaited<ReturnType<typeof getOrderPaymentStatus>>, Error>({
+    queryKey: ["orderPaymentStatus", orderId],
+    queryFn: () => getOrderPaymentStatus(orderId!),
+    enabled: !!orderId,
+    staleTime: 5000, // 5 seconds
+    refetchInterval: (query) => {
+      const data = query.state.data as
+        | Awaited<ReturnType<typeof getOrderPaymentStatus>>
+        | undefined;
+      // Poll every 5 seconds if payment is pending
+      if (data?.paymentStatus === "PENDING") {
+        return 5000;
+      }
+      // Stop polling for other statuses
+      return false;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Check if quote can proceed (query)
+ */
+export const useQuoteCanProceed = (
+  quoteId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof checkQuoteCanProceed>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof checkQuoteCanProceed>>, Error>({
+    queryKey: ["quoteCanProceed", quoteId],
+    queryFn: () => checkQuoteCanProceed(quoteId!),
+    enabled: !!quoteId,
+    staleTime: 10000, // 10 seconds
+    ...options,
+  });
+
+/**
+ * Proceed to next step (mutation - validates payment)
+ */
+export const useProceedToNextStep = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof proceedToNextStep>>,
+    Error,
+    string // orderId
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof proceedToNextStep>>,
+    Error,
+    string
+  >({
+    mutationFn: (orderId) => proceedToNextStep(orderId),
+    onSuccess: (data, orderId) => {
+      // Invalidate payment status and orders
+      queryClient.invalidateQueries({
+        queryKey: ["orderPaymentStatus", orderId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["userOrders"] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Get order payment details
+ */
+export const useOrderPaymentDetails = (
+  orderId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getOrderPaymentDetails>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getOrderPaymentDetails>>, Error>({
+    queryKey: ["orderPaymentDetails", orderId],
+    queryFn: () => getOrderPaymentDetails(orderId!),
+    enabled: !!orderId,
+    staleTime: 30000, // 30 seconds
+    ...options,
+  });
