@@ -601,6 +601,7 @@ export const createUserPayment = async (data: {
 export const createStripeCheckout = async (data: {
   quoteId: string;
   currency?: string;
+  idempotencyKey?: string;
 }): Promise<{
   success: boolean;
   data: {
@@ -732,6 +733,64 @@ export const getPaymentMethodFromSession = async (
   const res = await apiClient.get(
     `/stripe/session/${sessionId}/payment-method`,
   );
+  return res.data;
+};
+
+// Get payment ID from Stripe session
+export const getPaymentIdFromSession = async (
+  sessionId: string,
+): Promise<{
+  success: boolean;
+  data: {
+    paymentId: string;
+    sessionId: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get(`/stripe/session/${sessionId}/payment-id`);
+  return res.data;
+};
+
+// --- Receipt API Functions ---
+
+// Get receipt download URL
+export const getPaymentReceipt = async (
+  paymentId: string,
+): Promise<{
+  success: boolean;
+  data: {
+    receiptUrl: string;
+    receiptGeneratedAt?: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get(`/payments/${paymentId}/receipt`);
+  return res.data;
+};
+
+// Generate receipt for payment
+export const generatePaymentReceipt = async (
+  paymentId: string,
+): Promise<{
+  success: boolean;
+  data: {
+    receiptUrl: string;
+    receiptGeneratedAt: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post(`/payments/${paymentId}/receipt/generate`);
+  return res.data;
+};
+
+// Email receipt to user
+export const emailPaymentReceipt = async (
+  paymentId: string,
+): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  const res = await apiClient.post(`/payments/${paymentId}/receipt/email`);
   return res.data;
 };
 

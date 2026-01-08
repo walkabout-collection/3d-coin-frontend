@@ -2,8 +2,15 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Download, Loader2 } from "lucide-react";
 import SaveCardAfterCheckout from "@/src/components/SaveCardAfterCheckout";
+import {
+  usePaymentReceipt,
+  useGeneratePaymentReceipt,
+  usePaymentIdFromSession,
+} from "@/src/hooks/useQueries";
+import { usePaymentMethodFromSession } from "@/src/hooks/useQueries";
+import { toast } from "react-toastify";
 
 const PaymentSuccessPage = () => {
   const searchParams = useSearchParams();
@@ -11,6 +18,28 @@ const PaymentSuccessPage = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showSaveCard, setShowSaveCard] = useState(true);
   const [cardSaved, setCardSaved] = useState(false);
+
+  // Get payment ID from session
+  const { data: paymentIdData } = usePaymentIdFromSession(sessionId);
+  const paymentId = paymentIdData?.data?.paymentId;
+
+  // Get receipt for this payment
+  const { data: receiptData, isLoading: isLoadingReceipt } = usePaymentReceipt(
+    paymentId || null,
+  );
+  const { mutate: generateReceipt, isPending: isGenerating } =
+    useGeneratePaymentReceipt({
+      onSuccess: (data) => {
+        if (data.success && data.data.receiptUrl) {
+          window.open(data.data.receiptUrl, "_blank");
+          toast.success("Receipt generated successfully");
+        }
+      },
+      onError: (error) => {
+        const msg = error instanceof Error ? error.message : String(error);
+        toast.error(msg || "Failed to generate receipt");
+      },
+    });
 
   // Check if user is logged in
   const getCookie = (name: string): string | null => {
@@ -69,6 +98,66 @@ const PaymentSuccessPage = () => {
             <p className="text-green-800 text-sm">
               ✓ Your card has been saved successfully!
             </p>
+          </div>
+        )}
+
+        {/* Receipt Section */}
+        {paymentId && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-1">
+                  Payment Receipt
+                </h3>
+                {isLoadingReceipt ? (
+                  <p className="text-blue-700 text-sm flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking receipt status...
+                  </p>
+                ) : receiptData?.data?.receiptUrl ? (
+                  <p className="text-blue-700 text-sm">
+                    Receipt is ready for download
+                  </p>
+                ) : (
+                  <p className="text-blue-700 text-sm">
+                    Receipt will be generated automatically
+                  </p>
+                )}
+              </div>
+              <div>
+                {receiptData?.data?.receiptUrl ? (
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      window.open(receiptData.data.receiptUrl, "_blank")
+                    }
+                    className="rounded-full py-2 px-4 text-sm flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Receipt
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    onClick={() => generateReceipt(paymentId)}
+                    disabled={isGenerating}
+                    className="rounded-full py-2 px-4 text-sm flex items-center gap-2"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Generate Receipt
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

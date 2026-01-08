@@ -8,6 +8,12 @@ import { useUserQuotes, useCreateStripeCheckout } from "@/src/hooks/useQueries";
 import Button from "@/src/components/common/button/Button";
 import PayNowModal from "@/src/components/PayNowModal";
 import { toast } from "react-toastify";
+import {
+  generateIdempotencyKey,
+  storeIdempotencyKey,
+  getIdempotencyKey,
+  clearIdempotencyKey,
+} from "@/src/utils/idempotency";
 
 const Quotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,20 +23,42 @@ const Quotes: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const { data: quotesData, isPending, isError, refetch } = useUserQuotes();
+  const [processingQuoteId, setProcessingQuoteId] = useState<string | null>(
+    null,
+  );
+
   const { mutate: createStripeCheckout, isPending: isCreatingCheckout } =
     useCreateStripeCheckout({
-      onSuccess: (data) => {
+      onSuccess: (data, variables) => {
         if (data.success && data.data.url) {
+          // Clear idempotency key on successful checkout creation
+          clearIdempotencyKey(variables.quoteId);
+          setProcessingQuoteId(null);
           window.location.href = data.data.url; // Redirect to Stripe checkout
         }
       },
       onError: (error) => {
+        setProcessingQuoteId(null);
         const msg = error instanceof Error ? error.message : String(error);
-        if (msg.includes("already completed")) {
+
+        // Enhanced error handling
+        if (msg.includes("already completed") || msg.includes("already paid")) {
           toast.info("This quote has already been paid.");
           refetch();
+        } else if (msg.includes("duplicate") || msg.includes("idempotency")) {
+          toast.warning(
+            "A payment session is already being processed for this quote. Please wait.",
+          );
+        } else if (msg.includes("network") || msg.includes("timeout")) {
+          toast.error(
+            "Network error. Please check your connection and try again.",
+          );
+        } else if (msg.includes("rate limit")) {
+          toast.error("Too many requests. Please wait a moment and try again.");
         } else {
-          toast.error("Failed to create payment session.");
+          toast.error(
+            msg || "Failed to create payment session. Please try again.",
+          );
         }
       },
     });
@@ -91,13 +119,31 @@ const Quotes: React.FC = () => {
   };
 
   const handleStripePayment = (quote: Quote) => {
+    // Prevent duplicate submissions
+    if (processingQuoteId === quote.id || isCreatingCheckout) {
+      toast.warning("Payment is already being processed. Please wait.");
+      return;
+    }
+
     if (!quote.amount) {
       toast.error("Quote amount is missing. Please contact support.");
       return;
     }
+
+    // Set processing state
+    setProcessingQuoteId(quote.id);
+
+    // Generate or get existing idempotency key
+    let idempotencyKey = getIdempotencyKey(quote.id);
+    if (!idempotencyKey) {
+      idempotencyKey = generateIdempotencyKey(quote.id);
+      storeIdempotencyKey(quote.id, idempotencyKey);
+    }
+
     createStripeCheckout({
       quoteId: quote.id,
       currency: "usd",
+      idempotencyKey,
     });
   };
 
@@ -237,10 +283,12 @@ const Quotes: React.FC = () => {
                       <Button
                         variant="primary"
                         onClick={() => handleStripePayment(quote)}
-                        disabled={isCreatingCheckout}
+                        disabled={
+                          isCreatingCheckout || processingQuoteId === quote.id
+                        }
                         className="text-xs px-3 py-1 rounded-full max-w-[140px]"
                       >
-                        {isCreatingCheckout
+                        {isCreatingCheckout || processingQuoteId === quote.id
                           ? "Processing..."
                           : "Pay with Credit Card"}
                       </Button>

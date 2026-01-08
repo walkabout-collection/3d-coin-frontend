@@ -57,6 +57,10 @@ import {
   createQuickBooksInvoice,
   syncQuickBooksTransactions,
   getQuickBooksInvoiceStatus,
+  getPaymentReceipt,
+  generatePaymentReceipt,
+  getPaymentIdFromSession,
+  emailPaymentReceipt,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -868,5 +872,67 @@ export const useQuickBooksInvoiceStatus = (
       }
       return false;
     },
+    ...options,
+  });
+
+// --- Receipt Hooks ---
+
+// Get payment receipt
+export const usePaymentReceipt = (
+  paymentId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPaymentReceipt>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getPaymentReceipt>>, Error>({
+    queryKey: ["paymentReceipt", paymentId],
+    queryFn: () => getPaymentReceipt(paymentId!),
+    enabled: !!paymentId,
+    ...options,
+  });
+
+// Generate payment receipt mutation
+export const useGeneratePaymentReceipt = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof generatePaymentReceipt>>,
+    Error,
+    string
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof generatePaymentReceipt>>,
+    Error,
+    string
+  >({
+    mutationFn: (paymentId: string) => generatePaymentReceipt(paymentId),
+    ...options,
+  });
+
+// Get payment ID from Stripe session
+export const usePaymentIdFromSession = (
+  sessionId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPaymentIdFromSession>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getPaymentIdFromSession>>, Error>({
+    queryKey: ["paymentIdFromSession", sessionId],
+    queryFn: () => getPaymentIdFromSession(sessionId!),
+    enabled: !!sessionId,
+    ...options,
+  });
+
+// Email payment receipt mutation
+export const useEmailPaymentReceipt = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof emailPaymentReceipt>>,
+    Error,
+    string
+  >,
+) =>
+  useMutation<Awaited<ReturnType<typeof emailPaymentReceipt>>, Error, string>({
+    mutationFn: (paymentId: string) => emailPaymentReceipt(paymentId),
     ...options,
   });
