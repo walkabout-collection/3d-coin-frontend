@@ -1,11 +1,17 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Paperclip, X } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Paperclip, X, AlertCircle } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useGenerateCoinSide } from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
+import {
+  validateAIGenerationInput,
+  validateAIGenerationPrompt,
+  validateAIGenerationImageFile,
+  validateAIGenerationImageDimensions,
+} from "@/src/utils/validation";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -101,10 +107,45 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
       },
     });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Validate inputs
+  const handleValidate = useCallback(async () => {
+    const validation = await validateAIGenerationInput(
+      currentTab.prompt || undefined,
+      currentTab.attachedImage || undefined,
+      undefined,
+    );
+    setValidationErrors(validation.errors);
+    return validation.isValid;
+  }, [currentTab.prompt, currentTab.attachedImage]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file
+      const fileValidation = validateAIGenerationImageFile(file);
+      if (!fileValidation.isValid) {
+        setValidationErrors(fileValidation.errors);
+        toast.error(fileValidation.errors[0] || "Invalid file");
+        e.target.value = "";
+        return;
+      }
+
+      // Validate dimensions
+      const dimensionValidation =
+        await validateAIGenerationImageDimensions(file);
+      if (!dimensionValidation.isValid) {
+        setValidationErrors(dimensionValidation.errors);
+        toast.error(
+          dimensionValidation.errors[0] || "Invalid image dimensions",
+        );
+        e.target.value = "";
+        return;
+      }
+
       setAttachedImage(file);
+      setValidationErrors([]);
       toast.success("Image attached to prompt");
     }
   };
@@ -152,9 +193,16 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     return new File([u8arr], fileName, { type: mime });
   };
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     if (!currentTab.prompt && !currentTab.attachedImage && !currentTab.image) {
       toast.error("Please provide a prompt or attach an image");
+      return;
+    }
+
+    // Validate before submission
+    const isValid = await handleValidate();
+    if (!isValid && currentTab.prompt && currentTab.attachedImage) {
+      toast.error("Please fix validation errors");
       return;
     }
 
@@ -232,6 +280,25 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
               </button>
             </div>
 
+            {/* Validation Errors */}
+            {validationErrors.length > 0 && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-800 mb-1">
+                      Validation Errors:
+                    </p>
+                    <ul className="list-disc list-inside text-sm text-red-700">
+                      {validationErrors.map((err, index) => (
+                        <li key={index}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ChatGPT-style Prompt Box */}
             <div className="mb-8">
               <div className="w-full border-2 border-yellow-500 shadow-lg shadow-yellow-400/20 rounded-xl p-6 text-left flex flex-col">
@@ -257,12 +324,22 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                 {/* Prompt Textarea */}
                 <textarea
                   className="w-full bg-transparent outline-none resize-none text-base placeholder-gray-400 text-gray-800 leading-relaxed flex-1 min-h-[200px] pr-4 mb-4"
-                  placeholder={`Enter prompt for ${activeTab} image… `}
+                  placeholder={`Enter prompt for ${activeTab} image (10-1000 characters)… `}
                   value={currentTab.prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
+                  onChange={(e) => {
+                    setPrompt(e.target.value);
+                    setValidationErrors([]);
+                  }}
+                  onBlur={handleValidate}
                   onKeyDown={handleKeyDown}
+                  maxLength={1000}
                   style={{ maxHeight: "400px" }}
                 />
+                {currentTab.prompt && (
+                  <div className="text-xs text-gray-500 mb-2 text-right">
+                    {currentTab.prompt.length}/1000 characters
+                  </div>
+                )}
 
                 {/* Action Buttons Inside Prompt Box */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
@@ -279,7 +356,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
 
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleFileChange}
                     className="hidden"
                     id="image-upload"
@@ -289,7 +366,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                     className="!bg-blue-900 hover:!bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold text-sm max-w-[140px] flex items-center justify-center gap-2"
                     onClick={handleRegenerate}
                     variant="primary"
-                    disabled={isGenerating}
+                    disabled={isGenerating || validationErrors.length > 0}
                     type="button"
                   >
                     {isGenerating ? (

@@ -244,6 +244,123 @@ export const generateCompleteCoin = async (data: {
 
   return res.data;
 };
+
+// --- AI Generation API Functions (Queue-based) ---
+
+export interface GenerationRequest {
+  requestId: string;
+  status: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  queuePosition?: number;
+  message?: string;
+}
+
+export interface GenerationStatus {
+  requestId: string;
+  status: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  queuePosition?: number;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+  designId?: string;
+}
+
+export interface QueuePosition {
+  queuePosition: number;
+  activeRequests: number;
+  requests: Array<{
+    id: string;
+    status: string;
+    queuePosition?: number;
+    createdAt: string;
+  }>;
+  queueStats: {
+    total: number;
+    queued: number;
+    processing: number;
+    completed: number;
+    failed: number;
+  };
+}
+
+/**
+ * Generate coin design (with queue)
+ */
+export const generateCoinDesign = async (
+  prompt?: string,
+  imageFile?: File | null,
+  imageUrl?: string,
+): Promise<{
+  success: boolean;
+  data: GenerationRequest;
+  message?: string;
+}> => {
+  const formData = new FormData();
+
+  if (prompt) {
+    formData.append("prompt", prompt);
+  }
+
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
+  if (imageUrl) {
+    formData.append("imageUrl", imageUrl);
+  }
+
+  const res = await apiClient.post("/ai-flow/generate", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+};
+
+/**
+ * Get generation status
+ */
+export const getGenerationStatus = async (
+  requestId: string,
+): Promise<{
+  success: boolean;
+  data: GenerationStatus;
+  message?: string;
+}> => {
+  const res = await apiClient.get(`/ai-flow/generation-status/${requestId}`);
+  return res.data;
+};
+
+/**
+ * Get queue position
+ */
+export const getQueuePosition = async (): Promise<{
+  success: boolean;
+  data: QueuePosition;
+  message?: string;
+}> => {
+  const res = await apiClient.get("/ai-flow/queue-position");
+  return res.data;
+};
+
+/**
+ * Cancel generation request
+ */
+export const cancelGeneration = async (
+  requestId: string,
+): Promise<{
+  success: boolean;
+  data: {
+    requestId: string;
+    message: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post(`/ai-flow/cancel/${requestId}`);
+  return res.data;
+};
+
 // submit design
 
 export const createDesign = async (

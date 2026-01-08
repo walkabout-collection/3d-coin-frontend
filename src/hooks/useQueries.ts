@@ -73,6 +73,10 @@ import {
   getAdminQuickBooksUnmappedTransactions,
   mapAdminQuickBooksTransaction,
   retryAdminQuickBooksFailedSyncs,
+  generateCoinDesign,
+  getGenerationStatus,
+  getQueuePosition,
+  cancelGeneration,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -1141,6 +1145,116 @@ export const useRetryAdminQuickBooksFailedSyncs = (
     mutationFn: retryAdminQuickBooksFailedSyncs,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "quickbooks"] });
+    },
+    ...options,
+  });
+};
+
+// --- AI Generation Hooks (Queue-based) ---
+
+/**
+ * Generate coin design (mutation)
+ */
+export const useGenerateCoinDesign = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCoinDesign>>,
+    Error,
+    { prompt?: string; imageFile?: File | null; imageUrl?: string }
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof generateCoinDesign>>,
+    Error,
+    { prompt?: string; imageFile?: File | null; imageUrl?: string }
+  >({
+    mutationFn: ({ prompt, imageFile, imageUrl }) =>
+      generateCoinDesign(prompt, imageFile, imageUrl),
+    onSuccess: (data) => {
+      // Invalidate queue position
+      queryClient.invalidateQueries({ queryKey: ["ai", "queue-position"] });
+      // Start polling for status
+      if (data.data?.requestId) {
+        queryClient.setQueryData(
+          ["ai", "generation-status", data.data.requestId],
+          {
+            requestId: data.data.requestId,
+            status: data.data.status,
+            queuePosition: data.data.queuePosition,
+          },
+        );
+      }
+    },
+    ...options,
+  });
+};
+
+/**
+ * Get generation status (with polling)
+ */
+export const useGenerationStatus = (
+  requestId: string | null,
+  enabled: boolean = true,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGenerationStatus>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getGenerationStatus>>, Error>({
+    queryKey: ["ai", "generation-status", requestId],
+    queryFn: () => getGenerationStatus(requestId!),
+    enabled: enabled && !!requestId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.status;
+      // Poll every 2 seconds if queued or processing
+      if (status === "QUEUED" || status === "PROCESSING") {
+        return 2000;
+      }
+      // Stop polling if completed, failed, or cancelled
+      return false;
+    },
+    ...options,
+  });
+
+/**
+ * Get queue position
+ */
+export const useQueuePosition = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getQueuePosition>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getQueuePosition>>, Error>({
+    queryKey: ["ai", "queue-position"],
+    queryFn: getQueuePosition,
+    staleTime: 5000, // 5 seconds
+    refetchInterval: 10000, // Refresh every 10 seconds
+    ...options,
+  });
+
+/**
+ * Cancel generation (mutation)
+ */
+export const useCancelGeneration = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof cancelGeneration>>,
+    Error,
+    string
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof cancelGeneration>>,
+    Error,
+    string
+  >({
+    mutationFn: cancelGeneration,
+    onSuccess: () => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ["ai"] });
     },
     ...options,
   });
