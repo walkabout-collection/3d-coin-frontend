@@ -25,8 +25,13 @@ const Quotes: React.FC = () => {
         }
       },
       onError: (error) => {
-        console.error("Error creating Stripe checkout:", error);
-        toast.error("Failed to create payment session. Please try again.");
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes("already completed")) {
+          toast.info("This quote has already been paid.");
+          refetch();
+        } else {
+          toast.error("Failed to create payment session.");
+        }
       },
     });
 
