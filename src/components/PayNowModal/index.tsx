@@ -22,7 +22,7 @@ const PayNowModal: React.FC<ModalProps> = ({
   order,
   quote,
   price,
-  onConfirmPayment,
+  // removed unused onConfirmPayment
   onPaymentSuccess,
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);

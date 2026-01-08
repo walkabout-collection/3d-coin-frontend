@@ -447,7 +447,6 @@
 
 "use client";
 import React, { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
 import Button from "../common/button/Button";
 import { QAFormData } from "./types";
 import CoinUploadScreen from "./CoinUpload";
@@ -558,6 +557,7 @@ const AIGenerator: React.FC = () => {
   };
 
   const handleQASubmit = (data: QAFormData) => {
+    void data;
     // Data is already stored in Zustand via QAPromptsForm's onFormSubmit
     // Navigation is already handled in QAPromptsForm's onFormSubmit
     // This handler is kept for any additional logic if needed in the future
