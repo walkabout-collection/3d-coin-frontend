@@ -734,3 +734,139 @@ export const getPaymentMethodFromSession = async (
   );
   return res.data;
 };
+
+// --- QuickBooks Integration API ---
+
+// Initiate QuickBooks OAuth flow
+export const initiateQuickBooksOAuth = async (): Promise<{
+  success: boolean;
+  data: {
+    authUrl: string;
+    state: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/quickbooks/oauth/initiate");
+  return res.data;
+};
+
+// Handle QuickBooks OAuth callback
+export const handleQuickBooksCallback = async (data: {
+  code: string;
+  state: string;
+  realmId?: string;
+}): Promise<{
+  success: boolean;
+  data: {
+    connected: boolean;
+    companyName?: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/quickbooks/oauth/callback", data);
+  return res.data;
+};
+
+// Get QuickBooks connection status
+export const getQuickBooksConnectionStatus = async (): Promise<{
+  success: boolean;
+  data: {
+    connected: boolean;
+    companyName?: string;
+    companyId?: string;
+    connectedAt?: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get("/quickbooks/connection/status");
+  return res.data;
+};
+
+// Get QuickBooks transactions
+export const getQuickBooksTransactions = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{
+  success: boolean;
+  data: {
+    transactions: Array<{
+      id: string;
+      date: string;
+      amount: number;
+      description: string;
+      type: "INVOICE" | "PAYMENT" | "EXPENSE";
+      status: string;
+      customerName?: string;
+    }>;
+    total: number;
+    hasMore: boolean;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get("/quickbooks/transactions", { params });
+  return res.data;
+};
+
+// Disconnect QuickBooks account
+export const disconnectQuickBooks = async (): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  const res = await apiClient.post("/quickbooks/disconnect");
+  return res.data;
+};
+
+// Create QuickBooks invoice for a quote
+export const createQuickBooksInvoice = async (data: {
+  quoteId: string;
+  amount: number;
+}): Promise<{
+  success: boolean;
+  data: {
+    invoiceId: string;
+    invoiceNumber?: string;
+    quickbooksInvoiceId: string;
+    status: string;
+    paymentId: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/quickbooks/invoice/create", data);
+  return res.data;
+};
+
+// Sync QuickBooks transactions manually
+export const syncQuickBooksTransactions = async (): Promise<{
+  success: boolean;
+  data: {
+    syncedCount: number;
+    lastSyncAt: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/quickbooks/sync");
+  return res.data;
+};
+
+// Get QuickBooks invoice payment status
+export const getQuickBooksInvoiceStatus = async (
+  invoiceId: string,
+): Promise<{
+  success: boolean;
+  data: {
+    invoiceId: string;
+    quickbooksInvoiceId: string;
+    status: "PENDING" | "PAID" | "OVERDUE" | "CANCELLED";
+    amount: number;
+    amountPaid: number;
+    amountDue: number;
+    dueDate?: string;
+    paidDate?: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get(`/quickbooks/invoice/${invoiceId}/status`);
+  return res.data;
+};

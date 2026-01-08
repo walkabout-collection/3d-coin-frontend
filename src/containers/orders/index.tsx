@@ -4,6 +4,7 @@ import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
 import { OrderDataItem } from "./types";
 import PayNowModal from "@/src/components/PayNowModal";
+import QuickBooksPaymentModal from "@/src/components/QuickBooks/QuickBooksPaymentModal";
 import {
   useCreateUserPayment,
   useUserOrders,
@@ -51,6 +52,7 @@ const Orders = () => {
   const { data: orderData, isPending, isError } = useUserOrders();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQuickBooksModalOpen, setIsQuickBooksModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDataItem | null>(
     null,
   );
@@ -150,7 +152,12 @@ const Orders = () => {
     const originalOrder = row.originalOrder;
     if (originalOrder && "quotes" in originalOrder) {
       setSelectedOrder(originalOrder);
-      setIsModalOpen(true);
+      const paymentMethod = originalOrder.quotes?.[0]?.method?.toUpperCase();
+      if (paymentMethod === "QUICKBOOKS") {
+        setIsQuickBooksModalOpen(true);
+      } else {
+        setIsModalOpen(true);
+      }
     }
   };
 
@@ -192,9 +199,10 @@ const Orders = () => {
       variant: "primary",
       show: (row: DisplayDataItem) => {
         const originalOrder = row.originalOrder;
+        const paymentMethod = originalOrder?.quotes?.[0]?.method?.toUpperCase();
         return (
           originalOrder?.status === "PENDING" &&
-          originalOrder?.quotes?.[0]?.method === "MANUAL"
+          (paymentMethod === "MANUAL" || paymentMethod === "QUICKBOOKS")
         );
       },
     },
@@ -237,13 +245,38 @@ const Orders = () => {
         </div>
       )}
       {selectedOrder && (
-        <PayNowModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          order={selectedOrder}
-          price={selectedOrder.totalPrice || 0}
-          onConfirmPayment={handleConfirmPayment}
-        />
+        <>
+          <PayNowModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedOrder(null);
+            }}
+            order={selectedOrder}
+            price={selectedOrder.totalPrice || 0}
+            onConfirmPayment={handleConfirmPayment}
+            onPaymentSuccess={() => {
+              setIsModalOpen(false);
+              setSelectedOrder(null);
+            }}
+          />
+          <QuickBooksPaymentModal
+            isOpen={isQuickBooksModalOpen}
+            onClose={() => {
+              setIsQuickBooksModalOpen(false);
+              setSelectedOrder(null);
+            }}
+            quoteId={selectedOrder.quotes?.[0]?.id || ""}
+            amount={selectedOrder.totalPrice || 0}
+            orderId={selectedOrder.orderId}
+            onPaymentSuccess={() => {
+              setIsQuickBooksModalOpen(false);
+              setSelectedOrder(null);
+              // Refetch orders to update status
+              window.location.reload();
+            }}
+          />
+        </>
       )}
     </div>
   );

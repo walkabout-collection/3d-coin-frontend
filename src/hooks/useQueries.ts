@@ -49,6 +49,14 @@ import {
   setDefaultPaymentMethod,
   deleteSavedPaymentMethod,
   getPaymentMethodFromSession,
+  initiateQuickBooksOAuth,
+  handleQuickBooksCallback,
+  getQuickBooksConnectionStatus,
+  getQuickBooksTransactions,
+  disconnectQuickBooks,
+  createQuickBooksInvoice,
+  syncQuickBooksTransactions,
+  getQuickBooksInvoiceStatus,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -729,5 +737,136 @@ export const usePaymentMethodFromSession = (
     queryKey: ["paymentMethodFromSession", sessionId],
     queryFn: () => getPaymentMethodFromSession(sessionId!),
     enabled: !!sessionId,
+    ...options,
+  });
+
+// --- QuickBooks Integration Hooks ---
+
+// Initiate QuickBooks OAuth flow
+export const useInitiateQuickBooksOAuth = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof initiateQuickBooksOAuth>>,
+    Error,
+    void
+  >,
+) =>
+  useMutation<Awaited<ReturnType<typeof initiateQuickBooksOAuth>>, Error, void>(
+    {
+      mutationFn: () => initiateQuickBooksOAuth(),
+      ...options,
+    },
+  );
+
+// Handle QuickBooks OAuth callback
+export const useHandleQuickBooksCallback = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof handleQuickBooksCallback>>,
+    Error,
+    Parameters<typeof handleQuickBooksCallback>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof handleQuickBooksCallback>>,
+    Error,
+    Parameters<typeof handleQuickBooksCallback>[0]
+  >({
+    mutationFn: handleQuickBooksCallback,
+    ...options,
+  });
+
+// Get QuickBooks connection status
+export const useQuickBooksConnectionStatus = (
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getQuickBooksConnectionStatus>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getQuickBooksConnectionStatus>>, Error>({
+    queryKey: ["quickBooksConnectionStatus"],
+    queryFn: getQuickBooksConnectionStatus,
+    ...options,
+  });
+
+// Get QuickBooks transactions
+export const useQuickBooksTransactions = (
+  params?: Parameters<typeof getQuickBooksTransactions>[0],
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getQuickBooksTransactions>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getQuickBooksTransactions>>, Error>({
+    queryKey: ["quickBooksTransactions", params],
+    queryFn: () => getQuickBooksTransactions(params),
+    ...options,
+  });
+
+// Disconnect QuickBooks account
+export const useDisconnectQuickBooks = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectQuickBooks>>,
+    Error,
+    void
+  >,
+) =>
+  useMutation<Awaited<ReturnType<typeof disconnectQuickBooks>>, Error, void>({
+    mutationFn: () => disconnectQuickBooks(),
+    ...options,
+  });
+
+// Create QuickBooks invoice
+export const useCreateQuickBooksInvoice = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQuickBooksInvoice>>,
+    Error,
+    Parameters<typeof createQuickBooksInvoice>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof createQuickBooksInvoice>>,
+    Error,
+    Parameters<typeof createQuickBooksInvoice>[0]
+  >({
+    mutationFn: createQuickBooksInvoice,
+    ...options,
+  });
+
+// Sync QuickBooks transactions
+export const useSyncQuickBooksTransactions = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof syncQuickBooksTransactions>>,
+    Error,
+    void
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof syncQuickBooksTransactions>>,
+    Error,
+    void
+  >({
+    mutationFn: () => syncQuickBooksTransactions(),
+    ...options,
+  });
+
+// Get QuickBooks invoice status
+export const useQuickBooksInvoiceStatus = (
+  invoiceId: string | null,
+  options?: UseQueryOptions<
+    Awaited<ReturnType<typeof getQuickBooksInvoiceStatus>>,
+    Error
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getQuickBooksInvoiceStatus>>, Error>({
+    queryKey: ["quickBooksInvoiceStatus", invoiceId],
+    queryFn: () => getQuickBooksInvoiceStatus(invoiceId!),
+    enabled: !!invoiceId,
+    refetchInterval: (query) => {
+      // Poll every 10 seconds if invoice is still pending
+      const data = query.state.data;
+      if (data?.data?.status === "PENDING") {
+        return 10000;
+      }
+      return false;
+    },
     ...options,
   });
