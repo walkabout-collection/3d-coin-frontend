@@ -371,6 +371,186 @@ export const createDesign = async (
   return res.data;
 };
 
+// --- Draft Design API Functions ---
+
+export interface DraftDesign {
+  id: string;
+  userId: string;
+  name: string;
+  status: "DRAFT";
+  totalCoins?: number;
+  generatorPrompt?: string;
+  generatorImage?: string;
+  designerInstructions?: string;
+  frontImage?: string;
+  frontDescription?: string;
+  frontText?: string;
+  frontTextStyle?: string;
+  frontReference?: string;
+  frontReferenceImpact?: string;
+  frontComposition?: string;
+  backImage?: string;
+  backDescription?: string;
+  backText?: string;
+  backTextStyle?: string;
+  backReference?: string;
+  backReferenceImpact?: string;
+  backComposition?: string;
+  coinShape?: string;
+  subject?: string;
+  materialFinish?: string;
+  contrastStyle?: string;
+  detailLevel?: string;
+  prohibitedContent?: string;
+  createdAt: string;
+  updatedAt: string;
+  previewImage?: string;
+  variants?: Array<{
+    id: string;
+    imageUrl?: string;
+    imageBase64?: string;
+  }>;
+}
+
+export interface SaveDraftRequest {
+  name?: string;
+  totalCoins?: number;
+  generatorPrompt?: string;
+  generatorImage?: string;
+  designerInstructions?: string;
+  frontImage?: string;
+  frontDescription?: string;
+  frontText?: string;
+  frontTextStyle?: string;
+  frontReference?: string;
+  frontReferenceImpact?: string;
+  frontComposition?: string;
+  backImage?: string;
+  backDescription?: string;
+  backText?: string;
+  backTextStyle?: string;
+  backReference?: string;
+  backReferenceImpact?: string;
+  backComposition?: string;
+  coinShape?: string;
+  subject?: string;
+  materialFinish?: string;
+  contrastStyle?: string;
+  detailLevel?: string;
+  prohibitedContent?: string;
+}
+
+// Export for use in components
+export type {
+  SaveDraftRequest as SaveDraftRequestType,
+  SubmitDraftRequest as SubmitDraftRequestType,
+};
+
+export interface SubmitDraftRequest {
+  amount?: number;
+  method: "STRIPE" | "QUICKBOOKS" | "MANUAL";
+  feedback?: string;
+  packaging?: {
+    description?: string;
+    referenceImg?: string;
+    text?: string;
+  };
+}
+
+/**
+ * Save design as draft
+ */
+export const saveDraft = async (
+  data: SaveDraftRequest,
+): Promise<DraftDesign> => {
+  const res = await apiClient.post<ApiResponse<DraftDesign>>(
+    "/design/draft/create",
+    data,
+  );
+  return res.data.data;
+};
+
+/**
+ * Get all user drafts
+ */
+export const getUserDrafts = async (): Promise<DraftDesign[]> => {
+  const res =
+    await apiClient.get<ApiResponse<DraftDesign[]>>("/design/draft/list");
+  return res.data.data;
+};
+
+/**
+ * Get specific draft
+ */
+export const getDraft = async (draftId: string): Promise<DraftDesign> => {
+  const res = await apiClient.get<ApiResponse<DraftDesign>>(
+    `/design/draft/${draftId}`,
+  );
+  return res.data.data;
+};
+
+/**
+ * Update draft
+ */
+export const updateDraft = async (
+  draftId: string,
+  data: Partial<SaveDraftRequest>,
+): Promise<DraftDesign> => {
+  const res = await apiClient.put<ApiResponse<DraftDesign>>(
+    `/design/draft/${draftId}`,
+    data,
+  );
+  return res.data.data;
+};
+
+/**
+ * Delete draft
+ */
+export const deleteDraft = async (
+  draftId: string,
+): Promise<{ success: boolean; message: string }> => {
+  const res = await apiClient.delete<
+    ApiResponse<{
+      success: boolean;
+      message: string;
+    }>
+  >(`/design/draft/${draftId}`);
+  return res.data.data;
+};
+
+/**
+ * Quote data structure from draft submission
+ */
+export interface DraftQuote {
+  id: string;
+  designId: string;
+  amount?: number;
+  method: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Submit draft (convert to quote)
+ */
+export const submitDraft = async (
+  draftId: string,
+  data: SubmitDraftRequest,
+): Promise<{
+  design: DraftDesign;
+  quote: DraftQuote | null;
+}> => {
+  const res = await apiClient.post<
+    ApiResponse<{
+      design: DraftDesign;
+      quote: DraftQuote | null;
+    }>
+  >(`/design/draft/${draftId}/submit`, data);
+  return res.data.data;
+};
+
 // --- S3 Upload ---
 // Get presigned URL for uploading to S3
 export const getS3UploadUrl = async (data: {

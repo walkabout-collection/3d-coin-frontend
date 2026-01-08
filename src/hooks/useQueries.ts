@@ -77,6 +77,14 @@ import {
   getGenerationStatus,
   getQueuePosition,
   cancelGeneration,
+  saveDraft,
+  getUserDrafts,
+  getDraft,
+  updateDraft,
+  deleteDraft,
+  submitDraft,
+  type SaveDraftRequest,
+  type SubmitDraftRequest,
 } from "@/src/services/apiServices";
 import { Api } from "../services/api/apiTypes";
 
@@ -1255,6 +1263,136 @@ export const useCancelGeneration = (
     onSuccess: () => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ["ai"] });
+    },
+    ...options,
+  });
+};
+
+// --- Draft Hooks ---
+
+/**
+ * Save draft (mutation)
+ */
+export const useSaveDraft = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveDraft>>,
+    Error,
+    Parameters<typeof saveDraft>[0]
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof saveDraft>>,
+    Error,
+    Parameters<typeof saveDraft>[0]
+  >({
+    mutationFn: saveDraft,
+    onSuccess: () => {
+      // Invalidate drafts list
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Get all user drafts
+ */
+export const useUserDrafts = (
+  options?: UseQueryOptions<Awaited<ReturnType<typeof getUserDrafts>>, Error>,
+) =>
+  useQuery<Awaited<ReturnType<typeof getUserDrafts>>, Error>({
+    queryKey: ["drafts"],
+    queryFn: getUserDrafts,
+    staleTime: 30000, // 30 seconds
+    ...options,
+  });
+
+/**
+ * Get specific draft
+ */
+export const useDraft = (
+  draftId: string | null,
+  options?: UseQueryOptions<Awaited<ReturnType<typeof getDraft>>, Error>,
+) =>
+  useQuery<Awaited<ReturnType<typeof getDraft>>, Error>({
+    queryKey: ["draft", draftId],
+    queryFn: () => getDraft(draftId!),
+    enabled: !!draftId,
+    staleTime: 30000,
+    ...options,
+  });
+
+/**
+ * Update draft (mutation)
+ */
+export const useUpdateDraft = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateDraft>>,
+    Error,
+    { draftId: string; data: Partial<SaveDraftRequest> }
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof updateDraft>>,
+    Error,
+    { draftId: string; data: Partial<SaveDraftRequest> }
+  >({
+    mutationFn: ({ draftId, data }) => updateDraft(draftId, data),
+    onSuccess: (data, variables) => {
+      // Invalidate specific draft and list
+      queryClient.invalidateQueries({ queryKey: ["draft", variables.draftId] });
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Delete draft (mutation)
+ */
+export const useDeleteDraft = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDraft>>,
+    Error,
+    string
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Awaited<ReturnType<typeof deleteDraft>>, Error, string>({
+    mutationFn: deleteDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Submit draft (mutation)
+ */
+export const useSubmitDraft = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitDraft>>,
+    Error,
+    { draftId: string; data: SubmitDraftRequest }
+  >,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof submitDraft>>,
+    Error,
+    { draftId: string; data: SubmitDraftRequest }
+  >({
+    mutationFn: ({ draftId, data }) => submitDraft(draftId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
     },
     ...options,
   });

@@ -9,7 +9,11 @@ import {
   useCoinDesignStore,
   useQAPromptsStore,
 } from "@/src/store/useCoinStore";
-import { useCreateDesign } from "@/src/hooks/useQueries";
+import {
+  useCreateDesign,
+  useSaveDraft,
+  useUpdateDraft,
+} from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import { useRouter } from "next/navigation";
@@ -30,7 +34,13 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   loading = false,
 }) => {
   const router = useRouter();
-  const { front, back } = useCoinDesignStore();
+  const {
+    front,
+    back,
+    currentDraftId,
+    setCurrentDraftId,
+    getDesignDataForDraft,
+  } = useCoinDesignStore();
   const { formData } = useQAPromptsStore();
   const frontImage = front.image?.url || "/images/home/front-side.png";
   const backImage = back.image?.url || "/images/home/front-side.png";
@@ -75,7 +85,39 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
     },
   });
 
+  const saveDraftMutation = useSaveDraft({
+    onSuccess: (data) => {
+      setCurrentDraftId(data.id);
+      toast.success("Draft saved successfully!");
+      setIsProcessing(false);
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save draft";
+      toast.error(errorMessage);
+      setIsProcessing(false);
+    },
+  });
+
+  const updateDraftMutation = useUpdateDraft({
+    onSuccess: () => {
+      toast.success("Draft updated successfully!");
+      setIsProcessing(false);
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update draft";
+      toast.error(errorMessage);
+      setIsProcessing(false);
+    },
+  });
+
   const handleSaveAsDraft = async () => {
+    if (!isLoggedIn) {
+      toast.error("Please log in to save drafts");
+      return;
+    }
+
     if (onSaveAsDraft) {
       setIsProcessing(true);
       try {
@@ -83,6 +125,31 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       } finally {
         setIsProcessing(false);
       }
+      return;
+    }
+
+    // Direct save implementation
+    setIsProcessing(true);
+    try {
+      const designData = getDesignDataForDraft();
+      // Note: QA prompts data would need to be mapped to appropriate fields
+      // For now, using the flat structure directly
+
+      if (currentDraftId) {
+        // Update existing draft
+        updateDraftMutation.mutate({
+          draftId: currentDraftId,
+          data: designData,
+        });
+      } else {
+        // Create new draft
+        saveDraftMutation.mutate(designData);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save draft";
+      toast.error(errorMessage);
+      setIsProcessing(false);
     }
   };
 

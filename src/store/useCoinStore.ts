@@ -36,6 +36,7 @@ interface TabState {
 interface CoinDesignStore {
   // Design ID from backend
   designId: string | null;
+  currentDraftId: string | null; // Track current draft ID
 
   // Tab states
   front: TabState;
@@ -44,6 +45,7 @@ interface CoinDesignStore {
 
   // Actions - Design ID
   setDesignId: (id: string) => void;
+  setCurrentDraftId: (draftId: string | null) => void;
 
   // Actions - Front Tab
   setFrontImage: (imageUrl: string) => void;
@@ -64,6 +66,25 @@ interface CoinDesignStore {
   addAdditionalVariant: (imageUrl: string) => void;
   removeAdditionalVariant: (imageId: string) => void;
 
+  // Draft Actions
+  getDesignDataForDraft: () => {
+    name?: string;
+    generatorPrompt?: string;
+    generatorImage?: string;
+    frontDescription?: string;
+    frontImage?: string;
+    backDescription?: string;
+    backImage?: string;
+  };
+  loadDraftData: (draftData: {
+    generatorPrompt?: string;
+    generatorImage?: string;
+    frontDescription?: string;
+    frontImage?: string;
+    backDescription?: string;
+    backImage?: string;
+  }) => void;
+
   // Utility
   reset: () => void;
 }
@@ -76,14 +97,17 @@ const initialTabState: TabState = {
 
 export const useCoinDesignStore = create<CoinDesignStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       designId: null,
+      currentDraftId: null,
       front: initialTabState,
       back: initialTabState,
       additionalVariants: [],
 
       // ============ DESIGN ID ACTION ============
       setDesignId: (id: string) => set({ designId: id }),
+      setCurrentDraftId: (draftId: string | null) =>
+        set({ currentDraftId: draftId }),
 
       // ============ FRONT TAB ACTIONS ============
       setFrontImage: (imageUrl: string) =>
@@ -239,10 +263,70 @@ export const useCoinDesignStore = create<CoinDesignStore>()(
           ),
         })),
 
+      // ============ DRAFT ACTIONS ============
+      getDesignDataForDraft: () => {
+        const state = get();
+        // Transform to flat API structure
+        return {
+          name: `AI Generator Draft - ${new Date().toLocaleDateString()}`,
+          generatorPrompt: state.front.prompt || state.back.prompt || undefined,
+          generatorImage:
+            state.front.image?.url || state.back.image?.url || undefined,
+          frontDescription: state.front.prompt || undefined,
+          frontImage: state.front.image?.url || undefined,
+          backDescription: state.back.prompt || undefined,
+          backImage: state.back.image?.url || undefined,
+        };
+      },
+      loadDraftData: (draftData: {
+        generatorPrompt?: string;
+        generatorImage?: string;
+        frontDescription?: string;
+        frontImage?: string;
+        backDescription?: string;
+        backImage?: string;
+      }) => {
+        set({
+          designId: null, // Will be set when draft is loaded
+          front: draftData.frontImage
+            ? {
+                ...initialTabState,
+                image: {
+                  id: `front-${Date.now()}`,
+                  url: draftData.frontImage,
+                  timestamp: Date.now(),
+                },
+                prompt:
+                  draftData.frontDescription || draftData.generatorPrompt || "",
+              }
+            : {
+                ...initialTabState,
+                prompt:
+                  draftData.frontDescription || draftData.generatorPrompt || "",
+              },
+          back: draftData.backImage
+            ? {
+                ...initialTabState,
+                image: {
+                  id: `back-${Date.now()}`,
+                  url: draftData.backImage,
+                  timestamp: Date.now(),
+                },
+                prompt: draftData.backDescription || "",
+              }
+            : {
+                ...initialTabState,
+                prompt: draftData.backDescription || "",
+              },
+          additionalVariants: [],
+        });
+      },
+
       // ============ UTILITY ============
       reset: () =>
         set({
           designId: null,
+          currentDraftId: null,
           front: initialTabState,
           back: initialTabState,
           additionalVariants: [],
@@ -253,6 +337,7 @@ export const useCoinDesignStore = create<CoinDesignStore>()(
       // Persist everything except File objects (can't be serialized)
       partialize: (state) => ({
         designId: state.designId,
+        currentDraftId: state.currentDraftId,
         front: {
           ...state.front,
           attachedImage: null, // Don't persist File objects

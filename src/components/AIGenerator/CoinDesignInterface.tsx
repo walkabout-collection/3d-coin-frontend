@@ -4,11 +4,14 @@ import { Paperclip, X, AlertCircle } from "lucide-react";
 import Button from "../common/button/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { useGenerateCoinSide } from "@/src/hooks/useQueries";
+import {
+  useGenerateCoinSide,
+  useSaveDraft,
+  useUpdateDraft,
+} from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
 import {
   validateAIGenerationInput,
-  validateAIGenerationPrompt,
   validateAIGenerationImageFile,
   validateAIGenerationImageDimensions,
 } from "@/src/utils/validation";
@@ -49,6 +52,9 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     replaceFrontImage,
     replaceBackImage,
     removeAdditionalVariant,
+    currentDraftId,
+    setCurrentDraftId,
+    getDesignDataForDraft,
   } = useCoinDesignStore();
 
   const currentTab = activeTab === "front" ? front : back;
@@ -246,8 +252,53 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     onContinue(frontUrls, backUrls);
   };
 
-  const handleSaveDraft = () => {
-    toast.info("Draft saved!");
+  const saveDraftMutation = useSaveDraft({
+    onSuccess: (data) => {
+      setCurrentDraftId(data.id);
+      toast.success("Draft saved successfully!");
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save draft";
+      toast.error(errorMessage);
+    },
+  });
+
+  const updateDraftMutation = useUpdateDraft({
+    onSuccess: () => {
+      toast.success("Draft updated successfully!");
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update draft";
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleSaveDraft = async () => {
+    if (!isLoggedIn) {
+      toast.error("Please log in to save drafts");
+      return;
+    }
+
+    try {
+      const designData = getDesignDataForDraft();
+
+      if (currentDraftId) {
+        // Update existing draft
+        updateDraftMutation.mutate({
+          draftId: currentDraftId,
+          data: designData,
+        });
+      } else {
+        // Create new draft
+        saveDraftMutation.mutate(designData);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save draft";
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -469,9 +520,16 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                   type="button"
                   variant="ternary"
                   onClick={handleSaveDraft}
+                  disabled={
+                    saveDraftMutation.isPending || updateDraftMutation.isPending
+                  }
                   className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none"
                 >
-                  SAVE AS DRAFT
+                  {saveDraftMutation.isPending || updateDraftMutation.isPending
+                    ? "Saving..."
+                    : currentDraftId
+                      ? "UPDATE DRAFT"
+                      : "SAVE AS DRAFT"}
                 </Button>
               )}
 
