@@ -32,17 +32,24 @@ const DesignSummarySection = () => {
 
   const router = useRouter();
   const { mutate: createDesign, isPending } = useCreateDesign({
-    onSuccess: () => {
-      toast.success("Design submitted successfully!");
+    onSuccess: (_, variables) => {
+      const isDraft = variables.status === "DRAFT";
+      toast.success(
+        isDraft
+          ? "Design saved as draft successfully!"
+          : "Design submitted successfully!",
+      );
       setShowPaymentModal(false);
       setSelectedPayment(null);
       setAmount(null);
       setFeedback("");
-      router.push("/");
+      if (!isDraft) {
+        router.push("/");
+      }
     },
     onError: (err) => {
       console.error("CreateDesign error:", err);
-      toast.error("Failed to submit design: " + err.message);
+      toast.error("Failed to save design: " + err.message);
     },
   });
 
@@ -70,19 +77,28 @@ const DesignSummarySection = () => {
     paymentOption?: PaymentOption,
     amountValue?: number,
     email?: string,
+    status: "DRAFT" | "SUBMITTED" = "SUBMITTED",
   ) => {
     const payment = paymentOption || selectedPayment;
     const qty = amountValue !== undefined ? amountValue : amount;
 
-    console.log("handleSubmitForQuote called with:", { payment, qty, email });
+    console.log("handleSubmitForQuote called with:", {
+      payment,
+      qty,
+      email,
+      status,
+    });
 
-    if (!payment || qty === null) {
+    // For DRAFT status, we don't need payment or amount
+    if (status === "DRAFT") {
+      // Skip payment validation for drafts
+    } else if (!payment || qty === null) {
       console.log("Opening PaymentModal due to missing payment or amount");
       setShowPaymentModal(true);
       return;
     }
 
-    if (!isLoggedIn && !email) {
+    if (!isLoggedIn && !email && status !== "DRAFT") {
       console.log(
         "Opening PaymentModal due to missing email and not logged in",
       );
@@ -206,13 +222,12 @@ const DesignSummarySection = () => {
 
       const designData = {
         name: "Custom Coin Design",
-        status: "SUBMITTED" as const,
-        totalCoins: qty,
+        status: status,
+        totalCoins: status === "DRAFT" ? 0 : (qty ?? undefined),
         email: email || undefined,
-        method: payment.name.toUpperCase() as
-          | "STRIPE"
-          | "QUICKBOOKS"
-          | "MANUAL",
+        method: (status === "DRAFT"
+          ? "STRIPE"
+          : payment!.name.toUpperCase()) as "STRIPE" | "QUICKBOOKS" | "MANUAL",
         feedback: feedback || undefined,
         generatorPrompt:
           artwork.front.prompt || artwork.back.prompt || undefined,
@@ -249,7 +264,12 @@ const DesignSummarySection = () => {
     console.log("handlePaymentSelect called with:", { option, amount, email });
     setSelectedPayment(option);
     setAmount(amount);
-    handleSubmitForQuote(option, amount, email);
+    handleSubmitForQuote(option, amount, email, "SUBMITTED");
+  };
+
+  const handleSaveAsDraft = async () => {
+    // For draft, we don't need payment or amount, so we can call directly
+    await handleSubmitForQuote(undefined, undefined, undefined, "DRAFT");
   };
 
   const handleModalClose = () => {
@@ -426,15 +446,19 @@ const DesignSummarySection = () => {
           <Button
             type="button"
             variant="ternary"
+            onClick={handleSaveAsDraft}
             className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
+            disabled={isPending}
           >
-            SAVE AS DRAFT
+            {isPending ? "Saving..." : "SAVE AS DRAFT"}
           </Button>
         )}
         <Button
           type="button"
           variant="primary"
-          onClick={() => handleSubmitForQuote()}
+          onClick={() =>
+            handleSubmitForQuote(undefined, undefined, undefined, "SUBMITTED")
+          }
           className="max-w-[280px] w-full text-lg font-medium"
           disabled={isPending}
         >

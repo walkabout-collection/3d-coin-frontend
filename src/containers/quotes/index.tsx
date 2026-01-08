@@ -224,13 +224,13 @@ const Quotes: React.FC = () => {
               </div>
 
               <div className="flex flex-col items-center gap-2">
-                <button
+                {/* <button
                   onClick={() => viewQuote(quote.id)}
                   className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
                   title="View Quote"
                 >
                   <Eye size={22} />
-                </button>
+                </button> */}
                 {quote.status === "APPROVED" && quote.amount && (
                   <div className="flex flex-col gap-2 mt-2">
                     {quote.method === "STRIPE" && (
