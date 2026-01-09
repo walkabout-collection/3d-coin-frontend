@@ -1479,9 +1479,14 @@ export const useOrderPaymentStatus = (
  */
 export const useQuoteCanProceed = (
   quoteId: string | null,
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof checkQuoteCanProceed>>,
-    Error
+  options?: Omit<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof checkQuoteCanProceed>>,
+      Error,
+      Awaited<ReturnType<typeof checkQuoteCanProceed>>,
+      readonly unknown[]
+    >,
+    "queryKey" | "queryFn"
   >,
 ) =>
   useQuery<Awaited<ReturnType<typeof checkQuoteCanProceed>>, Error>({
