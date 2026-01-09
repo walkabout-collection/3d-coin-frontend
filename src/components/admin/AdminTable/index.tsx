@@ -122,15 +122,28 @@ function AdminTable<
     }
 
     if (String(column.key).toLowerCase().includes("status")) {
+      // Check if this is a payment history row with originalPaymentMethod
+      // Only allow editing if payment method is MANUAL
+      const rowWithPaymentMethod = row as T & {
+        originalPaymentMethod?: string;
+        orderId?: string;
+      };
+      const originalPaymentMethod = rowWithPaymentMethod.originalPaymentMethod;
+      const isEditable = originalPaymentMethod
+        ? originalPaymentMethod.toUpperCase() === "MANUAL"
+        : true; // Default to editable for other tables (backward compatibility)
+
       return (
         <StatusBadge
           status={String(value)}
-          editable={true}
+          editable={isEditable}
           onStatusChange={(newStatus) => {
-            if (row.id) {
+            // Use orderId if available (for payment history), otherwise use id
+            const identifier = rowWithPaymentMethod.orderId || row.id;
+            if (identifier) {
               updateStatus(
                 {
-                  orderId: row.id,
+                  orderId: identifier,
                   data: {
                     status: newStatus.toUpperCase() as
                       | "PENDING"

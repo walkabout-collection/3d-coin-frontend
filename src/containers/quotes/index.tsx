@@ -3,10 +3,9 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Quote } from "./types";
 import Search from "@/src/components/common/search";
 import SortDropdown from "@/src/components/common/SortDropdown";
-import { Eye } from "lucide-react";
 import { useUserQuotes, useCreateStripeCheckout } from "@/src/hooks/useQueries";
-import Button from "@/src/components/common/button/Button";
 import PayNowModal from "@/src/components/PayNowModal";
+import QuoteCard from "@/src/components/QuoteCard";
 import { toast } from "react-toastify";
 import {
   generateIdempotencyKey,
@@ -63,9 +62,26 @@ const Quotes: React.FC = () => {
       },
     });
 
-  useEffect(() => {
-    setSortedDataState(quotesData ?? []);
+  // Extract quotes array from response
+  const quotesArray: Quote[] = useMemo(() => {
+    if (!quotesData) return [];
+
+    // Handle both array and paginated response
+    if (Array.isArray(quotesData)) {
+      return quotesData as Quote[];
+    }
+
+    // If it's an object with data property
+    if (quotesData.data && Array.isArray(quotesData.data)) {
+      return quotesData.data as Quote[];
+    }
+
+    return [];
   }, [quotesData]);
+
+  useEffect(() => {
+    setSortedDataState(quotesArray);
+  }, [quotesArray]);
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort?.length) return dataToSort;
@@ -81,9 +97,9 @@ const Quotes: React.FC = () => {
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
         case "order_asc":
-          return a.orderId!.localeCompare(b.orderId!);
+          return (a.orderId || "").localeCompare(b.orderId || "");
         case "order_desc":
-          return b.orderId!.localeCompare(a.orderId!);
+          return (b.orderId || "").localeCompare(a.orderId || "");
         default:
           return 0;
       }
@@ -91,15 +107,20 @@ const Quotes: React.FC = () => {
   };
 
   useEffect(() => {
-    if (quotesData) {
-      setSortedDataState(sortData(quotesData, internalSort));
+    if (quotesArray.length > 0) {
+      setSortedDataState(sortData(quotesArray, internalSort));
+    } else {
+      setSortedDataState([]);
     }
-  }, [internalSort, quotesData]);
+  }, [internalSort, quotesArray]);
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return sortedDataState;
+    // Ensure we always return an array
+    const dataToFilter = sortedDataState || [];
 
-    return sortedDataState?.filter((row) =>
+    if (!searchTerm) return dataToFilter;
+
+    return dataToFilter.filter((row) =>
       Object.values(row).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase()),
       ),
@@ -112,10 +133,6 @@ const Quotes: React.FC = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-  };
-
-  const viewQuote = (id: string) => {
-    console.log(`Viewing quote ${id}`);
   };
 
   const handleStripePayment = (quote: Quote) => {
@@ -158,7 +175,19 @@ const Quotes: React.FC = () => {
     refetch();
   };
 
-  const getQuoteStatusDisplay = (status: string) => {
+  const getQuoteStatusDisplay = (
+    status: string,
+    paymentStatus?: string,
+    isPaid?: boolean,
+  ) => {
+    // If payment is successful, show paid status
+    if (isPaid || paymentStatus === "PAID" || paymentStatus === "SUCCESS") {
+      return {
+        text: "Payment Completed",
+        color: "bg-green-100 text-green-800",
+      };
+    }
+
     switch (status.toUpperCase()) {
       case "PENDING":
         return {
@@ -210,102 +239,21 @@ const Quotes: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        {filteredData?.length === 0 ? (
+        {!filteredData || filteredData.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">No quotes found</p>
           </div>
         ) : (
-          filteredData?.map((quote) => (
-            <div
+          filteredData.map((quote) => (
+            <QuoteCard
               key={quote.id}
-              className="bg-gray-100 p-6 rounded-lg flex justify-between items-center"
-            >
-              <div className="flex-1">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">Name:</span>
-                    <span className="text-sm text-gray-900">
-                      {quote.user?.firstName + " " + quote.user?.lastName}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">
-                      Order No:
-                    </span>
-                    <span className="text-sm text-gray-900">
-                      {quote.orderId ? (
-                        quote.orderId
-                      ) : (
-                        <span className="text-gray-500 italic">
-                          Pending Order Number
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">Email:</span>
-                    <span className="text-sm text-gray-900">
-                      {quote.email ?? quote.user?.email}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">
-                      Amount:
-                    </span>
-                    <span className="text-sm text-gray-900">
-                      {quote.amount ? `$${quote.amount.toFixed(2)}` : "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">
-                      Status:
-                    </span>
-                    <span
-                      className={`text-sm px-2 py-1 rounded ${getQuoteStatusDisplay(quote.status).color}`}
-                    >
-                      {getQuoteStatusDisplay(quote.status).text}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-2">
-                {/* <button
-                  onClick={() => viewQuote(quote.id)}
-                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
-                  title="View Quote"
-                >
-                  <Eye size={22} />
-                </button> */}
-                {quote.status === "APPROVED" && quote.amount && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    {quote.method === "STRIPE" && (
-                      <Button
-                        variant="primary"
-                        onClick={() => handleStripePayment(quote)}
-                        disabled={
-                          isCreatingCheckout || processingQuoteId === quote.id
-                        }
-                        className="text-xs px-3 py-1 rounded-full max-w-[140px]"
-                      >
-                        {isCreatingCheckout || processingQuoteId === quote.id
-                          ? "Processing..."
-                          : "Pay with Credit Card"}
-                      </Button>
-                    )}
-                    {quote.method === "MANUAL" && (
-                      <Button
-                        variant="primary"
-                        onClick={() => handleManualPayment(quote)}
-                        className="text-xs px-3 py-1 rounded-full max-w-[140px]"
-                      >
-                        Upload Payment Proof
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+              quote={quote}
+              isCreatingCheckout={isCreatingCheckout}
+              processingQuoteId={processingQuoteId}
+              onStripePayment={handleStripePayment}
+              onManualPayment={handleManualPayment}
+              getQuoteStatusDisplay={getQuoteStatusDisplay}
+            />
           ))
         )}
       </div>

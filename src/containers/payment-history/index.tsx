@@ -215,13 +215,21 @@ const PaymentHistory = () => {
 
   // Polling fallback when WebSocket is disconnected
   React.useEffect(() => {
-    if (!isConnected && orderHistoryData?.data) {
+    if (!isConnected && orderHistoryData) {
+      // Get the actual array from nested structure
+      const orderHistoryArray = Array.isArray(orderHistoryData?.data?.data)
+        ? orderHistoryData.data.data
+        : Array.isArray(orderHistoryData?.data)
+          ? orderHistoryData.data
+          : [];
+
       // Poll every 30 seconds for pending payments when WebSocket is disconnected
-      const pendingPayments = orderHistoryData.data.filter(
+      const pendingPayments = orderHistoryArray.filter(
         (payment) =>
           payment.status === "PENDING" ||
           payment.status === "SUBMITTED" ||
-          payment.status === "UPLOADED",
+          payment.status === "UPLOADED" ||
+          payment.paymentStatus === "PENDING",
       );
 
       if (pendingPayments.length > 0) {
@@ -308,16 +316,21 @@ const PaymentHistory = () => {
   };
 
   // Transform API data to table format
-  const paymentData: PaymentHistoryItem[] = orderHistoryData?.data
-    ? orderHistoryData.data.map((item) => ({
-        orderId: item.orderId,
-        paymentMethod: formatPaymentMethod(item.paymentMethod),
-        total: item.total,
-        date: formatDate(item.date),
-        status: item.status,
-        paymentId: item.paymentId || item.orderId, // Use orderId as fallback
-      }))
-    : [];
+  // Response structure: { success: true, data: { data: [...], pagination: {...} } }
+  const orderHistoryArray = Array.isArray(orderHistoryData?.data?.data)
+    ? orderHistoryData.data.data
+    : Array.isArray(orderHistoryData?.data)
+      ? orderHistoryData.data
+      : [];
+
+  const paymentData: PaymentHistoryItem[] = orderHistoryArray.map((item) => ({
+    orderId: item.orderId,
+    paymentMethod: formatPaymentMethod(item.paymentMethod),
+    total: item.total,
+    date: formatDate(item.date),
+    status: item.status || item.paymentStatus || "N/A",
+    paymentId: item.paymentId || item.orderId, // Use orderId as fallback
+  }));
 
   const paymentColumns: TableColumn<PaymentHistoryItem>[] = [
     { key: "paymentMethod", label: "Payment Method", width: "w-32" },
@@ -407,7 +420,9 @@ const PaymentHistory = () => {
     );
   }
 
-  const pagination = orderHistoryData?.pagination;
+  // Get pagination from nested structure
+  const pagination =
+    orderHistoryData?.data?.pagination || orderHistoryData?.pagination;
   const totalPages = pagination?.totalPages || 1;
   const currentPage = filters.page || 1;
 

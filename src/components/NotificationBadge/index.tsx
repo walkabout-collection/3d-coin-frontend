@@ -21,7 +21,7 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
   const queryClient = useQueryClient();
 
   // Connect to WebSocket for payment status updates
-  const { isConnected } = usePaymentStatusWebSocket(true);
+  usePaymentStatusWebSocket(true);
 
   // Get payment notifications
   const { data: notificationsData } = usePaymentNotifications();
@@ -35,8 +35,13 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
   });
 
   // Calculate unread count from API
-  const unreadCount =
-    notificationsData?.data?.filter((n) => !n.read).length || 0;
+  // Response structure: { success: true, data: { notifications: [...] } }
+  const notificationsArray = Array.isArray(
+    notificationsData?.data?.notifications,
+  )
+    ? notificationsData.data.notifications
+    : [];
+  const unreadCount = notificationsArray.filter((n) => !n.read).length;
 
   // Listen for payment status updates
   useEffect(() => {
@@ -71,8 +76,13 @@ const NotificationBadge: React.FC<NotificationBadgeProps> = ({
     setHasNewNotification(false);
 
     // Mark all unread notifications as read
-    const unreadNotifications =
-      notificationsData?.data?.filter((n) => !n.read) || [];
+    // Response structure: { success: true, data: { notifications: [...] } }
+    const notificationsArray = Array.isArray(
+      notificationsData?.data?.notifications,
+    )
+      ? notificationsData.data.notifications
+      : [];
+    const unreadNotifications = notificationsArray.filter((n) => !n.read);
     unreadNotifications.forEach((notification) => {
       markAsRead.mutate(notification.id);
     });

@@ -38,17 +38,24 @@ const formatDate = (dateString: string | undefined): string => {
 const AdminPaymentHistory = () => {
   const { data: orderHistoryData, isPending, isError } = useAdminOrderHistory();
 
-  const displayData: PaymentDataItem[] = orderHistoryData?.data
-    ? orderHistoryData.data.map((item) => ({
-        paymentMethod: formatPaymentMethod(item.paymentMethod),
-        orderTotal: `$${item.total.toFixed(2)}`,
-        date: formatDate(item.date),
-        orderId: item.orderId,
-        customer: item.customer,
-        customerEmail: item.customerEmail,
-        status: item.status,
-      }))
-    : [];
+  // Extract the actual array from nested structure: data.data
+  const historyArray =
+    orderHistoryData?.data?.data && Array.isArray(orderHistoryData.data.data)
+      ? orderHistoryData.data.data
+      : Array.isArray(orderHistoryData?.data)
+        ? orderHistoryData.data
+        : [];
+
+  const displayData: PaymentDataItem[] = historyArray.map((item) => ({
+    paymentMethod: formatPaymentMethod(item.paymentMethod),
+    originalPaymentMethod: item.paymentMethod, // Store original value for status edit check
+    orderTotal: `$${item.total.toFixed(2)}`,
+    date: formatDate(item.date),
+    orderId: item.orderId,
+    customer: item.customer,
+    customerEmail: item.customerEmail,
+    status: item.status || item.paymentStatus, // Support both field names
+  }));
 
   const paymentColumns: TableColumn<PaymentDataItem>[] = [
     {

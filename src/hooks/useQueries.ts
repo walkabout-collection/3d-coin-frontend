@@ -327,14 +327,15 @@ export const useAdminQuotes = (
   });
 
 export const useUserQuotes = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof api.quote.userList>>["data"],
-    Error
+  params?: Parameters<typeof getUserQuotes>[0],
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof getUserQuotes>>, Error>,
+    "queryKey" | "queryFn"
   >,
 ) =>
-  useQuery<Awaited<ReturnType<typeof api.quote.userList>>["data"], Error>({
-    queryKey: ["userQuotes"],
-    queryFn: getUserQuotes,
+  useQuery<Awaited<ReturnType<typeof getUserQuotes>>, Error>({
+    queryKey: ["userQuotes", params],
+    queryFn: () => getUserQuotes(params),
     ...options,
   });
 

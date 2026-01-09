@@ -38,31 +38,28 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
     const connectWebSocket = () => {
       try {
         // Get WebSocket URL from environment or use default
-        const wsUrl =
+        let wsUrl =
           process.env.NEXT_PUBLIC_WS_URL ||
           process.env.NEXT_PUBLIC_BASE_URL?.replace(/^http/, "ws") ||
           "ws://localhost:8000";
 
+        // Remove /api prefix if present (WebSocket endpoints typically don't use it)
+        wsUrl = wsUrl.replace(/\/api$/, "");
+
         const ws = new WebSocket(`${wsUrl}/ws/payment-status-updates`);
+
+        let pingInterval: NodeJS.Timeout | null = null;
 
         ws.onopen = () => {
           console.log("Payment status WebSocket connected");
           reconnectAttempts.current = 0;
 
-          // Send authentication token if available
-          const token = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("token="))
-            ?.split("=")[1];
-
-          if (token) {
-            ws.send(
-              JSON.stringify({
-                type: "auth",
-                token,
-              }),
-            );
-          }
+          // Start ping interval to keep connection alive (every 30 seconds)
+          pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "ping" }));
+            }
+          }, 30000);
         };
 
         ws.onmessage = (event) => {
@@ -126,12 +123,36 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
           }
         };
 
-        ws.onerror = (error) => {
-          console.error("Payment status WebSocket error:", error);
+        ws.onerror = () => {
+          // WebSocket error events don't provide detailed error info in the event object
+          // Only log errors in development to avoid console spam
+          // The reconnection logic will handle the retry automatically
+          if (process.env.NODE_ENV === "development") {
+            const readyStateText =
+              ws.readyState === WebSocket.CONNECTING
+                ? "CONNECTING"
+                : ws.readyState === WebSocket.OPEN
+                  ? "OPEN"
+                  : ws.readyState === WebSocket.CLOSING
+                    ? "CLOSING"
+                    : ws.readyState === WebSocket.CLOSED
+                      ? "CLOSED"
+                      : "UNKNOWN";
+
+            console.warn(
+              `Payment status WebSocket error - State: ${readyStateText}, URL: ${ws.url}. Will attempt to reconnect...`,
+            );
+          }
         };
 
         ws.onclose = () => {
           console.log("Payment status WebSocket disconnected");
+
+          // Stop ping interval
+          if (pingInterval) {
+            clearInterval(pingInterval);
+            pingInterval = null;
+          }
 
           // Attempt to reconnect with exponential backoff
           if (reconnectAttempts.current < maxReconnectAttempts) {
@@ -151,12 +172,8 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
             console.error(
               "Max WebSocket reconnection attempts reached. Please refresh the page.",
             );
-            toast.error(
-              "Connection lost. Please refresh the page to receive payment updates.",
-              {
-                autoClose: false,
-              },
-            );
+            // Don't show error toast - user can still use the app
+            // Payment status will refresh when navigating pages or manually refreshing
           }
         };
 

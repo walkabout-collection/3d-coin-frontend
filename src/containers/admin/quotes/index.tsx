@@ -66,7 +66,12 @@ const AdminQuotes: React.FC = () => {
   const [sortedDataState, setSortedDataState] = useState<Quote[]>([]);
   useEffect(() => {
     if (quotesData?.length) {
-      setSortedDataState(sortData(quotesData as Quote[], internalSort));
+      const nonApprovedQuotes = (quotesData as Quote[]).filter(
+        (quote) => quote.status?.toUpperCase() !== "APPROVED",
+      );
+      setSortedDataState(sortData(nonApprovedQuotes, internalSort));
+    } else {
+      setSortedDataState([]);
     }
   }, [quotesData, internalSort]);
 
@@ -147,35 +152,70 @@ const AdminQuotes: React.FC = () => {
     { value: "oldest", label: "Oldest To Newest" },
   ];
 
+  // Calculate dynamic counts (excluding APPROVED quotes)
+  const pendingQuotesCount = useMemo(() => {
+    if (!quotesData?.length) return 0;
+    return (quotesData as Quote[]).filter(
+      (quote) => quote.status?.toUpperCase() === "PENDING",
+    ).length;
+  }, [quotesData]);
+
+  const approveQuotesCount = useMemo(() => {
+    if (!quotesData?.length) return 0;
+    // Count quotes that are not APPROVED (can be approved)
+    return (quotesData as Quote[]).filter(
+      (quote) => quote.status?.toUpperCase() !== "APPROVED",
+    ).length;
+  }, [quotesData]);
+
   return (
     <div className="min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Quotes</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        {quotesCards.map((card) => (
-          <div
-            key={card.id}
-            className="bg-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-[#1a2a3a] rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                <div className="w-6 h-6 relative">
-                  <Image
-                    src={card.icon}
-                    alt={`${card.title} icon`}
-                    fill
-                    className="object-contain filter brightness-0 invert"
-                  />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  {card.title}
-                </h2>
-                <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+        <div className="bg-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-[#1a2a3a] rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+              <div className="w-6 h-6 relative">
+                <Image
+                  src={quotesCards[0].icon}
+                  alt="Pending Quotes icon"
+                  fill
+                  className="object-contain filter brightness-0 invert"
+                />
               </div>
             </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                {quotesCards[0].title}
+              </h2>
+              <p className="text-2xl font-bold text-gray-900">
+                {pendingQuotesCount}
+              </p>
+            </div>
           </div>
-        ))}
+        </div>
+        <div className="bg-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-[#1a2a3a] rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+              <div className="w-6 h-6 relative">
+                <Image
+                  src={quotesCards[1].icon}
+                  alt="Approve Quotes icon"
+                  fill
+                  className="object-contain filter brightness-0 invert"
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                {quotesCards[1].title}
+              </h2>
+              <p className="text-2xl font-bold text-gray-900">
+                {approveQuotesCount}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center justify-between mb-6 mt-10">

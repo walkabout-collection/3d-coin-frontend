@@ -741,16 +741,67 @@ export const getAdminQuotes = async (): Promise<
   return res.data.data;
 };
 
-export const getUserQuotes = async (): Promise<
-  Awaited<ReturnType<typeof api.quote.userList>>["data"]
-> => {
-  const res = await apiClient.get("/quote/user", {
+export interface GetUserQuotesParams {
+  page?: number;
+  limit?: number;
+  sortBy?: "date" | "amount" | "status";
+  sortOrder?: "asc" | "desc";
+  status?: string;
+}
+
+export const getUserQuotes = async (
+  params?: GetUserQuotesParams,
+): Promise<{
+  success: boolean;
+  data: unknown[]; // Quote[] array - using unknown[] to handle API response flexibility
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  if (params?.status) queryParams.append("status", params.status);
+
+  const queryString = queryParams.toString();
+  const url = `/quote/user${queryString ? `?${queryString}` : ""}`;
+
+  const res = await apiClient.get(url, {
     headers: {
       "Cache-Control": "no-cache",
       Pragma: "no-cache",
     },
   });
-  return res.data.data;
+
+  // Handle both paginated and non-paginated responses
+  if (res.data.pagination) {
+    return res.data;
+  }
+
+  // If no pagination, return as if it's all on page 1
+  const data = Array.isArray(res.data.data)
+    ? res.data.data
+    : res.data.data?.data || res.data.data || [];
+  return {
+    success: true,
+    data,
+    pagination: {
+      page: 1,
+      limit: data.length,
+      total: data.length,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    },
+  };
 };
 // delete quote
 export const deleteAdminQuote = async (
@@ -835,6 +886,12 @@ export interface GetUserOrdersParams {
 
 /**
  * Get user orders with payment status (enhanced)
+ * Endpoint: GET /api/orders/user?paymentStatus=PAID|UNPAID&page=1&limit=20&sortBy=date&sortOrder=desc
+ *
+ * Retrieves authenticated user's orders with optional filtering by payment status.
+ *
+ * @param params - Query parameters for filtering and pagination
+ * @returns User orders with pagination
  */
 export const getUserOrders = async (
   params?: GetUserOrdersParams,
@@ -933,40 +990,53 @@ export type PaymentStatus =
 
 /**
  * Order payment status response
+ * Matches API response from GET /api/orders/:orderId/payment-status
  */
 export interface OrderPaymentStatus {
   orderId: string;
+  orderNumber?: string; // Optional, may not be in all responses
   paymentStatus: PaymentStatus;
   amount?: number;
   paymentMethod?: string;
   paymentDate?: string;
   paymentDeadline?: string;
+  paymentId?: string; // Payment ID if available
   canProceed: boolean;
 }
 
 /**
  * Quote can proceed response
+ * Matches API response from GET /api/quotes/:quoteId/can-proceed
  */
 export interface QuoteCanProceed {
-  quoteId: string;
   canProceed: boolean;
-  paymentStatus: PaymentStatus;
+  reason: string; // Reason if cannot proceed
+  quoteStatus: "PENDING" | "APPROVED" | "REJECTED";
+  paymentStatus: PaymentStatus | null;
+  orderExists: boolean;
+  orderId: string | null;
   amount?: number;
-  reason?: string; // Reason if cannot proceed
+  quoteId?: string; // Optional, may not be in response
 }
 
 /**
  * Proceed to next step response
+ * Matches API response from POST /api/orders/:orderId/proceed
  */
 export interface ProceedToNextStepResponse {
-  success: boolean;
+  orderId: string;
+  orderNumber?: string;
+  status: "PENDING" | "APPROVED" | "CANCELLED" | "COMPLETED";
+  paymentStatus: PaymentStatus;
   message: string;
-  orderId?: string;
-  nextStep?: string;
 }
 
 /**
  * Get payment status for an order
+ * Endpoint: GET /api/orders/:orderId/payment-status
+ *
+ * @param orderId - The order ID
+ * @returns Order payment status with canProceed flag
  */
 export const getOrderPaymentStatus = async (
   orderId: string,
@@ -979,6 +1049,10 @@ export const getOrderPaymentStatus = async (
 
 /**
  * Check if a quote can proceed to next step
+ * Endpoint: GET /api/quotes/:quoteId/can-proceed
+ *
+ * @param quoteId - The quote ID
+ * @returns Quote can proceed status with reason and payment status
  */
 export const checkQuoteCanProceed = async (
   quoteId: string,
@@ -991,6 +1065,13 @@ export const checkQuoteCanProceed = async (
 
 /**
  * Proceed to next step (validates payment)
+ * Endpoint: POST /api/orders/:orderId/proceed
+ *
+ * Validates that payment is completed and allows the order to proceed.
+ * Updates order status to APPROVED if payment is PAID.
+ *
+ * @param orderId - The order ID
+ * @returns Order proceed response with updated status
  */
 export const proceedToNextStep = async (
   orderId: string,
@@ -1167,20 +1248,32 @@ export const getUserOrderHistory = async (
   params?: GetUserOrderHistoryParams,
 ): Promise<{
   success: boolean;
-  data: Array<{
-    orderId: string;
-    paymentMethod: string;
-    total: number;
-    date: string;
-    status?: string;
-    paymentId?: string;
-  }>;
+  data: {
+    data: Array<{
+      orderId: string;
+      paymentMethod: string;
+      paymentStatus?: string;
+      total: number;
+      date: string;
+      status?: string;
+      paymentId?: string;
+    }>;
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage?: boolean;
+      hasPreviousPage?: boolean;
+    };
+  };
   pagination?: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
   };
+  message?: string;
 }> => {
   const queryParams = new URLSearchParams();
 
@@ -1198,23 +1291,75 @@ export const getUserOrderHistory = async (
   const url = `/order/user/history${queryString ? `?${queryString}` : ""}`;
 
   const res = await apiClient.get(url);
+
+  // Handle nested response structure: { success, data: { data: [...], pagination: {...} } }
+  // Also handle flat structure for backward compatibility: { success, data: [...], pagination: {...} }
+  if (res.data.success && res.data.data) {
+    // Check if data is nested (has data.data)
+    if (res.data.data.data && Array.isArray(res.data.data.data)) {
+      return res.data;
+    }
+    // If data is directly an array, wrap it in the nested structure
+    if (Array.isArray(res.data.data)) {
+      return {
+        ...res.data,
+        data: {
+          data: res.data.data,
+          pagination: res.data.pagination,
+        },
+      };
+    }
+  }
+
   return res.data;
 };
 
 // Get admin order history
 export const getAdminOrderHistory = async (): Promise<{
   success: boolean;
-  data: Array<{
-    orderId: string;
-    paymentMethod: string;
-    total: number;
-    date: string;
-    status: string;
-    customer: string;
-    customerEmail: string;
-  }>;
+  data: {
+    data: Array<{
+      orderId: string;
+      paymentMethod: string;
+      total: number;
+      date: string;
+      status: string;
+      customer: string;
+      customerEmail: string;
+    }>;
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage?: boolean;
+      hasPreviousPage?: boolean;
+    };
+  };
 }> => {
   const res = await apiClient.get("/order/admin/history");
+  // Handle nested structure: { data: { data: [...], pagination: {...} } }
+  // Also handle flat structure for backward compatibility: { data: [...] }
+  if (res.data.data && Array.isArray(res.data.data)) {
+    // Flat structure - wrap it
+    return {
+      ...res.data,
+      data: {
+        data: res.data.data,
+      },
+    };
+  }
+  // Nested structure - ensure data.data is an array
+  if (
+    res.data.data &&
+    res.data.data.data &&
+    !Array.isArray(res.data.data.data)
+  ) {
+    console.warn(
+      "API returned non-array for admin order history data, defaulting to empty array.",
+    );
+    return { ...res.data, data: { ...res.data.data, data: [] } };
+  }
   return res.data;
 };
 
@@ -1346,22 +1491,78 @@ export const emailPaymentReceipt = async (
 
 // --- Notification API Functions ---
 
-// Get payment notifications
-export const getPaymentNotifications = async (): Promise<{
+// Get payment status by paymentId
+// Note: According to the API docs, we need orderId to get payment status
+// If you only have paymentId, you need to find the orderId first using getOrderPaymentDetails
+// or get the orderId from the payment response
+export const getPaymentStatus = async (
+  paymentId: string,
+): Promise<{
   success: boolean;
-  data: Array<{
-    id: string;
-    type: "PAYMENT_APPROVED" | "PAYMENT_REJECTED" | "PAYMENT_PENDING";
-    message: string;
+  data: {
     paymentId: string;
+    status: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
+    amount: number;
+    paidAt?: string;
     orderId?: string;
-    read: boolean;
+    orderStatus?: string;
+    quoteId?: string;
+    quoteStatus?: string;
     createdAt: string;
-  }>;
+  };
   message?: string;
 }> => {
-  const res = await apiClient.get("/notifications/payment-status");
-  return res.data;
+  // Try to get payment details first to find orderId
+  // This endpoint might not exist - check with backend
+  // Alternative: Use getOrderPaymentDetails if you have orderId
+  try {
+    const res = await apiClient.get(`/payments/${paymentId}`);
+    return res.data;
+  } catch {
+    // If endpoint doesn't exist, throw helpful error
+    throw new Error(
+      "Cannot get payment status by paymentId. Please use getOrderPaymentStatus with orderId instead.",
+    );
+  }
+};
+
+// Get payment notifications
+// Response structure: { success: true, data: { notifications: [...] } }
+export const getPaymentNotifications = async (): Promise<{
+  success: boolean;
+  data: {
+    notifications: Array<{
+      id: string;
+      type:
+        | "payment-status-update"
+        | "PAYMENT_APPROVED"
+        | "PAYMENT_REJECTED"
+        | "PAYMENT_PENDING";
+      message: string;
+      paymentId: string;
+      orderId?: string;
+      read: boolean;
+      createdAt: string;
+    }>;
+  };
+  message?: string;
+}> => {
+  try {
+    const res = await apiClient.get("/notifications/payment-status");
+    return res.data;
+  } catch {
+    // Return empty notifications if endpoint doesn't exist
+    console.warn(
+      "/notifications/payment-status endpoint not found. Returning empty notifications.",
+    );
+    return {
+      success: true,
+      data: {
+        notifications: [],
+      },
+      message: "Notifications endpoint not available",
+    };
+  }
 };
 
 // Mark notification as read

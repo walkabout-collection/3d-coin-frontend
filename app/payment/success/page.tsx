@@ -2,69 +2,35 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
-import { CheckCircle, Download, Loader2 } from "lucide-react";
-import SaveCardAfterCheckout from "@/src/components/SaveCardAfterCheckout";
-import {
-  usePaymentReceipt,
-  useGeneratePaymentReceipt,
-  usePaymentIdFromSession,
-} from "@/src/hooks/useQueries";
-import { usePaymentMethodFromSession } from "@/src/hooks/useQueries";
-import { toast } from "react-toastify";
+import { CheckCircle, Loader2 } from "lucide-react";
 
 const PaymentSuccessContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [showSaveCard, setShowSaveCard] = useState(true);
-  const [cardSaved, setCardSaved] = useState(false);
-
-  // Get payment ID from session
-  const { data: paymentIdData } = usePaymentIdFromSession(sessionId);
-  const paymentId = paymentIdData?.data?.paymentId;
 
   // Get receipt for this payment
-  const { data: receiptData, isLoading: isLoadingReceipt } = usePaymentReceipt(
-    paymentId || null,
-  );
-  const { mutate: generateReceipt, isPending: isGenerating } =
-    useGeneratePaymentReceipt({
-      onSuccess: (data) => {
-        if (data.success && data.data.receiptUrl) {
-          window.open(data.data.receiptUrl, "_blank");
-          toast.success("Receipt generated successfully");
-        }
-      },
-      onError: (error) => {
-        const msg = error instanceof Error ? error.message : String(error);
-        toast.error(msg || "Failed to generate receipt");
-      },
-    });
-
-  // Check if user is logged in
-  const getCookie = (name: string): string | null => {
-    if (typeof document === "undefined") return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-    return null;
-  };
-
-  const isLoggedIn = !!getCookie("token");
+  // const { data: receiptData, isLoading: isLoadingReceipt } = usePaymentReceipt(
+  //   paymentId || null,
+  // );
+  // const { mutate: generateReceipt, isPending: isGenerating } =
+  //   useGeneratePaymentReceipt({
+  //     onSuccess: (data) => {
+  //       if (data.success && data.data.receiptUrl) {
+  //         window.open(data.data.receiptUrl, "_blank");
+  //         toast.success("Receipt generated successfully");
+  //       }
+  //     },
+  //     onError: (error) => {
+  //       const msg = error instanceof Error ? error.message : String(error);
+  //       toast.error(msg || "Failed to generate receipt");
+  //     },
+  //   });
 
   useEffect(() => {
     const session_id = searchParams.get("session_id");
     setSessionId(session_id);
   }, [searchParams]);
-
-  const handleCardSaved = () => {
-    setCardSaved(true);
-    setShowSaveCard(false);
-  };
-
-  const handleSkip = () => {
-    setShowSaveCard(false);
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
@@ -83,7 +49,7 @@ const PaymentSuccessContent = () => {
         </div>
 
         {/* Show save card prompt for logged-in users with Stripe session */}
-        {showSaveCard && isLoggedIn && sessionId && (
+        {/* {showSaveCard && isLoggedIn && sessionId && (
           <div className="mb-6">
             <SaveCardAfterCheckout
               sessionId={sessionId}
@@ -99,10 +65,10 @@ const PaymentSuccessContent = () => {
               ✓ Your card has been saved successfully!
             </p>
           </div>
-        )}
+        )} */}
 
         {/* Receipt Section */}
-        {paymentId && (
+        {/* {paymentId && (
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -159,7 +125,7 @@ const PaymentSuccessContent = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         <div className="flex flex-col gap-3">
           <Button
