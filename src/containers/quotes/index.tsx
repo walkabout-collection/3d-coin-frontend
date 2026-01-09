@@ -181,7 +181,7 @@ const Quotes: React.FC = () => {
     isPaid?: boolean,
   ) => {
     // If payment is successful, show paid status
-    if (isPaid || paymentStatus === "PAID" || paymentStatus === "SUCCESS") {
+    if (isPaid || paymentStatus === "PAID") {
       return {
         text: "Payment Completed",
         color: "bg-green-100 text-green-800",

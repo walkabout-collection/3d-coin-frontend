@@ -41,7 +41,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
 
   const canProceed = canProceedData?.canProceed ?? false;
   const paymentStatus = canProceedData?.paymentStatus;
-  const isPaid = paymentStatus === "PAID" || paymentStatus === "SUCCESS";
+  const isPaid = paymentStatus === "PAID";
   const orderExists = canProceedData?.orderExists ?? false;
 
   // Determine if payment button should be shown

@@ -62,7 +62,7 @@ const ReceiptButton: React.FC<ReceiptButtonProps> = ({
   variant = "download",
 }) => {
   const { data: receiptData, isLoading: isLoadingReceipt } = usePaymentReceipt(
-    paymentStatus === "SUCCESS" ? paymentId : null,
+    paymentStatus === "PAID" ? paymentId : null,
   );
   const { mutate: generateReceipt, isPending: isGenerating } =
     useGeneratePaymentReceipt({
@@ -104,11 +104,7 @@ const ReceiptButton: React.FC<ReceiptButtonProps> = ({
   };
 
   // Only show for successful payments
-  if (
-    paymentStatus &&
-    paymentStatus !== "SUCCESS" &&
-    paymentStatus !== "APPROVED"
-  ) {
+  if (paymentStatus && paymentStatus !== "PAID") {
     return null;
   }
 
