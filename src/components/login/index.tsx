@@ -10,6 +10,7 @@ import Link from "next/link";
 import Input from "../common/input";
 import Button from "../common/button/Button";
 import { useLogin } from "@/src/hooks/useQueries";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -136,8 +137,20 @@ const Login = () => {
                 />
               </div>
 
-              <Button type="submit" variant="primary" disabled={isPending}>
-                {isPending ? "Logging In..." : "Continue"}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={isPending}
+                className="flex items-center justify-center gap-2"
+              >
+                {isPending ? (
+                  <>
+                    <LoadingSpinner size="sm" className="text-white" />
+                    <span>Logging In...</span>
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </Button>
             </form>
 

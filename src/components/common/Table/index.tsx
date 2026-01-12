@@ -5,6 +5,7 @@ import { TableProps, TableColumn } from "./types";
 import Search from "../search";
 import StatusBadge from "../StatusBadge";
 import SortDropdown from "../SortDropdown";
+import LoadingSpinner from "../LoadingSpinner";
 
 function Table<T extends Partial<{ date?: string; order?: string }> & object>({
   columns,
@@ -135,7 +136,10 @@ function Table<T extends Partial<{ date?: string; order?: string }> & object>({
                   colSpan={columns.length + (showActions ? 1 : 0)}
                   className="px-6 py-8 text-center"
                 >
-                  Loading...
+                  <div className="flex items-center justify-center gap-2">
+                    <LoadingSpinner size="md" className="text-blue-600" />
+                    <span className="text-gray-500">Loading...</span>
+                  </div>
                 </td>
               </tr>
             ) : filteredData.length === 0 ? (

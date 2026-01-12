@@ -65,12 +65,6 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
       <div className="flex-1">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-md font-bold text-black">Name:</span>
-            <span className="text-sm text-gray-900">
-              {quote.user?.firstName + " " + quote.user?.lastName}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
             <span className="text-md font-bold text-black">Order No:</span>
             <span className="text-sm text-gray-900">
               {quote.orderId ? (

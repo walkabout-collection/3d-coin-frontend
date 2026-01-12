@@ -95,15 +95,6 @@ const ViewQuoteModal: React.FC<ViewQuoteModalProps> = ({ id, onClose }) => {
               </p>
             </div>
 
-            {quote.user && (
-              <div>
-                <h3 className="font-semibold text-gray-700">User</h3>
-                <p>
-                  {quote.user.firstName} {quote.user.lastName}
-                </p>
-              </div>
-            )}
-
             <div>
               <h3 className="font-semibold ">Packaging</h3>
               <p>{quote.packaging ? "Yes" : "No"}</p>

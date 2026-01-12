@@ -362,37 +362,37 @@ const PaymentHistory = () => {
         );
       },
     },
-    {
-      key: "actions",
-      label: "Actions",
-      width: "w-32",
-      render: (_value, row) => {
-        return (
-          <div className="flex gap-2 items-center">
-            {row.paymentId && (
-              <Button
-                variant="ternary"
-                onClick={() => {
-                  setSelectedPaymentId(row.paymentId!);
-                  setIsTimelineModalOpen(true);
-                }}
-                className="text-xs px-2 py-1"
-              >
-                Timeline
-              </Button>
-            )}
-            {(row.status === "SUCCESS" || row.status === "APPROVED") &&
-              row.paymentId && (
-                <ReceiptButton
-                  paymentId={row.paymentId}
-                  paymentStatus={row.status}
-                  variant="download"
-                />
-              )}
-          </div>
-        );
-      },
-    },
+    // {
+    //   key: "actions",
+    //   label: "Actions",
+    //   width: "w-32",
+    //   render: (_value, row) => {
+    //     return (
+    //       <div className="flex gap-2 items-center">
+    //         {row.paymentId && (
+    //           <Button
+    //             variant="ternary"
+    //             onClick={() => {
+    //               setSelectedPaymentId(row.paymentId!);
+    //               setIsTimelineModalOpen(true);
+    //             }}
+    //             className="text-xs px-2 py-1"
+    //           >
+    //             Timeline
+    //           </Button>
+    //         )}
+    //         {(row.status === "SUCCESS" || row.status === "APPROVED") &&
+    //           row.paymentId && (
+    //             <ReceiptButton
+    //               paymentId={row.paymentId}
+    //               paymentStatus={row.status}
+    //               variant="download"
+    //             />
+    //           )}
+    //       </div>
+    //     );
+    //   },
+    // },
   ];
 
   if (isPending) {

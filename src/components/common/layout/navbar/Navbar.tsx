@@ -7,6 +7,7 @@ import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps } from "./types";
 import { useLogout, useGetUserProfile } from "@/src/hooks/useQueries";
 import NotificationBadge from "@/src/components/NotificationBadge";
+import { useQueryClient } from "@tanstack/react-query";
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
@@ -34,12 +35,29 @@ const Navbar: React.FC<NavbarProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const popupRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const previousLoggedInRef = useRef<boolean>(false);
 
   // Fetch user profile
-  const { data: userProfile } = useGetUserProfile({
+  const { data: userProfile, refetch: refetchProfile } = useGetUserProfile({
     queryKey: ["userProfile"],
     enabled: isLoggedIn,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always consider data stale to ensure fresh data
   });
+
+  // Refetch profile when user logs in
+  useEffect(() => {
+    if (isLoggedIn) {
+      // Small delay to ensure token is set in cookies
+      const timer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        refetchProfile();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoggedIn, queryClient, refetchProfile]);
 
   const { mutate: logout } = useLogout({
     onSuccess: () => {
@@ -56,13 +74,33 @@ const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
-      setIsLoggedIn(!!token);
+      const newLoggedIn = !!token;
+      const previousLoggedIn = previousLoggedInRef.current;
+
+      setIsLoggedIn(newLoggedIn);
+
+      // If user just logged in (wasn't logged in before, but now is), refetch profile
+      if (!previousLoggedIn && newLoggedIn) {
+        // Invalidate and refetch user profile
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        setTimeout(() => {
+          refetchProfile();
+        }, 100);
+      }
+
+      // Update ref for next check
+      previousLoggedInRef.current = newLoggedIn;
     };
+
+    // Initial check
+    const token = getCookie("token");
+    previousLoggedInRef.current = !!token;
+    setIsLoggedIn(!!token);
 
     checkAuth();
     window.addEventListener("authChanged", checkAuth);
     return () => window.removeEventListener("authChanged", checkAuth);
-  }, []);
+  }, [queryClient, refetchProfile]);
 
   useEffect(() => {
     const handleScroll = () => {

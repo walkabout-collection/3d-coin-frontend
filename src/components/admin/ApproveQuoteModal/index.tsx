@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useApproveAdminQuote } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
 import { Quote } from "@/src/containers/admin/quotes/types";
+import LoadingSpinner from "@/src/components/common/LoadingSpinner";
 interface ApproveQuoteModalProps {
   quote: Quote;
   onClose: () => void;
@@ -86,6 +87,11 @@ const ApproveQuoteModal: React.FC<ApproveQuoteModalProps> = ({
           <p>
             <strong>Email:</strong> {quote.email}
           </p>
+          {quote.totalCoins !== undefined && (
+            <p>
+              <strong>Coin Quantity:</strong> {quote.totalCoins}
+            </p>
+          )}
           <p>
             <strong>Current Status:</strong> {quote.status}
           </p>
@@ -126,9 +132,16 @@ const ApproveQuoteModal: React.FC<ApproveQuoteModalProps> = ({
             variant="primary"
             onClick={handleSubmit}
             disabled={approveMutation.isPending}
-            className="px-4 py-2 text-sm font-medium rounded-full max-w-[120px]"
+            className="px-4 py-2 text-sm font-medium rounded-full max-w-[120px] flex items-center justify-center gap-2"
           >
-            {approveMutation.isPending ? "Approving..." : "Approve"}
+            {approveMutation.isPending ? (
+              <>
+                <LoadingSpinner size="sm" className="text-white" />
+                <span>Approving...</span>
+              </>
+            ) : (
+              "Approve"
+            )}
           </Button>
         </div>
       </div>

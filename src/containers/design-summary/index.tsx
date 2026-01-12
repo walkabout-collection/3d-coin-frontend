@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import { useCreateDesign } from "@/src/hooks/useQueries";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import { uploadBase64ToS3 } from "@/src/services/apiServices";
+import LoadingSpinner from "@/src/components/common/LoadingSpinner";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -447,10 +448,17 @@ const DesignSummarySection = () => {
             type="button"
             variant="ternary"
             onClick={handleSaveAsDraft}
-            className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none"
+            className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none flex items-center justify-center gap-2"
             disabled={isPending}
           >
-            {isPending ? "Saving..." : "SAVE AS DRAFT"}
+            {isPending ? (
+              <>
+                <LoadingSpinner size="sm" className="text-gray-600" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              "SAVE AS DRAFT"
+            )}
           </Button>
         )}
         <Button
@@ -459,10 +467,17 @@ const DesignSummarySection = () => {
           onClick={() =>
             handleSubmitForQuote(undefined, undefined, undefined, "SUBMITTED")
           }
-          className="max-w-[280px] w-full text-lg font-medium"
-          disabled={isPending}
+          className="max-w-[280px] w-full text-lg font-medium flex items-center justify-center gap-2"
+          disabled={isPending || selectedButton === null}
         >
-          {isPending ? "Submitting..." : "SUBMIT FOR QUOTE"}
+          {isPending ? (
+            <>
+              <LoadingSpinner size="sm" className="text-white" />
+              <span>Submitting...</span>
+            </>
+          ) : (
+            "SUBMIT FOR QUOTE"
+          )}
         </Button>
       </div>
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import { paymentOptions } from "./data";
+import { usePaymentPreferences } from "@/src/hooks/useQueries";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -32,6 +33,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [email, setEmail] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Fetch payment preferences when logged in
+  const { data: preferencesData } = usePaymentPreferences({
+    enabled: isLoggedIn && isOpen,
+  });
+
   useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
@@ -44,6 +50,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       window.removeEventListener("authChanged", checkAuth);
     };
   }, []);
+
+  // Pre-select preferred payment method when modal opens and preferences are loaded
+  useEffect(() => {
+    if (isOpen && isLoggedIn && preferencesData?.data?.preferredPaymentMethod) {
+      const preferred = preferencesData.data.preferredPaymentMethod;
+      // Find matching option - payment options use uppercase IDs (QUICKBOOKS, STRIPE, MANUAL)
+      const matchingOption = paymentOptions.find((opt) => opt.id === preferred);
+      if (matchingOption) {
+        setSelected(matchingOption.id);
+      }
+    } else if (isOpen && !isLoggedIn) {
+      // Reset selection if user is not logged in
+      setSelected("");
+    }
+  }, [isOpen, isLoggedIn, preferencesData]);
 
   const handleSelect = (option: PaymentOption) => {
     setSelected(option.id);
@@ -59,9 +80,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         return;
       }
       onPaymentSelect(selectedOption, parseFloat(amount), userEmail);
+      // Reset state when closing
+      setSelected("");
+      setAmount("");
+      setEmail("");
       onClose();
     }
   };
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelected("");
+      setAmount("");
+      setEmail("");
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

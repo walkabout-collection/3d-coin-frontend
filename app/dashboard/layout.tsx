@@ -6,7 +6,6 @@ import { UserProfilesLayoutProps } from "@/src/containers/dashboard/types";
 import { sidebarItems } from "@/src/containers/dashboard/data";
 import { useLogout } from "@/src/hooks/useQueries";
 
-
 export default function UserProfilesLayout({
   children,
 }: UserProfilesLayoutProps) {
@@ -18,7 +17,6 @@ export default function UserProfilesLayout({
       document.cookie = "refreshToken=; path=/; max-age=0";
       window.dispatchEvent(new Event("authChanged"));
 
-
       router.push("/login");
     },
     onError: (err) => {
@@ -26,14 +24,12 @@ export default function UserProfilesLayout({
     },
   });
 
-
   const mainItems = sidebarItems.filter(
-    (item) => item.name !== "Account Setting" && item.name !== "Log Out"
+    (item) => item.name !== "Account Setting" && item.name !== "Log Out",
   );
   const bottomItems = sidebarItems.filter(
-    (item) => item.name === "Account Setting" || item.name === "Log Out"
+    (item) => item.name === "Account Setting" || item.name === "Log Out",
   );
-
 
   return (
     <div className="flex h-screen">
@@ -71,7 +67,6 @@ export default function UserProfilesLayout({
           })}
         </nav>
 
-
         {/* Bottom navigation */}
         <nav className="flex flex-col space-y-2 mt-6">
           {bottomItems.map((item) => {
@@ -94,7 +89,6 @@ export default function UserProfilesLayout({
                 </button>
               );
             }
-
 
             const isActive = pathname === item.href;
             return (
@@ -126,9 +120,9 @@ export default function UserProfilesLayout({
           })}
         </nav>
       </aside>
-
-
-      <main className="flex-1 p-6 bg-white">{children}</main>
+      <div className="flex flex-col flex-1 bg-white">
+        <main className="flex-grow p-6">{children}</main>
+      </div>{" "}
     </div>
   );
 }
