@@ -3,7 +3,11 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Quote } from "./types";
 import Search from "@/src/components/common/search";
 import SortDropdown from "@/src/components/common/SortDropdown";
-import { useUserQuotes, useCreateStripeCheckout } from "@/src/hooks/useQueries";
+import {
+  useUserQuotes,
+  useCreateStripeCheckout,
+  usePaymentNotifications,
+} from "@/src/hooks/useQueries";
 import PayNowModal from "@/src/components/PayNowModal";
 import QuoteCard from "@/src/components/QuoteCard";
 import { toast } from "react-toastify";
@@ -22,9 +26,35 @@ const Quotes: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const { data: quotesData, isPending, isError, refetch } = useUserQuotes();
+  const { data: paymentNotificationsData } = usePaymentNotifications();
   const [processingQuoteId, setProcessingQuoteId] = useState<string | null>(
     null,
   );
+
+  // Create a map of quoteId -> payment status from notifications
+  const quotePaymentStatusMap = useMemo(() => {
+    const map = new Map<string, "SUCCESS" | "PENDING" | "FAILED">();
+
+    if (
+      paymentNotificationsData?.success &&
+      paymentNotificationsData.data?.notifications
+    ) {
+      const notifications = paymentNotificationsData.data.notifications;
+
+      // Process notifications and keep the latest status for each quoteId
+      notifications.forEach((notification) => {
+        if (notification.quoteId && notification.status) {
+          // Only update if this notification is newer or if we don't have a status yet
+          const existingStatus = map.get(notification.quoteId);
+          if (!existingStatus || existingStatus !== "SUCCESS") {
+            map.set(notification.quoteId, notification.status);
+          }
+        }
+      });
+    }
+
+    return map;
+  }, [paymentNotificationsData]);
 
   const { mutate: createStripeCheckout, isPending: isCreatingCheckout } =
     useCreateStripeCheckout({
@@ -181,7 +211,7 @@ const Quotes: React.FC = () => {
     isPaid?: boolean,
   ) => {
     // If payment is successful, show paid status
-    if (isPaid || paymentStatus === "PAID") {
+    if (isPaid || paymentStatus === "PAID" || paymentStatus === "SUCCESS") {
       return {
         text: "Payment Completed",
         color: "bg-green-100 text-green-800",
@@ -244,17 +274,34 @@ const Quotes: React.FC = () => {
             <p className="text-gray-500 text-lg">No quotes found</p>
           </div>
         ) : (
-          filteredData.map((quote) => (
-            <QuoteCard
-              key={quote.id}
-              quote={quote}
-              isCreatingCheckout={isCreatingCheckout}
-              processingQuoteId={processingQuoteId}
-              onStripePayment={handleStripePayment}
-              onManualPayment={handleManualPayment}
-              getQuoteStatusDisplay={getQuoteStatusDisplay}
-            />
-          ))
+          filteredData.map((quote) => {
+            // Check payment status from notifications
+            const notificationStatus = quotePaymentStatusMap.get(quote.id);
+            const isPaidFromNotification = notificationStatus === "SUCCESS";
+
+            // Enhanced quote with payment status from notifications
+            const enhancedQuote = {
+              ...quote,
+              // Override paymentStatus if we have a SUCCESS notification
+              paymentStatus: isPaidFromNotification
+                ? "SUCCESS"
+                : quote.paymentStatus,
+              // Override isPaid if we have a SUCCESS notification
+              isPaid: isPaidFromNotification || quote.isPaid,
+            };
+
+            return (
+              <QuoteCard
+                key={quote.id}
+                quote={enhancedQuote}
+                isCreatingCheckout={isCreatingCheckout}
+                processingQuoteId={processingQuoteId}
+                onStripePayment={handleStripePayment}
+                onManualPayment={handleManualPayment}
+                getQuoteStatusDisplay={getQuoteStatusDisplay}
+              />
+            );
+          })
         )}
       </div>
       {selectedQuote && (

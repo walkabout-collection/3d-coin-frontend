@@ -1439,6 +1439,7 @@ export const getPaymentIdFromSession = async (
   data: {
     paymentId: string;
     sessionId: string;
+    status: "SUCCESS" | "PENDING" | "FAILED";
   };
   message?: string;
 }> => {
@@ -1539,11 +1540,30 @@ export const getPaymentNotifications = async (): Promise<{
         | "PAYMENT_REJECTED"
         | "PAYMENT_PENDING";
       message: string;
+      status: "SUCCESS" | "PENDING" | "FAILED";
+      amount: number;
+      paymentMethod: string;
+      orderId?: string | null;
+      quoteId?: string;
+      timestamp: string;
       paymentId: string;
-      orderId?: string;
-      read: boolean;
+      read?: boolean;
       createdAt: string;
+      metadata?: {
+        paymentId: string;
+        orderId?: string | null;
+        quoteId?: string;
+        paymentMethod: string;
+      };
     }>;
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
   };
   message?: string;
 }> => {

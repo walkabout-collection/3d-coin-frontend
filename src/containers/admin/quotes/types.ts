@@ -10,5 +10,5 @@ export interface Quote {
   email: string;
   label: string;
   createdAt: string;
+  totalCoins?: number;
 }
-

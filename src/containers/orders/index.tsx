@@ -96,14 +96,28 @@ const Orders = () => {
       : orderDataArray.map(
           (order: UserOrder | OrderDataItem): DisplayDataItem => {
             // Handle both UserOrder and OrderDataItem types
-            const isUserOrder = "paymentMethod" in order;
+            const isUserOrder = "paymentMethod" in order || "Quote" in order;
+
+            let paymentMethod: string;
+            if (isUserOrder) {
+              const userOrder = order as UserOrder;
+              // Try paymentMethod field first, then Quote[0].method
+              paymentMethod = formatPaymentMethod(
+                userOrder.paymentMethod ||
+                  (Array.isArray(userOrder.Quote) && userOrder.Quote[0]
+                    ? ((userOrder.Quote[0] as Record<string, unknown>)
+                        ?.method as string)
+                    : undefined),
+              );
+            } else {
+              paymentMethod = formatPaymentMethod(
+                (order as OrderDataItem).quotes?.[0]?.method,
+              );
+            }
+
             return {
               orderId: order.orderId || order.id,
-              paymentMethod: isUserOrder
-                ? formatPaymentMethod((order as UserOrder).paymentMethod)
-                : formatPaymentMethod(
-                    (order as OrderDataItem).quotes?.[0]?.method,
-                  ),
+              paymentMethod: paymentMethod,
               total: order.totalPrice || 0,
               date: formatDate(order.orderDate),
               status: order.status || "APPROVED",

@@ -22,15 +22,16 @@ export interface Packaging {
   createdAt: string;
 }
 
-
 export interface Quote {
+  isPaid: boolean;
+  paymentStatus: string;
   id: string;
   email: string | null;
   status: string;
   amount: number | null;
   createdAt: string;
   feedback: string;
-  method: PaymentMethod
+  method: PaymentMethod;
   orderId: string | null;
   packaging?: Packaging;
   packagingId: string | null;
