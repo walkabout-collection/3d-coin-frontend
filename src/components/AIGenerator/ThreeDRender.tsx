@@ -76,7 +76,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       setShowPaymentModal(false);
       setSelectedPayment(null);
       setAmount(null);
-      router.push("/success");
+      router.push("/");
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : String(err);
