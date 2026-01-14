@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
 import { OrderDataItem } from "./types";
@@ -18,7 +18,7 @@ const formatPaymentMethod = (method: string | undefined): string => {
   if (!method) return "N/A";
   switch (method.toUpperCase()) {
     case "STRIPE":
-      return "CREDIT CARD";
+      return "STRIPE";
     case "MANUAL":
       return "MANUAL";
     case "QUICKBOOKS":
@@ -44,23 +44,49 @@ const formatDate = (dateString: string | number | undefined): string => {
 };
 
 const Orders = () => {
-  // Try to use the new order history API, fallback to old one
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 10;
+
+  // Try to use the new order history API, fallback to paginated user orders
   const {
     data: orderHistoryData,
     isPending: isHistoryPending,
     isError: isHistoryError,
   } = useUserOrderHistory();
-  const { data: orderDataResponse, isPending, isError } = useUserOrders();
+
+  const {
+    data: orderDataResponse,
+    isPending,
+    isError,
+    refetch,
+  } = useUserOrders(
+    {
+      page: currentPage,
+      limit: entriesPerPage,
+    },
+    {
+      staleTime: 0,
+      queryKey: [],
+    },
+  );
+
+  // Force refetch when page changes
+  useEffect(() => {
+    refetch();
+  }, [currentPage, refetch]);
+
   // Handle both array and paginated response
   const orderDataArray = Array.isArray(orderDataResponse)
     ? orderDataResponse
     : orderDataResponse?.data || [];
+  const paginationData = orderDataResponse?.pagination;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQuickBooksModalOpen, setIsQuickBooksModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDataItem | null>(
     null,
   );
+
   const { mutate: createUserPayment } = useCreateUserPayment({
     onSuccess: () => {
       toast.success("Payment created successfully");
@@ -72,41 +98,151 @@ const Orders = () => {
     },
   });
 
-  // Use order history data if available, otherwise transform order data
   interface DisplayDataItem {
+    id: string;
     orderId: string;
-    paymentMethod: string;
-    total: number;
-    date: string;
+    userId?: string;
+    carrier?: string | null;
     status: string;
-    originalOrder?: OrderDataItem;
+    weight?: number | null;
+    orderDate: string;
+    totalCoins?: number | null;
+    totalPrice: number;
+    paymentStatus?: string;
+    paymentMethod: string;
+    paymentDate?: string | null;
+    paymentId?: string | null;
+    date: string;
+    originalOrder?: OrderDataItem | UserOrder;
   }
+
+  // Helper to extract payment status from order
+  const getPaymentStatus = (order: UserOrder | OrderDataItem): string => {
+    if ("paymentStatus" in order && order.paymentStatus) {
+      return order.paymentStatus;
+    }
+    if (
+      "Payment" in order &&
+      Array.isArray(order.Payment) &&
+      order.Payment.length > 0
+    ) {
+      const successPayment = order.Payment.find((p) => p.status === "SUCCESS");
+      if (successPayment) return "PAID";
+      const pendingPayment = order.Payment.find((p) => p.status === "PENDING");
+      if (pendingPayment) return "PENDING";
+      const failedPayment = order.Payment.find(
+        (p) => p.status === "FAILED" || p.status === "REFUNDED",
+      );
+      if (failedPayment) return "FAILED";
+    }
+    if (
+      "quotes" in order &&
+      Array.isArray(order.quotes) &&
+      order.quotes.length > 0
+    ) {
+      const quote = order.quotes[0];
+      if (quote.method === "MANUAL" && order.status === "PENDING") {
+        return "PENDING";
+      }
+      if (order.status === "APPROVED") {
+        return "PAID";
+      }
+    }
+    if (
+      "payments" in order &&
+      Array.isArray(order.payments) &&
+      order.payments.length > 0
+    ) {
+      const successPayment = order.payments.find((p) => p.status === "SUCCESS");
+      if (successPayment) return "PAID";
+      const pendingPayment = order.payments.find((p) => p.status === "PENDING");
+      if (pendingPayment) return "PENDING";
+      const failedPayment = order.payments.find(
+        (p) => p.status === "FAILED" || p.status === "REFUNDED",
+      );
+      if (failedPayment) return "FAILED";
+    }
+    return "UNPAID";
+  };
+
+  // Helper to extract payment date from order
+  const getPaymentDate = (order: UserOrder | OrderDataItem): string | null => {
+    if ("paymentDate" in order && order.paymentDate) {
+      return order.paymentDate;
+    }
+    if (
+      "Payment" in order &&
+      Array.isArray(order.Payment) &&
+      order.Payment.length > 0
+    ) {
+      const payment = order.Payment.find((p) => p.status === "SUCCESS");
+      return payment?.paidAt || null;
+    }
+    if (
+      "payments" in order &&
+      Array.isArray(order.payments) &&
+      order.payments.length > 0
+    ) {
+      const payment = order.payments.find((p) => p.status === "SUCCESS");
+      return payment?.paidAt || null;
+    }
+    return null;
+  };
+
+  // Helper to extract payment ID from order
+  const getPaymentId = (order: UserOrder | OrderDataItem): string | null => {
+    if ("paymentId" in order && order.paymentId) {
+      return order.paymentId;
+    }
+    if (
+      "Payment" in order &&
+      Array.isArray(order.Payment) &&
+      order.Payment.length > 0
+    ) {
+      const payment = order.Payment.find((p) => p.status === "SUCCESS");
+      return payment?.id || null;
+    }
+    if (
+      "payments" in order &&
+      Array.isArray(order.payments) &&
+      order.payments.length > 0
+    ) {
+      const payment = order.payments.find((p) => p.status === "SUCCESS");
+      return payment?.id || null;
+    }
+    return null;
+  };
 
   const displayData: DisplayDataItem[] =
     orderHistoryData?.data && Array.isArray(orderHistoryData.data)
       ? orderHistoryData.data.map(
           (item): DisplayDataItem => ({
+            id: item.orderId,
             orderId: item.orderId,
             paymentMethod: formatPaymentMethod(item.paymentMethod),
-            total: item.total,
+            totalPrice: item.total,
             date: formatDate(item.date),
+            orderDate: item.date,
             status: item.status || "APPROVED",
+            paymentStatus: item.paymentStatus || "UNPAID",
+            paymentDate: item.paymentId ? formatDate(item.date) : null,
+            paymentId: item.paymentId || null,
           }),
         )
       : orderDataArray.map(
           (order: UserOrder | OrderDataItem): DisplayDataItem => {
-            // Handle both UserOrder and OrderDataItem types
             const isUserOrder = "paymentMethod" in order || "Quote" in order;
-
             let paymentMethod: string;
+
             if (isUserOrder) {
               const userOrder = order as UserOrder;
-              // Try paymentMethod field first, then Quote[0].method
               paymentMethod = formatPaymentMethod(
                 userOrder.paymentMethod ||
                   (Array.isArray(userOrder.Quote) && userOrder.Quote[0]
-                    ? ((userOrder.Quote[0] as Record<string, unknown>)
-                        ?.method as string)
+                    ? userOrder.Quote[0].method
+                    : undefined) ||
+                  (Array.isArray(userOrder.Payment) && userOrder.Payment[0]
+                    ? userOrder.Payment[0].method
                     : undefined),
               );
             } else {
@@ -116,13 +252,21 @@ const Orders = () => {
             }
 
             return {
-              orderId: order.orderId || order.id,
-              paymentMethod: paymentMethod,
-              total: order.totalPrice || 0,
-              date: formatDate(order.orderDate),
+              id: order.id || order.orderId || "",
+              orderId: order.orderId || order.id || "",
+              userId: "userId" in order ? order.userId : undefined,
+              carrier: "carrier" in order ? order.carrier : undefined,
               status: order.status || "APPROVED",
-              // Keep original order for actions (only for OrderDataItem type)
-              originalOrder: isUserOrder ? undefined : (order as OrderDataItem),
+              weight: "weight" in order ? order.weight : undefined,
+              orderDate: order.orderDate || "",
+              totalCoins: "totalCoins" in order ? order.totalCoins : undefined,
+              totalPrice: order.totalPrice || 0,
+              paymentStatus: getPaymentStatus(order),
+              paymentMethod: paymentMethod,
+              paymentDate: getPaymentDate(order),
+              paymentId: getPaymentId(order),
+              date: formatDate(order.orderDate),
+              originalOrder: order,
             };
           },
         );
@@ -143,6 +287,7 @@ const Orders = () => {
 
     const orig = originalOrder as Record<string, unknown>;
     const maybeQuotes = orig["quotes"];
+
     if (!Array.isArray(maybeQuotes) || maybeQuotes.length === 0) {
       console.error("No quotes found for this order.");
       return;
@@ -154,7 +299,6 @@ const Orders = () => {
         ? (firstQuote["method"] as string)
         : undefined;
 
-    // Validate and cast method to valid type
     if (!methodString) {
       console.error("Missing payment method in quote.");
       return;
@@ -166,10 +310,12 @@ const Orders = () => {
     )
       ? (methodString.toUpperCase() as "STRIPE" | "QUICKBOOKS" | "MANUAL")
       : undefined;
+
     const quoteId =
       typeof firstQuote["id"] === "string"
         ? (firstQuote["id"] as string)
         : String(firstQuote["id"]);
+
     const totalPrice =
       typeof orig["totalPrice"] === "number"
         ? (orig["totalPrice"] as number)
@@ -187,102 +333,145 @@ const Orders = () => {
     });
   };
 
-  const handlePayNowClick = (row: DisplayDataItem) => {
-    const originalOrder = row.originalOrder;
-    if (originalOrder && "quotes" in originalOrder) {
-      setSelectedOrder(originalOrder);
-      const paymentMethod = originalOrder.quotes?.[0]?.method?.toUpperCase();
-      if (paymentMethod === "QUICKBOOKS") {
-        setIsQuickBooksModalOpen(true);
-      } else {
-        setIsModalOpen(true);
-      }
-    }
+  const formatPaymentStatus = (status: string | undefined): string => {
+    if (!status) return "N/A";
+    return status.toUpperCase();
   };
 
-  // Define columns according to guide format
+  const formatOrderStatus = (status: string | undefined): string => {
+    if (!status) return "N/A";
+    return status;
+  };
+
   const orderColumns: TableColumn<DisplayDataItem>[] = [
+    {
+      key: "orderId",
+      label: "Order ID",
+      width: "w-40",
+    },
+    {
+      key: "status",
+      label: "Order Status",
+      width: "w-32",
+      render: (value) => formatOrderStatus(value as string),
+    },
+    {
+      key: "paymentStatus",
+      label: "Payment Status",
+      width: "w-32",
+      render: (value) => formatPaymentStatus(value as string),
+    },
+    {
+      key: "totalPrice",
+      label: "Order Total",
+      width: "w-28",
+      render: (value) =>
+        value != null ? `$${Number(value).toFixed(2)}` : "N/A",
+    },
+    {
+      key: "totalCoins",
+      label: "Total Coins",
+      width: "w-24",
+      render: (value) => (value != null ? String(value) : "N/A"),
+    },
     {
       key: "paymentMethod",
       label: "Payment Method",
       width: "w-32",
     },
     {
-      key: "total",
-      label: "Order Total",
-      width: "w-24",
-      render: (value) =>
-        value != null ? `$${Number(value).toFixed(2)}` : "N/A",
+      key: "paymentDate",
+      label: "Payment Date",
+      width: "w-32",
+      render: (value) => (value ? formatDate(value as string) : "N/A"),
     },
     {
       key: "date",
-      label: "Date",
+      label: "Order Date",
       width: "w-32",
-    },
-    {
-      key: "orderId",
-      label: "Order ID",
-      width: "w-42",
     },
   ];
 
-  const actions: {
-    label: string;
-    onClick?: (row: DisplayDataItem) => void;
-    variant?: "primary" | "secondary" | "danger" | "success";
-    show?: (row: DisplayDataItem) => boolean;
-  }[] = [
-    {
-      label: "Pay Now",
-      onClick: handlePayNowClick,
-      variant: "primary",
-      show: (row: DisplayDataItem) => {
-        const originalOrder = row.originalOrder;
-        const paymentMethod = originalOrder?.quotes?.[0]?.method?.toUpperCase();
-        return (
-          originalOrder?.status === "PENDING" &&
-          (paymentMethod === "MANUAL" || paymentMethod === "QUICKBOOKS")
-        );
-      },
-    },
-    {
-      label: "Paid",
-      variant: "success",
-      show: (row: DisplayDataItem) => {
-        const originalOrder = row.originalOrder;
-        return (
-          originalOrder?.status === "APPROVED" &&
-          originalOrder?.quotes?.[0]?.method === "MANUAL"
-        );
-      },
-    },
-  ];
+  // const actions: {
+  //   label: string;
+  //   onClick?: (row: DisplayDataItem) => void;
+  //   variant?: "primary" | "secondary" | "danger" | "success";
+  //   show?: (row: DisplayDataItem) => boolean;
+  // }[] = [
+  //   {
+  //     label: "Pay Now",
+  //     onClick: handlePayNowClick,
+  //     variant: "primary",
+  //     show: (row: DisplayDataItem) => {
+  //       const originalOrder = row.originalOrder;
+  //       if (!originalOrder) return false;
+  //       if (!("quotes" in originalOrder)) return false;
+
+  //       const paymentMethod =
+  //         getPaymentMethodFromOrder(originalOrder)?.toUpperCase();
+
+  //       return (
+  //         originalOrder.status === "PENDING" &&
+  //         (paymentMethod === "MANUAL" || paymentMethod === "QUICKBOOKS")
+  //       );
+  //     },
+  //   },
+  //   {
+  //     label: "Paid",
+  //     variant: "success",
+  //     show: (row: DisplayDataItem) => {
+  //       const originalOrder = row.originalOrder;
+  //       if (!originalOrder) return false;
+  //       if (!("quotes" in originalOrder)) return false;
+
+  //       const paymentMethod = getPaymentMethodFromOrder(originalOrder);
+
+  //       return (
+  //         originalOrder.status === "APPROVED" && paymentMethod === "MANUAL"
+  //       );
+  //     },
+  //   },
+  // ];
 
   if (isDataPending) return <div>Loading...</div>;
   if (isDataError) return <div>Error loading orders</div>;
 
+  const totalEntries = paginationData?.total ?? displayData.length;
+  const totalPages =
+    paginationData?.totalPages ??
+    Math.ceil(displayData.length / entriesPerPage);
+  const entriesPerPageFromAPI = paginationData?.limit ?? entriesPerPage;
+
+  const handlePageChange = (page: number) => {
+    if (page < 1) return;
+    if (paginationData && page > paginationData.totalPages) return;
+
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
-    <div className="min-h-screen">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">
-        Order History
-      </h1>
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold">Order History</h2>
+      </div>
+
       {displayData.length > 0 ? (
         <Table
           columns={orderColumns}
           data={displayData}
-          alternatingRows={true}
-          searchable={true}
-          searchPlaceholder="Search orders..."
-          sortable={true}
-          currentSort="newest"
-          showActions={orderHistoryData ? false : true}
-          actions={orderHistoryData ? [] : actions}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          entriesPerPage={entriesPerPageFromAPI}
+          totalEntries={totalEntries}
+          hasNextPage={paginationData?.hasNextPage ?? currentPage < totalPages}
+          hasPreviousPage={paginationData?.hasPreviousPage ?? currentPage > 1}
         />
       ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No orders found</p>
-        </div>
+        <div className="text-center py-8">No orders found</div>
       )}
+
       {selectedOrder && (
         <>
           <PayNowModal
@@ -311,7 +500,6 @@ const Orders = () => {
             onPaymentSuccess={() => {
               setIsQuickBooksModalOpen(false);
               setSelectedOrder(null);
-              // Refetch orders to update status
               window.location.reload();
             }}
           />

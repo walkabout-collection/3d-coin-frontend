@@ -1,128 +1,91 @@
-"use client";
-import React, { useState, useMemo } from "react";
-import Image from "next/image";
-import { TableProps, TableColumn } from "./types";
-import Search from "../search";
-import StatusBadge from "../StatusBadge";
-import SortDropdown from "../SortDropdown";
-import LoadingSpinner from "../LoadingSpinner";
+import React from "react";
+import { TableColumn } from "./types";
 
-function Table<T extends Partial<{ date?: string; order?: string }> & object>({
+interface TableProps<T> {
+  columns: TableColumn<T>[];
+  data: T[];
+  actions?: {
+    label: string;
+    onClick?: (row: T) => void;
+    variant?: "primary" | "secondary" | "danger" | "success";
+    show?: (row: T) => boolean;
+  }[];
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
+  entriesPerPage?: number;
+  totalEntries?: number;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Table = <T extends Record<string, any>>({
   columns,
   data,
-  className = "",
-  alternatingRows = true,
-  showActions = false,
-  actions = [],
-  sortable = false,
-  sortOptions = [
-    { value: "newest", label: "Newest To Oldest" },
-    { value: "oldest", label: "Oldest To Newest" },
-    { value: "order_asc", label: "Order (Low to High)" },
-    { value: "order_desc", label: "Order (High to Low)" },
-  ],
-  currentSort,
-  onSortChange,
-  searchable = false,
-  onSearch,
-  searchPlaceholder = "Search...",
-  loading = false,
-  emptyMessage = "No data available",
-  headerClassName = "",
-  rowClassName = "",
-  cellClassName = "",
-}: TableProps<T>) {
-  const [internalSort, setInternalSort] = useState(currentSort || "");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortedDataState, setSortedDataState] = useState<T[]>(data);
-
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return sortedDataState;
-    return sortedDataState.filter((row) =>
-      Object.values(row as object).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    );
-  }, [sortedDataState, searchTerm]);
-
-  const handleSortChange = (sort: string) => {
-    setInternalSort(sort);
-    if (onSortChange) {
-      onSortChange(sort);
-    }
-  };
-
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    if (onSearch) {
-      onSearch(term);
-    }
-  };
-
-  const handleSortData = (sortedData: T[]) => {
-    setSortedDataState(sortedData);
-  };
-
-  const renderCellContent = (
-    column: TableColumn<T>,
-    value: T[keyof T] | undefined,
-    row: T,
-    index: number,
+  actions,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
+  entriesPerPage = 10,
+  totalEntries = 0,
+  hasNextPage = false,
+  hasPreviousPage = false,
+}: TableProps<T>) => {
+  const getVariantClasses = (
+    variant?: "primary" | "secondary" | "danger" | "success",
   ) => {
-    if (column.render) {
-      return column.render(value, row, index);
+    switch (variant) {
+      case "primary":
+        return "bg-[#1a2a3a] text-white";
+      case "secondary":
+        return "bg-gray-200 text-gray-800 hover:bg-gray-300";
+      case "danger":
+        return "bg-red-600 text-white hover:bg-red-700";
+      case "success":
+        return "text-green-600 font-bold text-lg";
+      default:
+        return "bg-gray-100 text-gray-800 hover:bg-gray-200";
     }
-    if (String(column.key).toLowerCase().includes("status")) {
-      return <StatusBadge status={String(value || "")} />;
-    }
-    if (String(column.key).toLowerCase().includes("packaging")) {
-      return <span className="text-sm">{String(value || "")}</span>;
-    }
-    return (value as React.ReactNode) || null;
   };
+
+  const getPageNumbers = () => {
+    const maxPagesToShow = 5;
+    const pageNumbers: number[] = [];
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
+  };
+
+  const startEntry = (currentPage - 1) * entriesPerPage + 1;
+  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries);
 
   return (
-    <div className={`w-full min-h-screen ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          {searchable && (
-            <Search
-              placeholder={searchPlaceholder}
-              onSearch={handleSearch}
-              variant="primary"
-            />
-          )}
-        </div>
-        <div className="flex items-center gap-4">
-          {sortable && sortOptions.length > 0 && (
-            <SortDropdown
-              options={sortOptions}
-              value={internalSort}
-              onChange={handleSortChange}
-              data={data}
-              onSort={handleSortData}
-              showLabel={true}
-              labelText="Sort:"
-            />
-          )}
-        </div>
-      </div>
+    <div className="w-full">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className={`border-b border-gray-200 ${headerClassName}`}>
+            <tr className="border-b border-gray-200">
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
                   className={`px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider ${
                     column.width || ""
                   }`}
-                  style={{ textAlign: column.align || "left" }}
                 >
                   {column.label}
                 </th>
               ))}
-              {showActions && actions.length > 0 && (
+              {actions && actions.length > 0 && (
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 uppercase tracking-wider">
                   Actions
                 </th>
@@ -130,101 +93,109 @@ function Table<T extends Partial<{ date?: string; order?: string }> & object>({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={columns.length + (showActions ? 1 : 0)}
-                  className="px-6 py-8 text-center"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <LoadingSpinner size="md" className="text-blue-600" />
-                    <span className="text-gray-500">Loading...</span>
-                  </div>
-                </td>
+            {data.map((row, index) => (
+              <tr
+                key={index}
+                className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                  index % 2 === 1 ? "bg-gray-100" : "bg-white"
+                }`}
+              >
+                {columns.map((column) => (
+                  <td
+                    key={String(column.key)}
+                    className="px-6 py-4 text-sm text-gray-900"
+                  >
+                    {column.render
+                      ? column.render(
+                          column.key in row
+                            ? (row[column.key as keyof T] as T[keyof T])
+                            : undefined,
+                          row,
+                          index,
+                        )
+                      : column.key in row
+                        ? (row[column.key as keyof T] as React.ReactNode)
+                        : null}
+                  </td>
+                ))}
+                {actions && actions.length > 0 && (
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {actions.map((action, actionIndex) => {
+                        const shouldShow = action.show
+                          ? action.show(row)
+                          : true;
+                        if (!shouldShow) return null;
+
+                        return (
+                          <button
+                            key={actionIndex}
+                            onClick={() =>
+                              action.onClick && action.onClick(row)
+                            }
+                            className={`max-w-lg rounded-full py-2 px-6 font-base text-sm ${getVariantClasses(
+                              action.variant,
+                            )} ${!action.onClick ? "cursor-default" : ""}`}
+                            disabled={!action.onClick}
+                          >
+                            {action.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                )}
               </tr>
-            ) : filteredData.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length + (showActions ? 1 : 0)}
-                  className="px-6 py-8 text-center text-gray-500"
-                >
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              filteredData.map((row, index) => (
-                <tr
-                  key={index}
-                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    alternatingRows && index % 2 === 1
-                      ? "bg-gray-100"
-                      : "bg-white"
-                  } ${rowClassName}`}
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={`${index}-${String(column.key)}`}
-                      className={`px-6 py-4 text-sm text-gray-900 ${cellClassName}`}
-                      style={{ textAlign: column.align || "left" }}
-                    >
-                      {renderCellContent(
-                        column,
-                        column.key in row
-                          ? (row[column.key as keyof T] as T[keyof T])
-                          : undefined,
-                        row,
-                        index,
-                      )}
-                    </td>
-                  ))}
-                  {showActions && actions.length > 0 && (
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {actions.map((action, actionIndex) => {
-                          if (action.show && !action.show(row)) return null;
-                          return (
-                            <button
-                              key={actionIndex}
-                              onClick={() =>
-                                action.onClick && action.onClick(row)
-                              }
-                              className={`max-w-lg rounded-full py-2 px-6 font-base text-sm ${
-                                action.variant === "primary"
-                                  ? "bg-[#1a2a3a] text-white"
-                                  : action.variant === "success"
-                                    ? "text-green-600 font-bold text-lg"
-                                    : action.variant === "secondary"
-                                      ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                                      : action.variant === "danger"
-                                        ? "bg-red-600 text-white hover:bg-red-700"
-                                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                              } ${!action.onClick ? "cursor-default" : ""}`}
-                              disabled={!action.onClick}
-                            >
-                              {action.icon && (
-                                <Image
-                                  src={action.icon}
-                                  alt=""
-                                  width={14}
-                                  height={14}
-                                  className="inline mr-1"
-                                />
-                              )}
-                              {action.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {onPageChange && totalPages > 1 && totalEntries > 10 && (
+        <div className="flex items-center justify-between mt-6 pt-4 mb-10">
+          <div className="text-sm text-gray-500">
+            Showing {startEntry} to {endEntry} of {totalEntries} entries
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={!hasPreviousPage}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            {getPageNumbers().map((pageNumber) => (
+              <button
+                key={pageNumber}
+                onClick={() => onPageChange(pageNumber)}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  pageNumber === currentPage
+                    ? "bg-[#1a2a3a] text-white"
+                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+
+            {/* Next Button */}
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={!hasNextPage}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default Table;

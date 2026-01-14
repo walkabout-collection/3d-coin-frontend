@@ -11,7 +11,6 @@ import {
   useProceedToNextStep,
 } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
-import Button from "@/src/components/common/button/Button";
 
 const Tracking = () => {
   const { data: orderData, isLoading } = useUserOrdersLegacy();
@@ -85,24 +84,6 @@ const Tracking = () => {
     }
   };
 
-  const actions: {
-    label: string;
-    onClick?: (row: TrackingDataItem) => void;
-    variant?: "primary" | "secondary";
-    show?: (row: TrackingDataItem) => boolean;
-  }[] = [
-    {
-      label: "Continue Order",
-      onClick: handleContinueOrder,
-      variant: "primary",
-      show: (row: TrackingDataItem) => {
-        // Show continue button if order is pending/approved
-        const status = row.status?.toUpperCase();
-        return status === "PENDING" || status === "APPROVED";
-      },
-    },
-  ];
-
   if (isLoading && !TrackingData.length) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,15 +109,7 @@ const Tracking = () => {
         </div>
       )}
 
-      <Table
-        columns={orderColumns}
-        data={trackingData}
-        alternatingRows={true}
-        searchable={true}
-        searchPlaceholder="Search orders..."
-        showActions={ordersArray.length > 0}
-        actions={actions}
-      />
+      <Table columns={orderColumns} data={trackingData} />
     </div>
   );
 };

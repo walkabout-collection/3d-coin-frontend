@@ -120,9 +120,9 @@ export default function UserProfilesLayout({
           })}
         </nav>
       </aside>
-      <div className="flex flex-col flex-1 bg-white">
-        <main className="flex-grow p-6">{children}</main>
-      </div>{" "}
+      <div className="flex flex-col flex-1 bg-white overflow-hidden">
+        <main className="flex-grow p-6 overflow-y-auto">{children}</main>
+      </div>
     </div>
   );
 }

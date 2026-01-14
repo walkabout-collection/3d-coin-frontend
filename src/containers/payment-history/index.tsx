@@ -3,18 +3,12 @@ import React, { useState, useCallback } from "react";
 import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
 import { useUserOrderHistory } from "@/src/hooks/useQueries";
-import {
-  usePaymentReceipt,
-  useGeneratePaymentReceipt,
-  useEmailPaymentReceipt,
-  usePaymentTimeline,
-} from "@/src/hooks/useQueries";
+import { usePaymentTimeline } from "@/src/hooks/useQueries";
 import { usePaymentStatusWebSocket } from "@/src/hooks/usePaymentStatusWebSocket";
 import Button from "@/src/components/common/button/Button";
 import PaymentTimeline from "@/src/components/PaymentTimeline";
 import SortDropdown from "@/src/components/common/SortDropdown";
 import FilterDropdown from "@/src/components/common/FilterDropdown";
-import Pagination from "@/src/components/common/Pagination";
 import Search from "@/src/components/common/search";
 import { toast } from "react-toastify";
 import { GetUserOrderHistoryParams } from "@/src/services/apiServices";
@@ -48,102 +42,6 @@ const formatPaymentMethod = (method: string | undefined): string => {
     default:
       return method;
   }
-};
-
-interface ReceiptButtonProps {
-  paymentId: string;
-  paymentStatus?: string;
-  variant?: "download" | "email" | "both";
-}
-
-const ReceiptButton: React.FC<ReceiptButtonProps> = ({
-  paymentId,
-  paymentStatus,
-  variant = "download",
-}) => {
-  const { data: receiptData, isLoading: isLoadingReceipt } = usePaymentReceipt(
-    paymentStatus === "PAID" ? paymentId : null,
-  );
-  const { mutate: generateReceipt, isPending: isGenerating } =
-    useGeneratePaymentReceipt({
-      onSuccess: (data) => {
-        if (data.success && data.data.receiptUrl) {
-          // Open receipt in new tab
-          window.open(data.data.receiptUrl, "_blank");
-          toast.success("Receipt generated successfully");
-        }
-      },
-      onError: (error) => {
-        const msg = error instanceof Error ? error.message : String(error);
-        toast.error(msg || "Failed to generate receipt");
-      },
-    });
-
-  const { mutate: emailReceipt, isPending: isEmailing } =
-    useEmailPaymentReceipt({
-      onSuccess: () => {
-        toast.success("Receipt emailed successfully");
-      },
-      onError: (error) => {
-        const msg = error instanceof Error ? error.message : String(error);
-        toast.error(msg || "Failed to email receipt");
-      },
-    });
-
-  const handleDownloadReceipt = () => {
-    if (receiptData?.data?.receiptUrl) {
-      window.open(receiptData.data.receiptUrl, "_blank");
-    } else {
-      // Generate receipt first
-      generateReceipt(paymentId);
-    }
-  };
-
-  const handleEmailReceipt = () => {
-    emailReceipt(paymentId);
-  };
-
-  // Only show for successful payments
-  if (paymentStatus && paymentStatus !== "PAID") {
-    return null;
-  }
-
-  if (isLoadingReceipt) {
-    return (
-      <Button variant="ternary" disabled className="text-xs px-2 py-1">
-        Loading...
-      </Button>
-    );
-  }
-
-  return (
-    <div className="flex gap-2">
-      {(variant === "download" || variant === "both") && (
-        <Button
-          variant="ternary"
-          onClick={handleDownloadReceipt}
-          disabled={isGenerating}
-          className="text-xs px-2 py-1"
-        >
-          {isGenerating
-            ? "Generating..."
-            : receiptData?.data?.receiptUrl
-              ? "Download"
-              : "Generate"}
-        </Button>
-      )}
-      {(variant === "email" || variant === "both") && (
-        <Button
-          variant="ternary"
-          onClick={handleEmailReceipt}
-          disabled={isEmailing}
-          className="text-xs px-2 py-1"
-        >
-          {isEmailing ? "Sending..." : "Email"}
-        </Button>
-      )}
-    </div>
-  );
 };
 
 const PaymentTimelineModal: React.FC<{
@@ -421,6 +319,8 @@ const PaymentHistory = () => {
     orderHistoryData?.data?.pagination || orderHistoryData?.pagination;
   const totalPages = pagination?.totalPages || 1;
   const currentPage = filters.page || 1;
+  const totalEntries = pagination?.total ?? paymentData.length;
+  const entriesPerPageFromAPI = pagination?.limit ?? (filters.limit || 20);
 
   return (
     <div className="min-h-screen">
@@ -428,9 +328,9 @@ const PaymentHistory = () => {
         <h1 className="text-2xl font-semibold text-gray-900">
           Payment History
         </h1>
-        <Button variant="ternary" onClick={() => refetch()} className="text-sm">
+        {/* <Button variant="ternary" onClick={() => refetch()} className="text-sm">
           Refresh
-        </Button>
+        </Button> */}
       </div>
 
       {/* Filters and Search Section */}
@@ -536,29 +436,14 @@ const PaymentHistory = () => {
           <Table
             columns={paymentColumns}
             data={paymentData}
-            alternatingRows={true}
-            searchable={false} // We have our own search
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={totalEntries > 10 ? handlePageChange : undefined}
+            entriesPerPage={entriesPerPageFromAPI}
+            totalEntries={totalEntries}
+            hasNextPage={currentPage < totalPages}
+            hasPreviousPage={currentPage > 1}
           />
-
-          {/* Pagination */}
-          {pagination && totalPages > 1 && (
-            <div className="mt-6">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
-
-          {/* Results Count */}
-          {pagination && (
-            <div className="mt-4 text-sm text-gray-600 text-center">
-              Showing {(currentPage - 1) * (filters.limit || 20) + 1} to{" "}
-              {Math.min(currentPage * (filters.limit || 20), pagination.total)}{" "}
-              of {pagination.total} payments
-            </div>
-          )}
 
           {/* Timeline Modal */}
           {selectedPaymentId && (

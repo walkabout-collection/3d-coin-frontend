@@ -42,6 +42,11 @@ export interface TableProps<T extends { date?: string; order?: string }> {
     totalEntries: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    total: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    nextPage: number;
+    previousPage: number;
   };
   sortable?: boolean;
   sortOptions?: SortOption[];

@@ -728,17 +728,68 @@ export const createContact = async (data: {
   return res.data;
 };
 
+export interface GetAdminQuotesParams {
+  page?: number;
+  limit?: number;
+  sortBy?: "date" | "amount" | "status";
+  sortOrder?: "asc" | "desc";
+  status?: string;
+}
+
 // get all quote admin
-export const getAdminQuotes = async (): Promise<
-  Awaited<ReturnType<typeof api.quote.adminList>>["data"]
-> => {
-  const res = await apiClient.get("/quote/admin", {
+export const getAdminQuotes = async (
+  params?: GetAdminQuotesParams,
+): Promise<{
+  success: boolean;
+  data: unknown[]; // Quote[] array - using unknown[] to handle API response flexibility
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+  if (params?.status) queryParams.append("status", params.status);
+
+  const queryString = queryParams.toString();
+  const url = `/quote/admin${queryString ? `?${queryString}` : ""}`;
+
+  const res = await apiClient.get(url, {
     headers: {
       "Cache-Control": "no-cache",
       Pragma: "no-cache",
     },
   });
-  return res.data.data;
+
+  // Handle both paginated and non-paginated responses
+  if (res.data.pagination) {
+    return res.data;
+  }
+
+  // If no pagination, return as if it's all on page 1
+  const data = Array.isArray(res.data.data)
+    ? res.data.data
+    : res.data.data?.data || res.data.data || [];
+  return {
+    success: true,
+    data,
+    pagination: {
+      page: 1,
+      limit: data.length,
+      total: data.length,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    },
+  };
 };
 
 export interface GetUserQuotesParams {
@@ -782,6 +833,12 @@ export const getUserQuotes = async (
   });
 
   // Handle both paginated and non-paginated responses
+  // Check if response has nested data structure: { success, data: { data: [], pagination: {} } }
+  if (res.data.data && res.data.data.pagination) {
+    return res.data.data;
+  }
+
+  // Check if response has flat structure: { success, data: [], pagination: {} }
   if (res.data.pagination) {
     return res.data;
   }
@@ -855,22 +912,104 @@ export const getAdminOrders = async (): Promise<
 /**
  * User order with payment status
  */
+export interface CoinDesign {
+  id: string;
+  userId?: string;
+  name: string;
+  status: string;
+  totalCoins?: number;
+  generatorPrompt?: string;
+  generatorImage?: string;
+  designerInstructions?: string;
+  frontImage?: string;
+  frontDescription?: string;
+  frontText?: string;
+  frontTextStyle?: string;
+  frontReference?: string;
+  frontReferenceImpact?: string;
+  frontComposition?: string;
+  backImage?: string;
+  backDescription?: string;
+  backText?: string;
+  backTextStyle?: string;
+  backReference?: string;
+  backReferenceImpact?: string;
+  backComposition?: string;
+  coinShape?: string;
+  subject?: string;
+  materialFinish?: string;
+  contrastStyle?: string;
+  detailLevel?: string;
+  prohibitedContent?: string | null;
+  orderId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Packaging {
+  id: string;
+  description?: string;
+  referenceImg?: string;
+  text?: string;
+  createdAt: string;
+  userId?: string;
+}
+
+export interface Quote {
+  id: string;
+  userId?: string;
+  orderId: string;
+  status: string;
+  amount?: number;
+  feedback?: string | null;
+  createdAt: string;
+  designStatus?: string;
+  method: string;
+  totalCoins?: number;
+  coinDesignId: string;
+  packagingId: string;
+  email?: string;
+  CoinDesign?: CoinDesign;
+  Packaging?: Packaging;
+}
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  quoteId: string;
+  userId?: string;
+  method: string;
+  status: string;
+  amount: number;
+  paidAt?: string | null;
+  createdAt: string;
+  paymentProof?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  stripeCustomerId?: string | null;
+  quickbooksInvoiceId?: string | null;
+  quickbooksSyncStatus?: string | null;
+  quickbooksLastSyncAt?: string | null;
+  idempotencyKey?: string;
+  receiptUrl?: string | null;
+  receiptGeneratedAt?: string | null;
+}
+
 export interface UserOrder {
   id: string;
+  userId?: string;
+  carrier?: string | null;
+  status: string;
+  weight?: number | null;
+  orderDate: string;
+  totalCoins?: number | null;
+  totalPrice: number;
   orderId: string;
   paymentStatus: "PAID" | "UNPAID" | "PENDING" | "FAILED";
   paymentMethod?: string;
-  paymentDate?: string;
-  paymentId?: string;
-  totalPrice: number;
-  orderDate: string;
-  status: string;
-  Quote?: {
-    id: string;
-    CoinDesign?: {
-      name: string;
-    };
-  };
+  paymentDate?: string | null;
+  paymentId?: string | null;
+  Quote?: Quote[];
+  Payment?: Payment[];
 }
 
 /**
