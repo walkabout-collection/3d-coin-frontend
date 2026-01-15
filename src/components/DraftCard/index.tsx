@@ -1,9 +1,17 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
-import { Calendar, Edit2, Trash2, Clock, FileText, Eye } from "lucide-react";
+import {
+  Calendar,
+  Edit2,
+  Trash2,
+  Clock,
+  FileText,
+  Eye,
+  Send,
+} from "lucide-react";
 import { DraftDesign } from "@/src/services/apiServices";
 import { useDeleteDraft } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
@@ -12,11 +20,19 @@ interface DraftCardProps {
   draft: DraftDesign;
   onEdit?: (draftId: string) => void;
   onDelete?: () => void;
+  onSubmit?: (draftId: string) => void;
 }
 
-const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
+const DraftCard: React.FC<DraftCardProps> = ({
+  draft,
+  onEdit,
+  onDelete,
+  onSubmit,
+}) => {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const imageErrorRef = useRef(false);
 
   const deleteDraftMutation = useDeleteDraft({
     onSuccess: () => {
@@ -70,23 +86,47 @@ const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
     }
   };
 
-  // Get preview image from draft data
-  const getPreviewImage = () => {
-    // API returns presigned URLs directly
-    if (draft.previewImage) {
-      return draft.previewImage;
+  // Validate image URL - must start with /, http://, https://, or data:
+  const validateImageUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (
+      url.startsWith("/") ||
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
     }
-    if (draft.frontImage) {
-      return draft.frontImage;
-    }
-    if (draft.backImage) {
-      return draft.backImage;
-    }
-    if (draft.generatorImage) {
-      return draft.generatorImage;
-    }
-    return "/images/home/coin-design.png"; // Default placeholder
+    return null;
   };
+
+  // Memoize preview image to prevent recalculation on every render
+  const previewImage = useMemo(() => {
+    // If image has errored, use placeholder immediately
+    if (imageErrorRef.current) {
+      return "/images/home/coin-design.png";
+    }
+
+    // API returns presigned URLs directly
+    const preview = validateImageUrl(draft.previewImage);
+    if (preview) return preview;
+
+    const front = validateImageUrl(draft.frontImage);
+    if (front) return front;
+
+    const back = validateImageUrl(draft.backImage);
+    if (back) return back;
+
+    const generator = validateImageUrl(draft.generatorImage);
+    if (generator) return generator;
+
+    return "/images/home/coin-design.png"; // Default placeholder
+  }, [
+    draft.previewImage,
+    draft.frontImage,
+    draft.backImage,
+    draft.generatorImage,
+  ]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -115,128 +155,178 @@ const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
     router.push(`/drafts/${draft.id}`);
   };
 
+  const handleSubmit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSubmit) {
+      onSubmit(draft.id);
+    }
+  };
+
   const handleCardClick = () => {
     router.push(`/drafts/${draft.id}`);
   };
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer group"
       onClick={handleCardClick}
     >
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Preview Image */}
-        <div className="flex-shrink-0">
-          <div className="w-32 h-32 md:w-24 md:h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-            <Image
-              src={getPreviewImage()}
-              alt={draft.name || "Draft Preview"}
-              width={96}
-              height={96}
-              className="object-cover w-full h-full"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "/images/home/coin-design.png";
-              }}
-            />
-          </div>
+      {/* Preview Image Section */}
+      <div className="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+        {previewImage.startsWith("data:") ? (
+          // Use regular img tag for data URLs to avoid Next.js optimization issues
+          <img
+            src={previewImage}
+            alt={draft.name || "Draft Preview"}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            onError={() => {
+              if (!imageErrorRef.current) {
+                imageErrorRef.current = true;
+                setImageError(true);
+              }
+            }}
+          />
+        ) : (
+          <Image
+            src={previewImage}
+            alt={draft.name || "Draft Preview"}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
+            loading={
+              previewImage === "/images/home/coin-design.png" ? "eager" : "lazy"
+            }
+            onError={() => {
+              // Prevent infinite loops by tracking error state
+              if (!imageErrorRef.current) {
+                imageErrorRef.current = true;
+                setImageError(true);
+              }
+            }}
+          />
+        )}
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        {/* Draft Badge */}
+        <div className="absolute top-3 right-3">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#1a2a3a] text-white shadow-md">
+            DRAFT
+          </span>
         </div>
+      </div>
 
-        {/* Draft Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-900 truncate">
-              {draft.name || "Untitled Draft"}
-            </h3>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 ml-2">
-              DRAFT
-            </span>
-          </div>
-
-          {/* Metadata */}
-          <div className="space-y-1 mb-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>Last saved: {formatDate(draft.updatedAt)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Calendar className="h-4 w-4" />
-              <span>Created: {formatDate(draft.createdAt)}</span>
-            </div>
-            {draft.totalCoins && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <FileText className="h-4 w-4" />
-                <span>Coins: {draft.totalCoins}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Draft Type Indicator */}
-          <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
-            <FileText className="h-3 w-3" />
-            <span>
+      {/* Content Section */}
+      <div className="p-5">
+        {/* Title and Type */}
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">
+            {draft.name || "Untitled Draft"}
+          </h3>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <FileText className="h-3.5 w-3.5" />
+            <span className="uppercase tracking-wide">
               {draft.generatorPrompt || draft.generatorImage
                 ? "AI Generator"
                 : "Standard Builder"}
             </span>
           </div>
+        </div>
 
-          {/* Delete Confirmation */}
-          {showDeleteConfirm && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800 mb-2">
-                Are you sure you want to delete this draft? This action cannot
-                be undone.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="ternary"
-                  onClick={handleConfirmDelete}
-                  disabled={deleteDraftMutation.isPending}
-                  className="!bg-red-600 !text-white hover:!bg-red-700 text-sm px-4 py-2"
-                >
-                  {deleteDraftMutation.isPending ? "Deleting..." : "Delete"}
-                </Button>
-                <Button
-                  variant="ternary"
-                  onClick={handleCancelDelete}
-                  disabled={deleteDraftMutation.isPending}
-                  className="text-sm px-4 py-2"
-                >
-                  Cancel
-                </Button>
-              </div>
+        {/* Metadata */}
+        <div className="space-y-2 mb-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <span className="truncate">
+              Last saved: {formatDate(draft.updatedAt)}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <span className="truncate">
+              Created: {formatDate(draft.createdAt)}
+            </span>
+          </div>
+          {draft.totalCoins && draft.totalCoins > 0 && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <span>
+                {draft.totalCoins} {draft.totalCoins === 1 ? "Coin" : "Coins"}
+              </span>
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          {!showDeleteConfirm && (
+        {/* Delete Confirmation */}
+        {showDeleteConfirm && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800 mb-3 font-medium">
+              Are you sure you want to delete this draft? This action cannot be
+              undone.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="ternary"
+                onClick={handleConfirmDelete}
+                disabled={deleteDraftMutation.isPending}
+                className="!bg-red-600 !text-white hover:!bg-red-700 text-sm px-4 py-2 flex-1"
+                width="w-auto"
+              >
+                {deleteDraftMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+              <Button
+                variant="ternary"
+                onClick={handleCancelDelete}
+                disabled={deleteDraftMutation.isPending}
+                className="text-sm px-4 py-2 flex-1"
+                width="w-auto"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        {!showDeleteConfirm && (
+          <div className="space-y-2 pt-2">
             <div className="flex items-center gap-2">
               <button
                 onClick={handleView}
-                className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[#1a2a3a] text-white hover:bg-[#2a3a4a] transition-colors text-sm font-medium shadow-sm"
                 title="View"
               >
-                <Eye className="h-5 w-5" />
+                <Eye className="h-4 w-4" />
+                <span>View</span>
               </button>
               <button
                 onClick={handleEdit}
-                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm font-medium"
                 title="Edit"
               >
-                <Edit2 className="h-5 w-5" />
+                <Edit2 className="h-4 w-4" />
+                <span>Edit</span>
               </button>
               <button
                 onClick={handleDeleteClick}
                 disabled={deleteDraftMutation.isPending}
-                className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Delete"
               >
-                <Trash2 className="h-5 w-5" />
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
-          )}
-        </div>
+            {onSubmit && (
+              <button
+                onClick={handleSubmit}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978] text-white hover:from-[#193359] hover:via-[#244978] hover:to-[#2d5b94] transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                title="Submit Draft"
+              >
+                <Send className="h-4 w-4" />
+                <span>Submit for Quote</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

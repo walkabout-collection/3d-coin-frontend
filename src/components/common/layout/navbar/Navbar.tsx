@@ -6,8 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps } from "./types";
 import { useLogout, useGetUserProfile } from "@/src/hooks/useQueries";
-import NotificationBadge from "@/src/components/NotificationBadge";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  User,
+  Settings,
+  LayoutDashboard,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
@@ -132,7 +138,8 @@ const Navbar: React.FC<NavbarProps> = ({
   const shouldShowShadow =
     (pathname !== "/" && pathname !== "/pricing") || isScrolled;
 
-  const togglePopup = () => {
+  const togglePopup = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsPopupOpen((prev) => !prev);
   };
 
@@ -193,78 +200,107 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {isLoggedIn ? (
             <div className="flex items-center space-x-6 relative">
-              <button className="text-white hover:text-amber-400 transition-colors">
-                <Image
-                  src="/images/navbar/shopping-cart.svg"
-                  alt="Shopping Cart"
-                  width={25}
-                  height={25}
-                />
-              </button>
-
-              {/* Notification Badge */}
-              <NotificationBadge
-                onClick={() => router.push("/dashboard/payment-history")}
-                className="text-white"
-              />
-
-              <div className="flex items-center space-x-3 relative">
+              <div className="flex items-center space-x-3">
                 {/* User Name */}
                 <span className="text-white font-medium text-sm">
                   {userProfile?.firstName || "User"}
                 </span>
 
-                {/* Profile Avatar/Button */}
-                <button
-                  className="w-12 h-12 rounded-full relative overflow-hidden border-2 border-white/30 hover:border-amber-400 transition-colors flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600"
-                  onClick={togglePopup}
-                >
-                  <span className="text-white font-semibold text-lg">
-                    {userProfile
-                      ? getUserInitials(
-                          userProfile.firstName,
-                          userProfile.lastName,
-                        )
-                      : "U"}
-                  </span>
-                </button>
+                {/* Profile Avatar/Button Container - relative for dropdown positioning */}
+                <div className="relative">
+                  {/* Profile Avatar/Button */}
+                  <button
+                    className="w-12 h-12 rounded-full relative overflow-hidden border-2 border-white/30 hover:border-amber-400 transition-all duration-200 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 hover:scale-105 active:scale-95"
+                    onClick={togglePopup}
+                    aria-label="User menu"
+                    aria-expanded={isPopupOpen}
+                  >
+                    <span className="text-white font-semibold text-lg transition-transform duration-200">
+                      {userProfile
+                        ? getUserInitials(
+                            userProfile.firstName,
+                            userProfile.lastName,
+                          )
+                        : "U"}
+                    </span>
+                  </button>
 
-                {/* Popup Menu */}
-                {isPopupOpen && (
+                  {/* Popup Menu */}
                   <div
                     ref={popupRef}
-                    className="absolute top-16 right-0 bg-white shadow-xl rounded-lg py-2 w-48 z-50"
+                    className={`absolute top-full right-0 mt-2 bg-white shadow-2xl rounded-xl border border-gray-100 overflow-hidden w-56 z-50 transition-all duration-200 ease-out origin-top-right ${
+                      isPopupOpen
+                        ? "opacity-100 scale-100 translate-y-0 pointer-events-auto visible"
+                        : "opacity-0 scale-95 -translate-y-2 pointer-events-none invisible"
+                    }`}
                   >
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {userProfile?.firstName || "User"}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {userProfile?.email || ""}
-                      </p>
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <span className="text-white font-semibold text-sm">
+                            {userProfile
+                              ? getUserInitials(
+                                  userProfile.firstName,
+                                  userProfile.lastName,
+                                )
+                              : "U"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {userProfile?.firstName && userProfile?.lastName
+                              ? `${userProfile.firstName} ${userProfile.lastName}`
+                              : userProfile?.firstName || "User"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {userProfile?.email || ""}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <Link
-                      href="/dashboard/account-setting"
-                      className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
-                      onClick={() => setIsPopupOpen(false)}
-                    >
-                      Profile
-                    </Link>
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
-                      onClick={() => setIsPopupOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </button>
+
+                    {/* Menu Items */}
+                    <div className="py-1.5">
+                      <Link
+                        href="/dashboard"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-all duration-150 group"
+                        onClick={() => setIsPopupOpen(false)}
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-gray-400 group-hover:text-[#1a2a3a] transition-colors" />
+                        <span className="text-sm font-medium flex-1">
+                          Dashboard
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-400 transition-colors opacity-0 group-hover:opacity-100" />
+                      </Link>
+                      <Link
+                        href="/dashboard/account-setting"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-all duration-150 group"
+                        onClick={() => setIsPopupOpen(false)}
+                      >
+                        <Settings className="h-4 w-4 text-gray-400 group-hover:text-[#1a2a3a] transition-colors" />
+                        <span className="text-sm font-medium flex-1">
+                          Account Settings
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-400 transition-colors opacity-0 group-hover:opacity-100" />
+                      </Link>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 my-1"></div>
+
+                    {/* Logout Button */}
+                    <div className="px-1.5 pb-1.5">
+                      <button
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 rounded-lg group"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="h-4 w-4 text-red-500 group-hover:text-red-600 transition-colors" />
+                        <span className="text-sm font-medium">Logout</span>
+                      </button>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ) : (

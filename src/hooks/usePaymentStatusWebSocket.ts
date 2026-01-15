@@ -51,7 +51,21 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
       return;
     }
 
+    // In development, optionally skip WebSocket if backend is likely unavailable
+    // Set NEXT_PUBLIC_DISABLE_WS=true to disable WebSocket connections
+    if (
+      process.env.NODE_ENV === "development" &&
+      process.env.NEXT_PUBLIC_DISABLE_WS === "true"
+    ) {
+      return;
+    }
+
     const connectWebSocket = () => {
+      // Skip if we've exceeded max reconnection attempts
+      if (reconnectAttempts.current >= maxReconnectAttempts) {
+        return;
+      }
+
       try {
         // Get WebSocket URL from environment or use default
         let wsUrl =
@@ -62,6 +76,9 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
         // Remove /api prefix if present (WebSocket endpoints typically don't use it)
         wsUrl = wsUrl.replace(/\/api$/, "");
 
+        // Create WebSocket connection
+        // Note: Browser will log connection failures automatically - this is expected
+        // when backend is not available and cannot be fully suppressed
         const ws = new WebSocket(`${wsUrl}/ws/payment-status-updates`);
 
         let pingInterval: NodeJS.Timeout | null = null;
@@ -241,16 +258,21 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
       if (wsRef.current) {
         try {
           // Only close if connection is open or connecting
+          // Skip closing if already closed to avoid triggering browser error logs
+          const readyState = wsRef.current.readyState;
           if (
-            wsRef.current.readyState === WebSocket.OPEN ||
-            wsRef.current.readyState === WebSocket.CONNECTING
+            readyState === WebSocket.OPEN ||
+            readyState === WebSocket.CONNECTING
           ) {
-            wsRef.current.close();
+            // Set a flag to prevent error logging during cleanup
+            wsRef.current.onerror = null; // Remove error handler before closing
+            wsRef.current.close(1000, "Component unmounting"); // Normal closure
           }
         } catch (err) {
-          // Ignore errors during cleanup
+          // Silently ignore errors during cleanup
+        } finally {
+          wsRef.current = null;
         }
-        wsRef.current = null;
       }
     };
   }, [enabled, queryClient]);

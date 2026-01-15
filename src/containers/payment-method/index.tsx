@@ -166,6 +166,7 @@ const PaymentMethodContainer: React.FC = () => {
                 width={80}
                 height={80}
                 className="object-contain"
+                style={{ width: "auto", height: "auto" }}
               />
               <p className="text-sm font-medium text-gray-700">{option.name}</p>
               {selected === option.id && isLoggedIn && (

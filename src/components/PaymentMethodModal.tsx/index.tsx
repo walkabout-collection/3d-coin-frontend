@@ -148,6 +148,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   width={40}
                   height={40}
                   className="object-contain max-w-full max-h-full"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
               <span className="text-xs font-medium text-gray-700 text-center">
