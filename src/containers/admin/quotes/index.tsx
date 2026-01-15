@@ -139,22 +139,33 @@ const AdminQuotes: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     if (page < 1) return;
-    if (pagination && page > pagination.totalPages) return;
+    if (page > totalPagesForFiltered) return;
 
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Force refetch on page change
+  // Reset to page 1 when search or sort changes
   useEffect(() => {
-    refetch();
-    setSortedDataState([]);
-  }, [currentPage, refetch]);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, internalSort]);
+
+  // Calculate pagination based on filtered data (client-side)
+  const totalFilteredItems = filteredData.length;
+  const totalPagesForFiltered = Math.ceil(totalFilteredItems / entriesPerPage);
+
+  // Get paginated data for current page
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    const endIndex = startIndex + entriesPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, entriesPerPage]);
 
   // Get page numbers for pagination
   const getPageNumbers = () => {
-    if (!pagination) return [];
-    const totalPages = pagination.totalPages;
+    if (totalPagesForFiltered <= 1) return [];
     const currentPageNum = currentPage;
     const maxPagesToShow = 5;
     const pageNumbers: number[] = [];
@@ -163,7 +174,10 @@ const AdminQuotes: React.FC = () => {
       1,
       currentPageNum - Math.floor(maxPagesToShow / 2),
     );
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    const endPage = Math.min(
+      totalPagesForFiltered,
+      startPage + maxPagesToShow - 1,
+    );
 
     if (endPage - startPage + 1 < maxPagesToShow) {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
@@ -328,7 +342,7 @@ const AdminQuotes: React.FC = () => {
           <p className="text-gray-500 text-lg">No quotes found</p>
         </div>
       ) : (
-        filteredData.map((quote) => (
+        paginatedData.map((quote) => (
           <div
             key={quote.id}
             className="bg-gray-100 p-6 rounded-lg flex justify-between items-center mb-2"
@@ -430,25 +444,24 @@ const AdminQuotes: React.FC = () => {
         <ViewQuoteModal id={viewQuoteId} onClose={() => setViewQuoteId(null)} />
       )}
 
-      {/* Pagination - Matching Orders Page Style */}
-      {pagination && pagination.totalPages > 1 && (
+      {/* Pagination - Only show if there are enough items to paginate */}
+      {totalPagesForFiltered > 1 && (
         <div className="flex items-center justify-between mt-6 pt-4 mb-10">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-700">
             Showing{" "}
-            {(currentPage - 1) * (pagination.limit || entriesPerPage) + 1} to{" "}
-            {Math.min(
-              currentPage * (pagination.limit || entriesPerPage),
-              pagination.total,
-            )}{" "}
-            of {pagination.total} entries
+            {totalFilteredItems === 0
+              ? 0
+              : (currentPage - 1) * entriesPerPage + 1}{" "}
+            to {Math.min(currentPage * entriesPerPage, totalFilteredItems)} of{" "}
+            {totalFilteredItems} entries
           </div>
 
           <div className="flex items-center gap-2">
             {/* Previous Button */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}
-              disabled={!pagination.hasPreviousPage || isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={currentPage === 1 || isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
@@ -472,8 +485,8 @@ const AdminQuotes: React.FC = () => {
             {/* Next Button */}
             <button
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={!pagination.hasNextPage || isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={currentPage >= totalPagesForFiltered || isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>
