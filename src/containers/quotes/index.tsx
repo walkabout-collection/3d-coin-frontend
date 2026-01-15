@@ -25,16 +25,18 @@ const Quotes: React.FC = () => {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const limit = 4; // Default limit as per API spec
+  const entriesPerPage = 4; // Items per page for client-side pagination
 
+  // Fetch all quotes (or a large number) for client-side pagination
+  // Using a large limit to get all quotes, then paginate client-side
   const {
     data: quotesData,
     isPending,
     isError,
     error,
   } = useUserQuotes({
-    page: currentPage,
-    limit: limit,
+    page: 1,
+    limit: 100, // Fetch a large number to get all quotes, then paginate client-side
   });
 
   const { data: paymentNotificationsData } = usePaymentNotifications();
@@ -113,26 +115,6 @@ const Quotes: React.FC = () => {
     );
   }, [quotesData]);
 
-  const pagination = useMemo(() => {
-    if (!quotesData || !quotesData.pagination) {
-      return null;
-    }
-    return quotesData.pagination;
-  }, [quotesData]);
-
-  // Handle case where page is beyond total pages (API returns empty array)
-  useEffect(() => {
-    if (
-      pagination &&
-      quotesArray.length === 0 &&
-      pagination.totalPages > 0 &&
-      currentPage > pagination.totalPages
-    ) {
-      // Redirect to last page if current page is beyond total pages
-      setCurrentPage(pagination.totalPages);
-    }
-  }, [pagination, quotesArray.length, currentPage]);
-
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort?.length) return dataToSort;
 
@@ -169,8 +151,29 @@ const Quotes: React.FC = () => {
     );
   }, [sortedData, searchTerm]);
 
+  // Calculate client-side pagination based on filtered data
+  const totalFilteredItems = filteredData.length;
+  const totalPagesForFiltered = Math.ceil(totalFilteredItems / entriesPerPage);
+
+  // Get paginated data for current page
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    const endIndex = startIndex + entriesPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, entriesPerPage]);
+
+  // Reset to page 1 when search or sort changes, or if current page is beyond total pages
+  useEffect(() => {
+    if (currentPage > totalPagesForFiltered && totalPagesForFiltered > 0) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, internalSort, totalPagesForFiltered, currentPage]);
+
   const handleSortChange = (sort: string) => {
     setInternalSort(sort);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   };
 
   const handleSearch = (term: string) => {
@@ -182,13 +185,7 @@ const Quotes: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     if (page < 1) return;
-    if (pagination && page > pagination.totalPages) {
-      // If page is beyond total pages, redirect to last page
-      if (pagination.totalPages > 0) {
-        setCurrentPage(pagination.totalPages);
-      }
-      return;
-    }
+    if (page > totalPagesForFiltered) return;
 
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -379,10 +376,11 @@ const Quotes: React.FC = () => {
     );
   }
 
-  const totalEntries = pagination?.total ?? filteredData.length;
-  const totalPages = pagination?.totalPages ?? 1;
-  const hasNextPage = pagination?.hasNextPage ?? currentPage < totalPages;
-  const hasPreviousPage = pagination?.hasPreviousPage ?? currentPage > 1;
+  // Calculate pagination values based on filtered data
+  const totalEntries = totalFilteredItems;
+  const totalPages = totalPagesForFiltered;
+  const hasNextPage = currentPage < totalPages;
+  const hasPreviousPage = currentPage > 1;
 
   return (
     <div className="min-h-screen">
@@ -409,7 +407,7 @@ const Quotes: React.FC = () => {
             <p className="text-gray-500 text-lg">No quotes available</p>
           </div>
         ) : (
-          filteredData.map((quote) => {
+          paginatedData.map((quote) => {
             const notificationStatus = quotePaymentStatusMap.get(quote.id);
             const isPaidFromNotification = notificationStatus === "SUCCESS";
 
@@ -452,16 +450,19 @@ const Quotes: React.FC = () => {
         )}
       </div>
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalEntries={totalEntries}
-        entriesPerPage={limit}
-        onPageChange={handlePageChange}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
-        itemLabel="quotes"
-      />
+      {/* Only show pagination if there are enough items to paginate */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalEntries={totalEntries}
+          entriesPerPage={entriesPerPage}
+          onPageChange={handlePageChange}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          itemLabel="quotes"
+        />
+      )}
 
       {selectedQuote && (
         <PayNowModal
