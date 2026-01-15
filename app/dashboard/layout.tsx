@@ -40,10 +40,9 @@ export default function UserProfilesLayout({
           {mainItems.map((item) => {
             let isActive = false;
 
-            // Dashboard should be active when on /dashboard or any /dashboard/* route
+            // Dashboard should be active only when on /dashboard (not on sub-routes)
             if (item.href === "/dashboard") {
-              isActive =
-                pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+              isActive = pathname === "/dashboard";
             }
             // Other items should be active when on their exact route or sub-routes
             else {
