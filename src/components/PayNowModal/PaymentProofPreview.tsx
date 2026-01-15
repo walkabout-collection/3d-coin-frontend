@@ -104,7 +104,7 @@ export const PaymentProofPreview: React.FC<PaymentProofPreviewProps> = ({
           </div>
         </div>
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-700 font-medium">
         Click image to zoom in/out. Make sure the payment details are clearly
         visible.
       </p>
