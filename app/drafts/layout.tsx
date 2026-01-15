@@ -30,8 +30,8 @@ export default function DraftsLayout({ children }: UserProfilesLayoutProps) {
   );
 
   return (
-    <div className="flex h-screen">
-      <aside className="w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col justify-between">
+    <div className="flex min-h-screen">
+      <aside className="fixed left-0 top-20 w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col justify-between h-[calc(100vh-5rem)] overflow-y-auto z-40">
         {/* Top navigation */}
         <nav className="flex flex-col space-y-4">
           {mainItems.map((item) => {
@@ -120,8 +120,8 @@ export default function DraftsLayout({ children }: UserProfilesLayoutProps) {
           })}
         </nav>
       </aside>
-      <div className="flex flex-col flex-1 bg-white overflow-hidden">
-        <main className="flex-grow p-6 overflow-y-auto">{children}</main>
+      <div className="flex flex-col flex-1 bg-white ml-64">
+        <main className="flex-grow p-6">{children}</main>
       </div>
     </div>
   );

@@ -101,7 +101,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col justify-between">
+      <aside className="fixed left-0 top-20 w-64 bg-[#f5f7fa] shadow-lg p-4 flex flex-col justify-between h-[calc(100vh-5rem)] overflow-y-auto z-40">
         {/* Top navigation */}
         <nav className="flex flex-col space-y-4">
           {mainItems.map((item) => {
@@ -178,7 +178,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content + Footer */}
-      <div className="flex flex-col flex-1 bg-white">
+      <div className="flex flex-col flex-1 bg-white ml-64">
         <main className="flex-grow p-6">{children}</main>
       </div>
     </div>

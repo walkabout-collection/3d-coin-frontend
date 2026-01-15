@@ -168,11 +168,11 @@ const DraftCard: React.FC<DraftCardProps> = ({
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer group"
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer group flex flex-col h-full"
       onClick={handleCardClick}
     >
       {/* Preview Image Section */}
-      <div className="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+      <div className="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden flex-shrink-0">
         {previewImage.startsWith("data:") ? (
           // Use regular img tag for data URLs to avoid Next.js optimization issues
           <img
@@ -216,7 +216,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
       </div>
 
       {/* Content Section */}
-      <div className="p-5">
+      <div className="p-5 flex flex-col flex-grow">
         {/* Title and Type */}
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">
@@ -258,7 +258,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
 
         {/* Delete Confirmation */}
         {showDeleteConfirm && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg mt-auto">
             <p className="text-sm text-red-800 mb-3 font-medium">
               Are you sure you want to delete this draft? This action cannot be
               undone.
@@ -288,7 +288,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
 
         {/* Action Buttons */}
         {!showDeleteConfirm && (
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2 pt-2 mt-auto">
             <div className="flex items-center gap-2">
               <button
                 onClick={handleView}

@@ -159,18 +159,24 @@ const Navbar: React.FC<NavbarProps> = ({
           shouldShowShadow ? "shadow-lg" : ""
         }`}
       >
-        <div className="container-fluid flex items-center justify-between h-full px-8">
+        <div className="container-fluid flex items-center justify-between h-full px-8 relative">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-36 h-20 rounded-full flex items-center justify-center px-4">
+          <Link
+            href="/"
+            className="flex items-center hover:opacity-90 transition-opacity z-10"
+          >
+            <div className="relative h-12 w-12 flex-shrink-0 flex items-center justify-center">
               <Image
                 src="/images/navbar/legacy-forge-icon.svg"
                 alt="Legacy Forge Icon"
-                width={80}
-                height={60}
+                width={48}
+                height={48}
+                className="object-contain w-auto h-auto"
                 priority
                 style={{ width: "auto", height: "auto" }}
               />
+            </div>
+            <div className="hidden sm:block h-auto w-auto flex items-center">
               <Image
                 src="/images/navbar/legacy-forge.svg"
                 alt="Legacy Forge"
@@ -182,7 +188,8 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           </Link>
 
-          <div className="flex items-center space-x-14">
+          {/* Centered Navigation Links */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-14">
             {navLinks.map((item) => (
               <Link
                 key={item.href}
@@ -199,7 +206,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {isLoggedIn ? (
-            <div className="flex items-center space-x-6 relative">
+            <div className="flex items-center space-x-6 relative z-10">
               <div className="flex items-center space-x-3">
                 {/* User Name */}
                 <span className="text-white font-medium text-sm">
@@ -304,7 +311,7 @@ const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 z-10">
               {navLinksAuth.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <button
