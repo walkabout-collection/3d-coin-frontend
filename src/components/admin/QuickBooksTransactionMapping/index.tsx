@@ -307,11 +307,7 @@ const QuickBooksTransactionMapping: React.FC = () => {
           <p className="text-gray-500">No transactions found</p>
         </div>
       ) : (
-        <Table
-          columns={transactionColumns}
-          data={filteredTransactions}
-          alternatingRows={true}
-        />
+        <Table columns={transactionColumns} data={filteredTransactions} />
       )}
     </div>
   );
