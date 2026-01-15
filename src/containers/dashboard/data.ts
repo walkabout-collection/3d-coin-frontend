@@ -1,45 +1,50 @@
-import { SidebarItem, DashboardCard } from './types';
+import { SidebarItem, DashboardCard } from "./types";
 
 export const sidebarItems: SidebarItem[] = [
-  { 
-    name: "Dashboard", 
-    href: "/dashboard", 
-    icon: "/images/dashboard/dashboard.svg" 
+  {
+    name: "Dashboard",
+    href: "/dashboard",
+    icon: "/images/dashboard/dashboard.svg",
   },
-  { 
-    name: "Orders", 
-    href: "/dashboard/orders", 
-    icon: "/images/dashboard/orders.svg" 
+  {
+    name: "Orders",
+    href: "/dashboard/orders",
+    icon: "/images/dashboard/orders.svg",
   },
-  { 
-    name: "Quotes", 
-    href: "/dashboard/quotes", 
-    icon: "/images/dashboard/quotes.svg" 
+  {
+    name: "Quotes",
+    href: "/dashboard/quotes",
+    icon: "/images/dashboard/quotes.svg",
   },
-  { 
-    name: "Tracking", 
-    href: "/dashboard/tracking", 
-    icon: "/images/dashboard/tracking.svg" 
+  {
+    name: "Drafts",
+    href: "/drafts",
+    icon: "/images/dashboard/quotes.svg",
   },
-  { 
-    name: "Payment Method", 
-    href: "/dashboard/payment-method", 
-    icon: "/images/dashboard/payment-method.svg" 
+  {
+    name: "Tracking",
+    href: "/dashboard/tracking",
+    icon: "/images/dashboard/tracking.svg",
   },
-  { 
-    name: "Payment History", 
-    href: "/dashboard/payment-history", 
-    icon: "/images/dashboard/payment-history.svg" 
+  {
+    name: "Payment Method",
+    href: "/dashboard/payment-method",
+    icon: "/images/dashboard/payment-method.svg",
   },
-  { 
-    name: "Account Setting", 
-    href: "/dashboard/account-setting", 
-    icon: "/images/dashboard/account-setting.svg" 
+  {
+    name: "Payment History",
+    href: "/dashboard/payment-history",
+    icon: "/images/dashboard/payment-history.svg",
   },
-  { 
-    name: "Log Out", 
-    href: "", 
-    icon: "/images/dashboard/log-out.svg" 
+  {
+    name: "Account Setting",
+    href: "/dashboard/account-setting",
+    icon: "/images/dashboard/account-setting.svg",
+  },
+  {
+    name: "Log Out",
+    href: "",
+    icon: "/images/dashboard/log-out.svg",
   },
 ];
 
@@ -49,27 +54,27 @@ export const dashboardCards: DashboardCard[] = [
     title: "Lifetime Orders",
     value: 100,
     icon: "/images/dashboard/lifetime-orders.svg",
-    bgColor: "#f4f6fa"
+    bgColor: "#f4f6fa",
   },
   {
     id: 2,
     title: "Pending Quotes",
     value: 25,
     icon: "/images/dashboard/pending-quotes.svg",
-    bgColor: "#f4f6fa"
+    bgColor: "#f4f6fa",
   },
   {
     id: 3,
     title: "Approve Quotes",
     value: 25,
     icon: "/images/dashboard/approve-quotes.svg",
-    bgColor: "#f4f6fa"
+    bgColor: "#f4f6fa",
   },
   {
     id: 4,
     title: "Payment",
     value: 25,
     icon: "/images/dashboard/payment.svg",
-    bgColor: "#f4f6fa"
-  }
+    bgColor: "#f4f6fa",
+  },
 ];

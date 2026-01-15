@@ -1,15 +1,18 @@
 "use client";
 import React, { useMemo } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { dashboardCards } from "./data";
 import { DashboardProps } from "./types";
 import {
   useGetUserStats,
   useUserOrders,
   useUserOrderHistory,
+  useUserDrafts,
 } from "@/src/hooks/useQueries";
 import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
+import Button from "@/src/components/common/button/Button";
 import { UserOrder } from "@/src/services/apiServices";
 import { OrderDataItem } from "../orders/types";
 
@@ -44,6 +47,7 @@ const formatDate = (dateString: string | number | undefined): string => {
 };
 
 export default function Dashboard({ cards = dashboardCards }: DashboardProps) {
+  const router = useRouter();
   const { data: stats } = useGetUserStats();
 
   // Fetch recent orders (limit 10)
@@ -60,6 +64,8 @@ export default function Dashboard({ cards = dashboardCards }: DashboardProps) {
       queryKey: [],
     },
   );
+
+  const { data: drafts } = useUserDrafts();
 
   const getCardValue = (title: string) => {
     switch (title) {
@@ -321,6 +327,33 @@ export default function Dashboard({ cards = dashboardCards }: DashboardProps) {
           </div>
         ))}
       </div>
+
+      {/* Drafts Section */}
+      {drafts && drafts.length > 0 && (
+        <div className="mt-8 mb-8">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  Your Drafts
+                </h2>
+                <p className="text-gray-600">
+                  You have {drafts.length} saved draft
+                  {drafts.length !== 1 ? "s" : ""}. Continue editing or submit
+                  your designs.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => router.push("/drafts")}
+                className="flex items-center gap-2"
+              >
+                View All Drafts
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Recent Orders Section */}
       <div className="mt-8">

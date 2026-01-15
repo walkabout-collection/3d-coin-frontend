@@ -19,7 +19,7 @@ const getCookie = (name: string): string | null => {
 
 const DraftsPage: React.FC = () => {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
 
@@ -53,13 +53,8 @@ const DraftsPage: React.FC = () => {
     };
   }, []);
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      toast.error("Please log in to view your drafts");
-      router.push("/auth/login");
-    }
-  }, [isLoggedIn, isLoading, router]);
+  // Note: Authentication is handled by middleware, but we still check for API errors
+  // The middleware will redirect to login if not authenticated
 
   const handleEdit = (draftId: string) => {
     // Load draft and navigate to appropriate page
@@ -100,6 +95,7 @@ const DraftsPage: React.FC = () => {
 
   const draftsList = drafts || [];
 
+  // Show loading while loading drafts
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -111,10 +107,38 @@ const DraftsPage: React.FC = () => {
     );
   }
 
+  // Handle API errors
   if (isError) {
+    // Check if it's an authentication error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorWithStatus = error as {
+      status?: number;
+      response?: { status?: number };
+    };
+    const errorStatus =
+      errorWithStatus?.status || errorWithStatus?.response?.status;
+    const isUnauthorized =
+      errorStatus === 401 ||
+      errorMessage.includes("401") ||
+      errorMessage.includes("Unauthorized");
+
+    if (isUnauthorized) {
+      // Middleware should handle this, but show a message just in case
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-red-600">Please log in to view your drafts</p>
+            <Button variant="primary" onClick={() => router.push("/login")}>
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className=" w-full  border border-red-200 rounded-lg p-6">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -141,8 +165,8 @@ const DraftsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen  py-8 px-4">
+      <div className=" mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -154,7 +178,7 @@ const DraftsPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={() => router.push("/")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 max-w-[260px]"
           >
             <Plus className="h-5 w-5" />
             New Design

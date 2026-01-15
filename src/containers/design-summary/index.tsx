@@ -8,7 +8,7 @@ import Input from "@/src/components/common/input";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useCreateDesign } from "@/src/hooks/useQueries";
+import { useCreateDesign, useUpdateDraft } from "@/src/hooks/useQueries";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import { uploadBase64ToS3 } from "@/src/services/apiServices";
 import LoadingSpinner from "@/src/components/common/LoadingSpinner";
@@ -54,8 +54,26 @@ const DesignSummarySection = () => {
     },
   });
 
-  const { dimensions, material, edgeType, artwork, packaging, textRings } =
-    useStandardBuilderStore();
+  const {
+    dimensions,
+    material,
+    edgeType,
+    artwork,
+    packaging,
+    textRings,
+    currentDraftId,
+  } = useStandardBuilderStore();
+
+  const { mutate: updateDraft, isPending: isUpdatingDraft } = useUpdateDraft({
+    onSuccess: () => {
+      toast.success("Draft updated successfully!");
+      router.push("/drafts");
+    },
+    onError: (err) => {
+      console.error("UpdateDraft error:", err);
+      toast.error("Failed to update draft: " + err.message);
+    },
+  });
 
   useEffect(() => {
     const checkAuth = () => {
@@ -235,10 +253,16 @@ const DesignSummarySection = () => {
         generatorImage: generatorImageKey,
         frontImage: frontImageKey,
         frontDescription: artwork.front.prompt || undefined,
-        frontText: textRings.front.top || textRings.front.bottom || undefined,
+        frontText:
+          textRings.front.top && textRings.front.bottom
+            ? `${textRings.front.top}\n${textRings.front.bottom}`
+            : textRings.front.top || textRings.front.bottom || undefined,
         backImage: backImageKey,
         backDescription: artwork.back.prompt || undefined,
-        backText: textRings.back.top || textRings.back.bottom || undefined,
+        backText:
+          textRings.back.top && textRings.back.bottom
+            ? `${textRings.back.top}\n${textRings.back.bottom}`
+            : textRings.back.top || textRings.back.bottom || undefined,
         coinShape: dimensions.coinDiameter
           ? `Diameter: ${dimensions.coinDiameter}`
           : undefined,
@@ -250,7 +274,32 @@ const DesignSummarySection = () => {
 
       console.log("Submitting designData with S3 keys:", designData);
 
-      createDesign(designData);
+      // If editing an existing draft and status is DRAFT, use updateDraft
+      if (status === "DRAFT" && currentDraftId) {
+        // For updateDraft, we only send draft-specific fields (no status, email, method, feedback, packaging)
+        const draftUpdateData = {
+          name: designData.name,
+          totalCoins: designData.totalCoins,
+          generatorPrompt: designData.generatorPrompt,
+          generatorImage: designData.generatorImage,
+          frontImage: designData.frontImage,
+          frontDescription: designData.frontDescription,
+          frontText: designData.frontText,
+          backImage: designData.backImage,
+          backDescription: designData.backDescription,
+          backText: designData.backText,
+          frontTextStyle: undefined, // Can be added if needed
+          backTextStyle: undefined, // Can be added if needed
+          coinShape: designData.coinShape,
+          materialFinish: designData.materialFinish,
+        };
+        updateDraft({
+          draftId: currentDraftId,
+          data: draftUpdateData,
+        });
+      } else {
+        createDesign(designData);
+      }
     } catch (error) {
       console.error("Error uploading images to S3:", error);
       // Error toast is already shown in getS3KeyOrOriginal
@@ -449,9 +498,9 @@ const DesignSummarySection = () => {
             variant="ternary"
             onClick={handleSaveAsDraft}
             className="max-w-[280px] w-full text-md font-base !bg-gray-200 border-none flex items-center justify-center gap-2"
-            disabled={isPending}
+            disabled={isPending || isUpdatingDraft}
           >
-            {isPending ? (
+            {isPending || isUpdatingDraft ? (
               <>
                 <LoadingSpinner size="sm" className="text-gray-600" />
                 <span>Saving...</span>
@@ -468,7 +517,7 @@ const DesignSummarySection = () => {
             handleSubmitForQuote(undefined, undefined, undefined, "SUBMITTED")
           }
           className="max-w-[280px] w-full text-lg font-medium flex items-center justify-center gap-2"
-          disabled={isPending || selectedButton === null}
+          disabled={isPending || isUpdatingDraft || selectedButton === null}
         >
           {isPending ? (
             <>

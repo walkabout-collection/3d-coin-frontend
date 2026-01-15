@@ -90,9 +90,34 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // 5️⃣ Protect drafts routes - require authentication
+  if (pathname.startsWith("/drafts")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
+    try {
+      const payload = jwtDecode<TokenPayload>(token);
+
+      // Check if token is expired
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    } catch (err) {
+      // Invalid token, redirect to login
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/signup"],
+  matcher: [
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/drafts/:path*",
+    "/login",
+    "/signup",
+  ],
 };

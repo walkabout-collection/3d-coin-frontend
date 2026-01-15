@@ -61,18 +61,16 @@ interface StandardBuilderState {
     };
   };
   loadDraftData: (draftData: {
-    dimensions?: { coinDiameter?: string; coinThickness?: string };
-    material?: string;
-    edgeType?: string;
-    artwork?: {
-      front?: { prompt?: string; previewImage?: string | null };
-      back?: { prompt?: string; previewImage?: string | null };
-    };
-    packaging?: { preferences?: string; backText?: string };
-    textRings?: {
-      front?: { top?: string; bottom?: string; noText?: boolean };
-      back?: { top?: string; bottom?: string; noText?: boolean };
-    };
+    coinShape?: string;
+    materialFinish?: string;
+    frontDescription?: string;
+    frontImage?: string;
+    frontText?: string;
+    backDescription?: string;
+    backImage?: string;
+    backText?: string;
+    generatorPrompt?: string;
+    generatorImage?: string;
   }) => void;
 
   reset: () => void;

@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
-import { Calendar, Edit2, Trash2, Clock, FileText } from "lucide-react";
+import { Calendar, Edit2, Trash2, Clock, FileText, Eye } from "lucide-react";
 import { DraftDesign } from "@/src/services/apiServices";
 import { useDeleteDraft } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
@@ -14,6 +15,7 @@ interface DraftCardProps {
 }
 
 const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
+  const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const deleteDraftMutation = useDeleteDraft({
@@ -95,8 +97,20 @@ const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
     }
   };
 
+  const handleView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/drafts/${draft.id}`);
+  };
+
+  const handleCardClick = () => {
+    router.push(`/drafts/${draft.id}`);
+  };
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-200">
+    <div
+      className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="flex flex-col md:flex-row gap-4">
         {/* Preview Image */}
         <div className="flex-shrink-0">
@@ -184,24 +198,29 @@ const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
 
           {/* Action Buttons */}
           {!showDeleteConfirm && (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="primary"
-                onClick={handleEdit}
-                className="flex items-center gap-2 text-sm px-4 py-2"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleView}
+                className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                title="View"
               >
-                <Edit2 className="h-4 w-4" />
-                Edit
-              </Button>
-              <Button
-                variant="ternary"
+                <Eye className="h-5 w-5" />
+              </button>
+              <button
+                onClick={handleEdit}
+                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                title="Edit"
+              >
+                <Edit2 className="h-5 w-5" />
+              </button>
+              <button
                 onClick={handleDeleteClick}
                 disabled={deleteDraftMutation.isPending}
-                className="flex items-center gap-2 !text-red-600 hover:!bg-red-50 text-sm px-4 py-2"
+                className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete"
               >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
+                <Trash2 className="h-5 w-5" />
+              </button>
             </div>
           )}
         </div>
