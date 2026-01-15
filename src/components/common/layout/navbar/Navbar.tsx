@@ -4,8 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { navLinks, navLinksAuth } from "./data";
-import { NavbarProps, User } from "./types";
-import { useLogout } from "@/src/hooks/useQueries"; 
+import { NavbarProps } from "./types";
+import { useLogout, useGetUserProfile } from "@/src/hooks/useQueries";
+import NotificationBadge from "@/src/components/NotificationBadge";
+import { useQueryClient } from "@tanstack/react-query";
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
@@ -14,17 +16,48 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
+// Helper function to get user initials
+const getUserInitials = (firstName?: string, lastName?: string): string => {
+  const first = firstName?.charAt(0).toUpperCase() || "";
+  const last = lastName?.charAt(0).toUpperCase() || "";
+  return first + last || "U";
+};
+
+// (removed unused getUserFullName helper)
+
 const Navbar: React.FC<NavbarProps> = ({
   transparent = false,
   className = "",
 }) => {
-  const [userData, setUserData] = useState<User | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isPopupOpen, setIsPopupOpen] = useState(false); 
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const popupRef = useRef<HTMLDivElement>(null); 
+  const popupRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const previousLoggedInRef = useRef<boolean>(false);
+
+  // Fetch user profile
+  const { data: userProfile, refetch: refetchProfile } = useGetUserProfile({
+    queryKey: ["userProfile"],
+    enabled: isLoggedIn,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always consider data stale to ensure fresh data
+  });
+
+  // Refetch profile when user logs in
+  useEffect(() => {
+    if (isLoggedIn) {
+      // Small delay to ensure token is set in cookies
+      const timer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        refetchProfile();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoggedIn, queryClient, refetchProfile]);
 
   const { mutate: logout } = useLogout({
     onSuccess: () => {
@@ -38,38 +71,36 @@ const Navbar: React.FC<NavbarProps> = ({
     },
   });
 
-  const updateUserData = () => {
-    const storedData = localStorage.getItem("user");
-    if (storedData) {
-      try {
-        setUserData(JSON.parse(storedData));
-      } catch (error) {
-        console.error("Failed to parse userData from localStorage:", error);
-        localStorage.removeItem("user");
-        setUserData(null);
-      }
-    } else {
-      setUserData(null);
-    }
-  };
-
   useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
-      setIsLoggedIn(!!token);
+      const newLoggedIn = !!token;
+      const previousLoggedIn = previousLoggedInRef.current;
+
+      setIsLoggedIn(newLoggedIn);
+
+      // If user just logged in (wasn't logged in before, but now is), refetch profile
+      if (!previousLoggedIn && newLoggedIn) {
+        // Invalidate and refetch user profile
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        setTimeout(() => {
+          refetchProfile();
+        }, 100);
+      }
+
+      // Update ref for next check
+      previousLoggedInRef.current = newLoggedIn;
     };
+
+    // Initial check
+    const token = getCookie("token");
+    previousLoggedInRef.current = !!token;
+    setIsLoggedIn(!!token);
 
     checkAuth();
     window.addEventListener("authChanged", checkAuth);
     return () => window.removeEventListener("authChanged", checkAuth);
-  }, []);
-
-  useEffect(() => {
-    updateUserData();
-    const handleStorageChange = () => updateUserData();
-    window.addEventListener("userChanged", handleStorageChange);
-    return () => window.removeEventListener("userChanged", handleStorageChange);
-  }, []);
+  }, [queryClient, refetchProfile]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -82,7 +113,10 @@ const Navbar: React.FC<NavbarProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(event.target as Node)
+      ) {
         setIsPopupOpen(false);
       }
     };
@@ -97,7 +131,6 @@ const Navbar: React.FC<NavbarProps> = ({
 
   const shouldShowShadow =
     (pathname !== "/" && pathname !== "/pricing") || isScrolled;
-
 
   const togglePopup = () => {
     setIsPopupOpen((prev) => !prev);
@@ -167,46 +200,70 @@ const Navbar: React.FC<NavbarProps> = ({
                 />
               </button>
 
-              <button
-                className="w-12 h-12 rounded-full relative"
-                onClick={togglePopup}
-              >
-                <Image
-                  src="/images/navbar/profile.svg"
-                  alt="Profile"
-                  width={40}
-                  height={40}
-                />
-              </button>
+              {/* Notification Badge */}
+              <NotificationBadge
+                onClick={() => router.push("/dashboard/payment-history")}
+                className="text-white"
+              />
 
-              {/* Popup Menu */}
-              {isPopupOpen && (
-                <div
-                  ref={popupRef}
-                  className="absolute top-16 right-0 bg-white shadow-xl rounded-lg py-2 w-48 z-50"
+              <div className="flex items-center space-x-3 relative">
+                {/* User Name */}
+                <span className="text-white font-medium text-sm">
+                  {userProfile?.firstName || "User"}
+                </span>
+
+                {/* Profile Avatar/Button */}
+                <button
+                  className="w-12 h-12 rounded-full relative overflow-hidden border-2 border-white/30 hover:border-amber-400 transition-colors flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600"
+                  onClick={togglePopup}
                 >
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
-                    onClick={() => setIsPopupOpen(false)}
+                  <span className="text-white font-semibold text-lg">
+                    {userProfile
+                      ? getUserInitials(
+                          userProfile.firstName,
+                          userProfile.lastName,
+                        )
+                      : "U"}
+                  </span>
+                </button>
+
+                {/* Popup Menu */}
+                {isPopupOpen && (
+                  <div
+                    ref={popupRef}
+                    className="absolute top-16 right-0 bg-white shadow-xl rounded-lg py-2 w-48 z-50"
                   >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
-                    onClick={() => setIsPopupOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {userProfile?.firstName || "User"}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {userProfile?.email || ""}
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/account-setting"
+                      className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
+                      onClick={() => setIsPopupOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
+                      onClick={() => setIsPopupOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-gray-800 font-medium hover:bg-gray-100"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center space-x-2">

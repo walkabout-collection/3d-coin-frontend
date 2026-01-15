@@ -10,8 +10,8 @@ export interface Payment {
   method: PaymentMethod;
   status: PaymentStatus;
   amount: number;
-  paidAt?: string | null;       // ISO date string
-  createdAt: string;            // ISO date string
+  paidAt?: string | null; // ISO date string
+  createdAt: string; // ISO date string
 }
 
 export interface OrderResponse {
@@ -57,7 +57,7 @@ export interface OrderResponse {
     packagingId: string | null;
     email: string | null;
     packaging: string | null;
-  description: string | null;
+    description: string | null;
     coinDesign: {
       id: string;
       userId: string | null;
@@ -92,11 +92,12 @@ export interface OrderResponse {
       updatedAt: string;
     } | null;
   }[];
-  payments: Payment[]; 
+  payments?: Payment[];
+  Payment?: Payment[]; // API returns Payment (capital P) in some cases
 }
 
 export interface OrderDataItem {
-   id: string;
+  id: string;
   trackingNo: string;
   packaging: string;
   order: string;
@@ -104,7 +105,6 @@ export interface OrderDataItem {
   payment: string;
   status: string;
   userId: string;
-  description: string;  
-  text: string;         
-};
-
+  description: string;
+  text: string;
+}

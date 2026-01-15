@@ -1,0 +1,36 @@
+"use client";
+import React from "react";
+
+interface LoadingSpinnerProps {
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  size = "md",
+  className = "",
+}) => {
+  const sizeClasses = {
+    sm: "w-4 h-4 border-2",
+    md: "w-6 h-6 border-2",
+    lg: "w-8 h-8 border-3",
+  };
+
+  const borderClasses = {
+    sm: "border-2",
+    md: "border-2",
+    lg: "border-[3px]",
+  };
+
+  return (
+    <div
+      className={`inline-block ${sizeClasses[size]} ${borderClasses[size]} border-t-transparent border-r-transparent border-b-transparent border-l-current rounded-full animate-spin ${className}`}
+      role="status"
+      aria-label="Loading"
+    >
+      <span className="sr-only">Loading...</span>
+    </div>
+  );
+};
+
+export default LoadingSpinner;

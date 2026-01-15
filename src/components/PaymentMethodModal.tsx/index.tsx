@@ -3,11 +3,16 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import { paymentOptions } from "./data";
+import { usePaymentPreferences } from "@/src/hooks/useQueries";
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPaymentSelect: (option: PaymentOption, amount: number, email?: string) => void;
+  onPaymentSelect: (
+    option: PaymentOption,
+    amount: number,
+    email?: string,
+  ) => void;
 }
 
 const getCookie = (name: string): string | null => {
@@ -28,6 +33,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [email, setEmail] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Fetch payment preferences when logged in
+  const { data: preferencesData } = usePaymentPreferences({
+    enabled: isLoggedIn && isOpen,
+  });
+
   useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
@@ -40,6 +50,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       window.removeEventListener("authChanged", checkAuth);
     };
   }, []);
+
+  // Pre-select preferred payment method when modal opens and preferences are loaded
+  useEffect(() => {
+    if (isOpen && isLoggedIn && preferencesData?.data?.preferredPaymentMethod) {
+      const preferred = preferencesData.data.preferredPaymentMethod;
+      // Find matching option - payment options use uppercase IDs (QUICKBOOKS, STRIPE, MANUAL)
+      const matchingOption = paymentOptions.find((opt) => opt.id === preferred);
+      if (matchingOption) {
+        setSelected(matchingOption.id);
+      }
+    } else if (isOpen && !isLoggedIn) {
+      // Reset selection if user is not logged in
+      setSelected("");
+    }
+  }, [isOpen, isLoggedIn, preferencesData]);
 
   const handleSelect = (option: PaymentOption) => {
     setSelected(option.id);
@@ -55,9 +80,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         return;
       }
       onPaymentSelect(selectedOption, parseFloat(amount), userEmail);
+      // Reset state when closing
+      setSelected("");
+      setAmount("");
+      setEmail("");
       onClose();
     }
   };
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelected("");
+      setAmount("");
+      setEmail("");
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -85,7 +123,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </p>
 
         {/* Payment Options */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 items-center justify-center gap-4 mt-4">
           {paymentOptions.map((option) => (
             <label
               key={option.id}
@@ -122,14 +160,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         {/* Amount Input */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Enter Total Coin Amount
+            Enter Quantity of Coins
           </label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
-            placeholder="Enter amount"
+            className="w-full border lowercase border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-800"
+            placeholder="e.g. 10"
           />
         </div>
 

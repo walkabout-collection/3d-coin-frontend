@@ -1,60 +1,173 @@
-'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import { Quote } from './types';
-import Search from '@/src/components/common/search';
-import SortDropdown from '@/src/components/common/SortDropdown';
-import { Eye } from 'lucide-react';
-import { useUserQuotes } from '@/src/hooks/useQueries';
+"use client";
+import React, { useState, useMemo, useEffect } from "react";
+import { Quote } from "./types";
+import Search from "@/src/components/common/search";
+import SortDropdown from "@/src/components/common/SortDropdown";
+import {
+  useUserQuotes,
+  useCreateStripeCheckout,
+  usePaymentNotifications,
+} from "@/src/hooks/useQueries";
+import PayNowModal from "@/src/components/PayNowModal";
+import QuoteCard from "@/src/components/QuoteCard";
+import { toast } from "react-toastify";
+import {
+  generateIdempotencyKey,
+  storeIdempotencyKey,
+  getIdempotencyKey,
+  clearIdempotencyKey,
+} from "@/src/utils/idempotency";
+import Pagination from "@/src/components/common/Pagination";
 
 const Quotes: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [internalSort, setInternalSort] = useState('newest');
-  const [sortedDataState, setSortedDataState] = useState<Quote[] | null>();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [internalSort, setInternalSort] = useState("newest");
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 4; // Default limit as per API spec
 
-  const {data: quotesData, isPending, isError, refetch} = useUserQuotes();
-  console.log(quotesData);
+  const {
+    data: quotesData,
+    isPending,
+    isError,
+    error,
+  } = useUserQuotes({
+    page: currentPage,
+    limit: limit,
+  });
 
- useEffect(() => {
-  setSortedDataState(quotesData ?? []);
-}, [quotesData]);
+  const { data: paymentNotificationsData } = usePaymentNotifications();
+  const [processingQuoteId, setProcessingQuoteId] = useState<string | null>(
+    null,
+  );
 
+  const quotePaymentStatusMap = useMemo(() => {
+    const map = new Map<string, "SUCCESS" | "PENDING" | "FAILED">();
 
+    if (
+      paymentNotificationsData?.success &&
+      paymentNotificationsData.data?.notifications
+    ) {
+      const notifications = paymentNotificationsData.data.notifications;
+
+      notifications.forEach((notification) => {
+        if (notification.quoteId && notification.status) {
+          const existingStatus = map.get(notification.quoteId);
+          if (!existingStatus || existingStatus !== "SUCCESS") {
+            map.set(notification.quoteId, notification.status);
+          }
+        }
+      });
+    }
+
+    return map;
+  }, [paymentNotificationsData]);
+
+  const { mutate: createStripeCheckout, isPending: isCreatingCheckout } =
+    useCreateStripeCheckout({
+      onSuccess: (data, variables) => {
+        if (data.success && data.data.url) {
+          clearIdempotencyKey(variables.quoteId);
+          setProcessingQuoteId(null);
+          window.location.href = data.data.url;
+        }
+      },
+      onError: (error) => {
+        setProcessingQuoteId(null);
+        const msg = error instanceof Error ? error.message : String(error);
+
+        if (msg.includes("already completed") || msg.includes("already paid")) {
+          toast.info("This quote has already been paid.");
+        } else if (msg.includes("duplicate") || msg.includes("idempotency")) {
+          toast.warning(
+            "A payment session is already being processed for this quote. Please wait.",
+          );
+        } else if (msg.includes("network") || msg.includes("timeout")) {
+          toast.error(
+            "Network error. Please check your connection and try again.",
+          );
+        } else if (msg.includes("rate limit")) {
+          toast.error("Too many requests. Please wait a moment and try again.");
+        } else {
+          toast.error(
+            msg || "Failed to create payment session. Please try again.",
+          );
+        }
+      },
+    });
+
+  const quotesArray: Quote[] = useMemo(() => {
+    if (!quotesData) return [];
+
+    let quotes: Quote[] = [];
+    if (quotesData?.data && Array.isArray(quotesData.data)) {
+      quotes = quotesData.data as Quote[];
+    } else if (Array.isArray(quotesData)) {
+      quotes = quotesData as Quote[];
+    }
+
+    // Filter out quotes with designStatus: "DRAFT"
+    return quotes.filter(
+      (quote) => quote.designStatus?.toUpperCase() !== "DRAFT",
+    );
+  }, [quotesData]);
+
+  const pagination = useMemo(() => {
+    if (!quotesData || !quotesData.pagination) {
+      return null;
+    }
+    return quotesData.pagination;
+  }, [quotesData]);
+
+  // Handle case where page is beyond total pages (API returns empty array)
+  useEffect(() => {
+    if (
+      pagination &&
+      quotesArray.length === 0 &&
+      pagination.totalPages > 0 &&
+      currentPage > pagination.totalPages
+    ) {
+      // Redirect to last page if current page is beyond total pages
+      setCurrentPage(pagination.totalPages);
+    }
+  }, [pagination, quotesArray.length, currentPage]);
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort?.length) return dataToSort;
 
     return [...dataToSort].sort((a, b) => {
       switch (sortValue) {
-        case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'order_asc':
-          return a.orderId!.localeCompare(b.orderId!);
-        case 'order_desc':
-          return b.orderId!.localeCompare(a.orderId!);
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case "order_asc":
+          return (a.orderId || "").localeCompare(b.orderId || "");
+        case "order_desc":
+          return (b.orderId || "").localeCompare(a.orderId || "");
         default:
           return 0;
       }
     });
   };
 
-  useEffect(() => {
-  if (quotesData) {
-    setSortedDataState(sortData(quotesData, internalSort));
-  }
-}, [internalSort, quotesData]);
-
+  const sortedData = useMemo(() => {
+    return sortData(quotesArray, internalSort);
+  }, [quotesArray, internalSort]);
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return sortedDataState;
-
-    return sortedDataState?.filter((row) =>
+    if (!searchTerm) return sortedData;
+    return sortedData.filter((row) =>
       Object.values(row).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+        String(value).toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
     );
-  }, [sortedDataState, searchTerm]);
+  }, [sortedData, searchTerm]);
 
   const handleSortChange = (sort: string) => {
     setInternalSort(sort);
@@ -62,25 +175,214 @@ const Quotes: React.FC = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   };
 
-  const viewQuote = (id: string) => {
-    console.log(`Viewing quote ${id}`);
+  const handlePageChange = (page: number) => {
+    if (page < 1) return;
+    if (pagination && page > pagination.totalPages) {
+      // If page is beyond total pages, redirect to last page
+      if (pagination.totalPages > 0) {
+        setCurrentPage(pagination.totalPages);
+      }
+      return;
+    }
+
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleStripePayment = (quote: Quote) => {
+    if (processingQuoteId === quote.id || isCreatingCheckout) {
+      toast.warning("Payment is already being processed. Please wait.");
+      return;
+    }
+
+    if (!quote.amount) {
+      toast.error("Quote amount is missing. Please contact support.");
+      return;
+    }
+
+    setProcessingQuoteId(quote.id);
+
+    let idempotencyKey = getIdempotencyKey(quote.id);
+    if (!idempotencyKey) {
+      idempotencyKey = generateIdempotencyKey(quote.id);
+      storeIdempotencyKey(quote.id, idempotencyKey);
+    }
+
+    createStripeCheckout({
+      quoteId: quote.id,
+      currency: "usd",
+      idempotencyKey,
+    });
+  };
+
+  const handleManualPayment = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setSelectedQuote(null);
+  };
+
+  const getQuoteStatusDisplay = (
+    status: string,
+    paymentStatus?: string,
+    isPaid?: boolean,
+    payments?: Array<{ status: string }>,
+  ) => {
+    // Check if payment is successful from multiple sources
+    const hasSuccessfulPayment =
+      isPaid ||
+      paymentStatus === "PAID" ||
+      paymentStatus === "SUCCESS" ||
+      (payments &&
+        Array.isArray(payments) &&
+        payments.some((p) => p.status === "SUCCESS"));
+
+    if (hasSuccessfulPayment) {
+      return {
+        text: "Payment Completed",
+        color: "bg-green-100 text-green-800",
+      };
+    }
+
+    switch (status.toUpperCase()) {
+      case "PENDING":
+        return {
+          text: "Pending Approval",
+          color: "bg-yellow-100 text-yellow-800",
+        };
+      case "APPROVED":
+        return {
+          text: "Approved - Payment Required",
+          color: "bg-blue-100 text-blue-800",
+        };
+      case "REJECTED":
+        return { text: "Rejected", color: "bg-red-100 text-red-800" };
+      default:
+        return { text: status, color: "bg-gray-100 text-gray-800" };
+    }
   };
 
   const sortOptionsDropdown = [
-    { value: 'newest', label: 'Newest To Oldest' },
-    { value: 'oldest', label: 'Oldest To Newest' },
-   
+    { value: "newest", label: "Newest To Oldest" },
+    { value: "oldest", label: "Oldest To Newest" },
   ];
 
   if (isPending) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading quotes...</p>
+      </div>
+    );
   }
 
   if (isError) {
-    return <div>Error</div>;
+    // Handle different error types based on API spec
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorWithStatus = error as {
+      status?: number;
+      response?: { status?: number };
+    };
+    const errorStatus =
+      errorWithStatus?.status || errorWithStatus?.response?.status;
+    const isUnauthorized =
+      errorStatus === 401 ||
+      errorMessage.includes("401") ||
+      errorMessage.includes("Unauthorized");
+    const isForbidden =
+      errorStatus === 403 ||
+      errorMessage.includes("403") ||
+      errorMessage.includes("Forbidden");
+    const isValidationError =
+      errorStatus === 400 ||
+      errorMessage.includes("400") ||
+      errorMessage.includes("Validation");
+    const isServerError =
+      errorStatus === 500 ||
+      errorMessage.includes("500") ||
+      errorMessage.includes("Internal");
+
+    if (isUnauthorized) {
+      // Redirect to login on 401
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-red-500">Please login to view your quotes</p>
+        </div>
+      );
+    }
+
+    if (isForbidden) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-red-500">
+            You don&apos;t have permission to access this page
+          </p>
+        </div>
+      );
+    }
+
+    if (isValidationError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+          <p className="text-red-500">Invalid page or limit value.</p>
+          <button
+            onClick={() => {
+              setCurrentPage(1);
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Reset to Default
+          </button>
+        </div>
+      );
+    }
+
+    if (isServerError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+          <p className="text-red-500">
+            Something went wrong. Please try again later.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-red-500">
+          Failed to fetch quotes. Please try again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
+
+  const totalEntries = pagination?.total ?? filteredData.length;
+  const totalPages = pagination?.totalPages ?? 1;
+  const hasNextPage = pagination?.hasNextPage ?? currentPage < totalPages;
+  const hasPreviousPage = pagination?.hasPreviousPage ?? currentPage > 1;
 
   return (
     <div className="min-h-screen">
@@ -101,47 +403,78 @@ const Quotes: React.FC = () => {
         />
       </div>
 
-      <div className="space-y-4">
-        {filteredData?.length === 0 ? (
+      <div className="space-y-2">
+        {!filteredData || filteredData.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No quotes found</p>
+            <p className="text-gray-500 text-lg">No quotes available</p>
           </div>
         ) : (
-          filteredData?.map((quote) => (
-            <div
-              key={quote.id}
-              className="bg-gray-100 p-6 rounded-lg flex justify-between items-center"
-            >
-              <div className="flex-1">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">Name:</span>
-                    <span className="text-sm text-gray-900">{quote.user?.firstName + " " + quote.user?.lastName}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">Order No:</span>
-                    <span className="text-sm text-gray-900">{quote.orderId}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-md font-bold text-black">Email:</span>
-                    <span className="text-sm text-gray-900">{quote.email ?? quote.user?.email}</span>
-                  </div>
-                </div>
-              </div>
+          filteredData.map((quote) => {
+            const notificationStatus = quotePaymentStatusMap.get(quote.id);
+            const isPaidFromNotification = notificationStatus === "SUCCESS";
 
-              <div className="flex flex-col items-center gap-2">
-                <button
-                  onClick={() => viewQuote(quote.id)}
-                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
-                  title="View Quote"
-                >
-                  <Eye size={22} />
-                </button>
-              </div>
-            </div>
-          ))
+            // Check Payment array for SUCCESS status
+            const hasPaymentSuccess =
+              quote.Payment &&
+              Array.isArray(quote.Payment) &&
+              quote.Payment.some((p) => p.status === "SUCCESS");
+
+            const enhancedQuote = {
+              ...quote,
+              paymentStatus: isPaidFromNotification
+                ? "SUCCESS"
+                : hasPaymentSuccess
+                  ? "SUCCESS"
+                  : quote.paymentStatus,
+              isPaid:
+                isPaidFromNotification || hasPaymentSuccess || quote.isPaid,
+            };
+
+            return (
+              <QuoteCard
+                key={quote.id}
+                quote={enhancedQuote}
+                isCreatingCheckout={isCreatingCheckout}
+                processingQuoteId={processingQuoteId}
+                onStripePayment={handleStripePayment}
+                onManualPayment={handleManualPayment}
+                getQuoteStatusDisplay={(status, paymentStatus, isPaid) =>
+                  getQuoteStatusDisplay(
+                    status,
+                    paymentStatus,
+                    isPaid,
+                    quote.Payment,
+                  )
+                }
+              />
+            );
+          })
         )}
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalEntries={totalEntries}
+        entriesPerPage={limit}
+        onPageChange={handlePageChange}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+        itemLabel="quotes"
+      />
+
+      {selectedQuote && (
+        <PayNowModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedQuote(null);
+          }}
+          quote={selectedQuote}
+          price={selectedQuote.amount || 0}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 };

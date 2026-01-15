@@ -3,8 +3,10 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useQueryClient } from "@tanstack/react-query";
 import Input from "@/src/components/common/input";
 import Button from "@/src/components/common/button/Button";
+import Image from "next/image";
 import {
   useGetUserProfile,
   useUpdateCurrentUserPassword,
@@ -13,14 +15,25 @@ import {
 import { toast } from "react-toastify";
 import { AxiosError } from "axios";
 
+// Helper function to get user initials
+const getUserInitials = (firstName?: string, lastName?: string): string => {
+  const first = firstName?.charAt(0).toUpperCase() || "";
+  const last = lastName?.charAt(0).toUpperCase() || "";
+  return first + last || "U";
+};
+
+// Helper function to get full name
+const getUserFullName = (firstName?: string, lastName?: string): string => {
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  }
+  return firstName || lastName || "User";
+};
+
 // Main form schema without password fields
 const formSchema = z.object({
-  firstName: z
-    .string()
-    .min(1, "First name is required"),
-  lastName: z
-    .string()
-    .min(1, "Last name is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
   contactNumber: z
     .string()
@@ -32,7 +45,9 @@ const formSchema = z.object({
 const passwordSchema = z
   .object({
     oldPassword: z.string().min(6, "Current password is required"),
-    newPassword: z.string().min(6, "New password must be at least 6 characters"),
+    newPassword: z
+      .string()
+      .min(6, "New password must be at least 6 characters"),
     confirmPassword: z.string().min(6, "Confirm password is required"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -45,50 +60,53 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const AdminAccountSetting: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch user profile
   const { data: profile, isLoading, error } = useGetUserProfile();
 
   // Update user profile mutation
-  const {
-    mutate: updateUserProfile,
-    isPending: isProfileUpdating,
-  } = useUpdateCurrentUserProfile({
-    onSuccess(data: unknown) {
-      if (data && typeof data === "object" && "data" in data) {
-        const res = data as { message: string; data: FormData & { id: string } };
-        toast.success(res.message);
-        reset(res.data);
-      } else {
-        toast.success("Profile updated");
-      }
-    },
-    onError(error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "Failed to update profile");
-    },
-  });
+  const { mutate: updateUserProfile, isPending: isProfileUpdating } =
+    useUpdateCurrentUserProfile({
+      onSuccess(data: unknown) {
+        // Invalidate and refetch user profile to update navbar
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+
+        if (data && typeof data === "object" && "data" in data) {
+          const res = data as {
+            message: string;
+            data: FormData & { id: string };
+          };
+          toast.success(res.message);
+          reset(res.data);
+        } else {
+          toast.success("Profile updated");
+        }
+      },
+      onError(error: unknown) {
+        const err = error as AxiosError<{ message?: string }>;
+        toast.error(err.response?.data?.message || "Failed to update profile");
+      },
+    });
 
   // Change password mutation
-  const {
-    mutate: changePassword,
-    isPending: isChangePasswordPending,
-  } = useUpdateCurrentUserPassword({
-    onSuccess(data: unknown) {
-      if (data && typeof data === "object" && "data" in data) {
-        const res = data as { data: { message: string } };
-        toast.success(res.data.message);
-      } else {
-        toast.success("Password updated");
-      }
-      setIsModalOpen(false);
-      resetPasswordForm();
-    },
-    onError(error: unknown) {
-      const err = error as AxiosError<{ message?: string }>;
-      toast.error(err.response?.data?.message || "Failed to change password");
-    },
-  });
+  const { mutate: changePassword, isPending: isChangePasswordPending } =
+    useUpdateCurrentUserPassword({
+      onSuccess(data: unknown) {
+        if (data && typeof data === "object" && "data" in data) {
+          const res = data as { data: { message: string } };
+          toast.success(res.data.message);
+        } else {
+          toast.success("Password updated");
+        }
+        setIsModalOpen(false);
+        resetPasswordForm();
+      },
+      onError(error: unknown) {
+        const err = error as AxiosError<{ message?: string }>;
+        toast.error(err.response?.data?.message || "Failed to change password");
+      },
+    });
 
   // Main form (profile info)
   const {
@@ -151,8 +169,31 @@ const AdminAccountSetting: React.FC = () => {
 
   return (
     <div className="max-w-2xl min-h-screen mb-20">
-      <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
-      <p className="text-gray-600 font-semibold mb-6">USER ID: {profile?.id || "N/A"}</p>
+      <div className="flex items-center gap-4 mb-6">
+        {/* Profile Avatar */}
+        <div className="w-16 h-16 rounded-full relative overflow-hidden border-2 border-gray-300 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 flex-shrink-0">
+          {profile?.image ? (
+            <Image
+              src={profile.image}
+              alt={getUserFullName(profile.firstName, profile.lastName)}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <span className="text-white font-semibold text-2xl">
+              {getUserInitials(profile?.firstName, profile?.lastName)}
+            </span>
+          )}
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-1">
+            Welcome, {profile?.firstName || "User"}!
+          </h2>
+          <p className="text-gray-600 font-semibold">
+            USER ID: {profile?.id || "N/A"}
+          </p>
+        </div>
+      </div>
 
       {/* Profile form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-5">
@@ -203,7 +244,9 @@ const AdminAccountSetting: React.FC = () => {
 
         {/* Change Password Button */}
         <div>
-          <label className="text-md font-semibold text-gray-900 mb-1 block">Password</label>
+          <label className="text-md font-semibold text-gray-900 mb-1 block">
+            Password
+          </label>
           <Button
             type="button"
             variant="secondary"
@@ -229,7 +272,10 @@ const AdminAccountSetting: React.FC = () => {
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md relative">
             <h3 className="text-xl font-bold mb-6">Change Password</h3>
-            <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
+            <form
+              onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+              className="space-y-4"
+            >
               <Input
                 label="Current Password"
                 placeholder="********"

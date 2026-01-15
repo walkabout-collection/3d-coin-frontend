@@ -16,9 +16,9 @@ const Button: React.FC<ButtonProps> = ({
   const baseStyles = `
     flex justify-center items-center
     px-6 py-3 font-semibold text-base
-    rounded-full transition-all duration-300 ease-out cursor-pointer
+    rounded-full transition-all duration-300 ease-out
+    ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
     ${width} ${height}
-    ${disabled ? "cursor-not-allowed opacity-50" : ""}
     ${className}
   `;
 

@@ -22,15 +22,37 @@ export interface Packaging {
   createdAt: string;
 }
 
+export interface Payment {
+  id: string;
+  orderId: string;
+  quoteId: string;
+  userId?: string;
+  method: string;
+  status: string;
+  amount: number;
+  paidAt?: string | null;
+  createdAt: string;
+  paymentProof?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  stripeCustomerId?: string | null;
+  quickbooksInvoiceId?: string | null;
+  quickbooksSyncStatus?: string | null;
+  quickbooksLastSyncAt?: string | null;
+  idempotencyKey?: string;
+  receiptUrl?: string | null;
+  receiptGeneratedAt?: string | null;
+}
 
 export interface Quote {
+  isPaid: boolean;
+  paymentStatus: string;
   id: string;
   email: string | null;
   status: string;
   amount: number | null;
   createdAt: string;
   feedback: string;
-  method: PaymentMethod
+  method: PaymentMethod;
   orderId: string | null;
   packaging?: Packaging;
   packagingId: string | null;
@@ -40,4 +62,5 @@ export interface Quote {
   coinDesign: CoinDesign;
   userId: string;
   user?: User;
+  Payment?: Payment[];
 }

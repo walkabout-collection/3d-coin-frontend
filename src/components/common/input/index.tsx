@@ -27,7 +27,7 @@ const Input = forwardRef<
       type = "text",
       ...props
     },
-    ref
+    ref,
   ) => {
     const [showPassword, setShowPassword] = useState(false);
 
@@ -84,11 +84,12 @@ const Input = forwardRef<
             <select
               ref={ref as React.Ref<HTMLSelectElement>}
               className={`${combinedStyles} pr-14`}
+              {...(!register && { defaultValue: "" })}
               {...register}
               {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
             >
               {placeholder && (
-                <option value="" disabled selected>
+                <option value="" disabled>
                   {placeholder}
                 </option>
               )}
@@ -150,7 +151,7 @@ const Input = forwardRef<
         )}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

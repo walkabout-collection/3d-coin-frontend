@@ -17,7 +17,7 @@ interface Quote {
   feedback?: string;
   email: string;
   user?: User;
-  packaging: boolean; 
+  packaging: boolean;
   description?: string;
   createdAt: string;
 }
@@ -34,7 +34,11 @@ interface ViewQuoteModalProps {
 }
 
 const ViewQuoteModal: React.FC<ViewQuoteModalProps> = ({ id, onClose }) => {
-  const { data: quote, isLoading, isError } = useAdminQuoteById(id) as UseAdminQuoteByIdResult;
+  const {
+    data: quote,
+    isLoading,
+    isError,
+  } = useAdminQuoteById(id) as UseAdminQuoteByIdResult;
 
   return (
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
@@ -63,7 +67,13 @@ const ViewQuoteModal: React.FC<ViewQuoteModalProps> = ({ id, onClose }) => {
             <div>
               <p>
                 <span className="font-semibold">Order ID:</span>{" "}
-                {quote.orderId} 
+                {quote.orderId ? (
+                  quote.orderId
+                ) : (
+                  <span className="text-gray-500 italic">
+                    Pending Order Number
+                  </span>
+                )}
               </p>
               <p>
                 <span className="font-semibold">Status:</span> {quote.status}
@@ -84,15 +94,6 @@ const ViewQuoteModal: React.FC<ViewQuoteModalProps> = ({ id, onClose }) => {
                 {quote.user ? quote.user.email : quote.email}
               </p>
             </div>
-
-            {quote.user && (
-              <div>
-                <h3 className="font-semibold text-gray-700">User</h3>
-                <p>
-                  {quote.user.firstName} {quote.user.lastName}
-                </p>
-              </div>
-            )}
 
             <div>
               <h3 className="font-semibold ">Packaging</h3>
