@@ -278,11 +278,7 @@ const QuickBooksSync: React.FC = () => {
             No payments found
           </div>
         ) : (
-          <Table
-            columns={paymentColumns}
-            data={payments}
-            alternatingRows={true}
-          />
+          <Table columns={paymentColumns} data={payments} />
         )}
       </div>
     </div>
