@@ -13,6 +13,7 @@ interface QuoteCardProps {
     status: string,
     paymentStatus?: string,
     isPaid?: boolean,
+    payments?: Array<{ status: string }>,
   ) => {
     text: string;
     color: string;
@@ -31,11 +32,17 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
   onManualPayment,
   getQuoteStatusDisplay,
 }) => {
-  // Check if quote is paid
+  // Check if quote is paid from multiple sources
+  const hasPaymentSuccess =
+    quote.Payment &&
+    Array.isArray(quote.Payment) &&
+    quote.Payment.some((p) => p.status === "SUCCESS");
+
   const isPaid =
     quote.isPaid ||
     quote.paymentStatus === "PAID" ||
-    quote.paymentStatus === "SUCCESS";
+    quote.paymentStatus === "SUCCESS" ||
+    hasPaymentSuccess;
 
   // Determine if payment button should be shown
   // Only show button for APPROVED quotes with STRIPE method that are not paid
@@ -56,6 +63,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
     quote.status,
     quote.paymentStatus,
     isPaid,
+    quote.Payment,
   );
 
   return (

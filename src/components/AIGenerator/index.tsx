@@ -446,7 +446,7 @@
 // export default AIGenerator;
 
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import Button from "../common/button/Button";
 import { QAFormData } from "./types";
 import CoinUploadScreen from "./CoinUpload";
@@ -461,54 +461,10 @@ import {
 } from "@/src/store/useCoinStore";
 
 const AIGenerator: React.FC = () => {
-  // removed unused `pathname`
-  const hasResetRef = useRef(false);
-  const {
-    state,
-    uploadData,
-    historyStack,
-    goTo,
-    goBack,
-    setUploadData,
-    reset,
-  } = useAiFlowStore();
-  const { reset: resetDesignCoin, front, back } = useCoinDesignStore();
+  const { state, uploadData, goTo, goBack, setUploadData, reset } =
+    useAiFlowStore();
+  const { reset: resetDesignCoin } = useCoinDesignStore();
   const { resetFormData } = useQAPromptsStore();
-
-  // Reset stores when navigating to custom-shapes page with stale persisted state
-  // Fix: Prevents showing threeDRender screen directly when navigating from home
-  useEffect(() => {
-    // Only reset once per mount
-    if (hasResetRef.current) return;
-    hasResetRef.current = true;
-
-    // If showing threeDRender screen on mount, check if it's stale persisted state
-    // Stale state = showing threeDRender without proper flow context
-    // (user didn't go through step-by-step, just navigated from another page)
-    const showingThreeDRender = state.showThreeDRender;
-    const hasValidFlowContext =
-      historyStack &&
-      historyStack.length > 2 && // More than just ["main", "threeDRender"]
-      (front.image ||
-        back.image ||
-        state.showQAPrompts ||
-        state.showDesignInterface);
-
-    // Reset if showing threeDRender but missing proper flow context
-    // This happens when user navigates with stale persisted state
-    if (showingThreeDRender && !hasValidFlowContext) {
-      // Clear all persisted stores from localStorage
-      localStorage.removeItem("ai-flow-storage");
-      localStorage.removeItem("coin-design-storage");
-      localStorage.removeItem("qa-prompts-storage");
-
-      // Reset all stores to initial state
-      reset();
-      resetDesignCoin();
-      resetFormData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
 
   useEffect(() => {
     const handlePopState = () => goBack();

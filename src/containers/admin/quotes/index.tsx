@@ -20,13 +20,18 @@ const AdminQuotes: React.FC = () => {
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 8; // Changed to 8 quotes per page
 
   const {
-    data: quotesData = [],
+    data: quotesData,
     isLoading,
     isError,
     refetch,
-  } = useAdminQuotes();
+  } = useAdminQuotes({
+    page: currentPage,
+    limit: limit,
+  });
 
   const viewQuote = (id: string) => {
     setViewQuoteId(id);
@@ -44,6 +49,31 @@ const AdminQuotes: React.FC = () => {
       toast.error(errorMessage);
     },
   });
+
+  // Extract quotes array and pagination info from response
+  const quotesArray: Quote[] = useMemo(() => {
+    if (!quotesData) return [];
+
+    let quotes: Quote[] = [];
+    if (quotesData.data && Array.isArray(quotesData.data)) {
+      quotes = quotesData.data as Quote[];
+    } else if (Array.isArray(quotesData)) {
+      quotes = quotesData as Quote[];
+    }
+
+    // Filter out quotes with designStatus: "DRAFT"
+    return quotes.filter(
+      (quote) => quote.designStatus?.toUpperCase() !== "DRAFT",
+    );
+  }, [quotesData]);
+
+  // Extract pagination info
+  const pagination = useMemo(() => {
+    if (!quotesData || !quotesData.pagination) {
+      return null;
+    }
+    return quotesData.pagination;
+  }, [quotesData]);
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort.length) return dataToSort;
@@ -65,15 +95,15 @@ const AdminQuotes: React.FC = () => {
 
   const [sortedDataState, setSortedDataState] = useState<Quote[]>([]);
   useEffect(() => {
-    if (quotesData?.length) {
-      const nonApprovedQuotes = (quotesData as Quote[]).filter(
+    if (quotesArray?.length) {
+      const nonApprovedQuotes = quotesArray.filter(
         (quote) => quote.status?.toUpperCase() !== "APPROVED",
       );
       setSortedDataState(sortData(nonApprovedQuotes, internalSort));
     } else {
       setSortedDataState([]);
     }
-  }, [quotesData, internalSort]);
+  }, [quotesArray, internalSort]);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return sortedDataState;
@@ -94,7 +124,51 @@ const AdminQuotes: React.FC = () => {
   }, [sortedDataState, searchTerm]);
 
   const handleSortChange = (sort: string) => setInternalSort(sort);
-  const handleSearch = (term: string) => setSearchTerm(term);
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1) return;
+    if (pagination && page > pagination.totalPages) return;
+
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Force refetch on page change
+  useEffect(() => {
+    refetch();
+    setSortedDataState([]);
+  }, [currentPage, refetch]);
+
+  // Get page numbers for pagination
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+    const totalPages = pagination.totalPages;
+    const currentPageNum = currentPage;
+    const maxPagesToShow = 5;
+    const pageNumbers: number[] = [];
+
+    let startPage = Math.max(
+      1,
+      currentPageNum - Math.floor(maxPagesToShow / 2),
+    );
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
+  };
 
   const handleApprove = (id: string) => {
     const quote = filteredData.find((q) => q.id === id);
@@ -107,7 +181,6 @@ const AdminQuotes: React.FC = () => {
   const handleDelete = (id: string) => {
     const quote = filteredData.find((q) => q.id === id);
     if (quote) {
-      // Check if quote can be deleted (client-side validation)
       if (quote.status === "APPROVED") {
         toast.error(
           "Approved quote cannot be deleted. It has been converted to an order.",
@@ -118,12 +191,10 @@ const AdminQuotes: React.FC = () => {
         toast.error("Quote cannot be deleted. It is linked to an order.");
         return;
       }
-      // Proceed with deletion
       deleteQuote(id);
     }
   };
 
-  // Check if quote can be deleted
   const canDeleteQuote = (quote: Quote): boolean => {
     return quote.status !== "APPROVED" && !quote.orderId;
   };
@@ -152,21 +223,20 @@ const AdminQuotes: React.FC = () => {
     { value: "oldest", label: "Oldest To Newest" },
   ];
 
-  // Calculate dynamic counts (excluding APPROVED quotes)
   const pendingQuotesCount = useMemo(() => {
-    if (!quotesData?.length) return 0;
-    return (quotesData as Quote[]).filter(
+    if (!quotesArray?.length) return 0;
+    return quotesArray.filter(
       (quote) => quote.status?.toUpperCase() === "PENDING",
     ).length;
-  }, [quotesData]);
+  }, [quotesArray]);
 
   const approveQuotesCount = useMemo(() => {
-    if (!quotesData?.length) return 0;
-    // Count quotes that are not APPROVED (can be approved)
-    return (quotesData as Quote[]).filter(
+    if (!quotesArray?.length) return 0;
+    // Filter out APPROVED quotes (quotesArray already excludes DRAFT)
+    return quotesArray.filter(
       (quote) => quote.status?.toUpperCase() !== "APPROVED",
     ).length;
-  }, [quotesData]);
+  }, [quotesArray]);
 
   return (
     <div className="min-h-screen">
@@ -285,7 +355,6 @@ const AdminQuotes: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-md font-bold text-black">Email:</span>
                   <span className="text-sm text-gray-900">
-                    {" "}
                     {quote.user ? quote.user.email : quote.email}
                   </span>
                 </div>
@@ -343,6 +412,7 @@ const AdminQuotes: React.FC = () => {
           </div>
         ))
       )}
+
       {isModalOpen && <AddQuoteModal onClose={() => setIsModalOpen(false)} />}
       {isApproveModalOpen && selectedQuote && (
         <ApproveQuoteModal
@@ -353,6 +423,53 @@ const AdminQuotes: React.FC = () => {
       )}
       {viewQuoteId && (
         <ViewQuoteModal id={viewQuoteId} onClose={() => setViewQuoteId(null)} />
+      )}
+
+      {/* Pagination - Table Component Style */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 pt-4 mb-10">
+          <div className="text-sm text-gray-500">
+            Showing {(currentPage - 1) * limit + 1} to{" "}
+            {Math.min(currentPage * limit, pagination.total)} of{" "}
+            {pagination.total} entries
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={!pagination.hasPreviousPage || isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            {getPageNumbers().map((pageNumber) => (
+              <button
+                key={pageNumber}
+                onClick={() => handlePageChange(pageNumber)}
+                disabled={isLoading}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  pageNumber === currentPage
+                    ? "bg-[#1a2a3a] text-white"
+                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {pageNumber}
+              </button>
+            ))}
+
+            {/* Next Button */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={!pagination.hasNextPage || isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

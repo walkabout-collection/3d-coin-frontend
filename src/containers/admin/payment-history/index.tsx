@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import { useState } from "react";
 import { TableColumn } from "@/src/components/common/Table/types";
 import { PaymentDataItem } from "./types";
 import AdminTable from "@/src/components/admin/AdminTable";
@@ -36,6 +36,9 @@ const formatDate = (dateString: string | undefined): string => {
 };
 
 const AdminPaymentHistory = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 10;
+
   const { data: orderHistoryData, isPending, isError } = useAdminOrderHistory();
 
   // Extract the actual array from nested structure: data.data
@@ -129,6 +132,13 @@ const AdminPaymentHistory = () => {
           searchPlaceholder="Search payments..."
           sortable={true}
           currentSort="newest"
+          pagination={{
+            currentPage,
+            entriesPerPage,
+            totalEntries: displayData.length,
+            totalPages: Math.ceil(displayData.length / entriesPerPage),
+            onPageChange: (page: number) => setCurrentPage(page),
+          }}
         />
       ) : (
         <div className="text-center py-12">

@@ -123,7 +123,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </p>
 
         {/* Payment Options */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 items-center justify-center gap-4 mt-4">
           {paymentOptions.map((option) => (
             <label
               key={option.id}

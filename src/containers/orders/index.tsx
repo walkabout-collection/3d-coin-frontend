@@ -81,6 +81,35 @@ const Orders = () => {
     : orderDataResponse?.data || [];
   const paginationData = orderDataResponse?.pagination;
 
+  // Filter out orders that have quotes with designStatus: "DRAFT"
+  const filteredOrderDataArray = orderDataArray.filter(
+    (order: UserOrder | OrderDataItem) => {
+      // Check if order has quotes array
+      if (
+        "Quote" in order &&
+        Array.isArray(order.Quote) &&
+        order.Quote.length > 0
+      ) {
+        // Filter out if any quote has designStatus: "DRAFT"
+        return !order.Quote.some(
+          (quote) => quote.designStatus?.toUpperCase() === "DRAFT",
+        );
+      }
+      if (
+        "quotes" in order &&
+        Array.isArray(order.quotes) &&
+        order.quotes.length > 0
+      ) {
+        // Filter out if any quote has designStatus: "DRAFT"
+        return !order.quotes.some(
+          (quote) => quote.designStatus?.toUpperCase() === "DRAFT",
+        );
+      }
+      // If no quotes, include the order
+      return true;
+    },
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQuickBooksModalOpen, setIsQuickBooksModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDataItem | null>(
@@ -213,23 +242,98 @@ const Orders = () => {
     return null;
   };
 
+  // Extract order history data array (handle nested structure)
+  const orderHistoryArray =
+    orderHistoryData?.data?.data && Array.isArray(orderHistoryData.data.data)
+      ? orderHistoryData.data.data
+      : orderHistoryData?.data && Array.isArray(orderHistoryData.data)
+        ? orderHistoryData.data
+        : [];
+
   const displayData: DisplayDataItem[] =
-    orderHistoryData?.data && Array.isArray(orderHistoryData.data)
-      ? orderHistoryData.data.map(
-          (item): DisplayDataItem => ({
-            id: item.orderId,
-            orderId: item.orderId,
-            paymentMethod: formatPaymentMethod(item.paymentMethod),
-            totalPrice: item.total,
-            date: formatDate(item.date),
-            orderDate: item.date,
-            status: item.status || "APPROVED",
-            paymentStatus: item.paymentStatus || "UNPAID",
-            paymentDate: item.paymentId ? formatDate(item.date) : null,
-            paymentId: item.paymentId || null,
-          }),
+    orderHistoryArray.length > 0
+      ? orderHistoryArray.map(
+          (item: UserOrder | Record<string, unknown>): DisplayDataItem => {
+            // Check if item is a full UserOrder object or simplified structure
+            const isUserOrder =
+              "totalPrice" in item || "Quote" in item || "Payment" in item;
+
+            if (isUserOrder) {
+              // Handle full UserOrder object
+              const userOrder = item as UserOrder;
+              return {
+                id: userOrder.id || userOrder.orderId || "",
+                orderId: userOrder.orderId || userOrder.id || "",
+                paymentMethod: formatPaymentMethod(
+                  userOrder.paymentMethod ||
+                    (Array.isArray(userOrder.Quote) && userOrder.Quote[0]
+                      ? userOrder.Quote[0].method
+                      : undefined) ||
+                    (Array.isArray(userOrder.Payment) && userOrder.Payment[0]
+                      ? userOrder.Payment[0].method
+                      : undefined),
+                ),
+                totalPrice: userOrder.totalPrice || 0,
+                totalCoins: userOrder.totalCoins ?? undefined,
+                date: formatDate(userOrder.orderDate),
+                orderDate: userOrder.orderDate || "",
+                status: userOrder.status || "APPROVED",
+                paymentStatus:
+                  userOrder.paymentStatus || getPaymentStatus(userOrder),
+                paymentDate: userOrder.paymentDate
+                  ? formatDate(userOrder.paymentDate)
+                  : getPaymentDate(userOrder),
+                paymentId: userOrder.paymentId || getPaymentId(userOrder),
+                originalOrder: userOrder,
+              };
+            } else {
+              // Handle simplified structure
+              const simplified = item as Record<string, unknown>;
+              const getString = (key: string): string => {
+                const value = simplified[key];
+                return typeof value === "string" ? value : "";
+              };
+              const getNumber = (key: string): number => {
+                const value = simplified[key];
+                return typeof value === "number" ? value : 0;
+              };
+              const getStringOrUndefined = (
+                key: string,
+              ): string | undefined => {
+                const value = simplified[key];
+                return typeof value === "string" ? value : undefined;
+              };
+              const getNumberOrUndefined = (
+                key: string,
+              ): number | undefined => {
+                const value = simplified[key];
+                return typeof value === "number" ? value : undefined;
+              };
+
+              return {
+                id: getString("orderId"),
+                orderId: getString("orderId"),
+                paymentMethod: formatPaymentMethod(
+                  getStringOrUndefined("paymentMethod"),
+                ),
+                totalPrice: getNumber("total"),
+                totalCoins: getNumberOrUndefined("totalCoins"),
+                date: formatDate(getStringOrUndefined("date")),
+                orderDate: getString("date") || getString("orderDate"),
+                status: getString("status") || "APPROVED",
+                paymentStatus: getString("paymentStatus") || "UNPAID",
+                paymentDate: simplified.paymentId
+                  ? formatDate(
+                      getStringOrUndefined("date") ||
+                        getStringOrUndefined("paymentDate"),
+                    )
+                  : null,
+                paymentId: getStringOrUndefined("paymentId") || null,
+              };
+            }
+          },
         )
-      : orderDataArray.map(
+      : filteredOrderDataArray.map(
           (order: UserOrder | OrderDataItem): DisplayDataItem => {
             const isUserOrder = "paymentMethod" in order || "Quote" in order;
             let paymentMethod: string;
@@ -436,11 +540,19 @@ const Orders = () => {
   if (isDataPending) return <div>Loading...</div>;
   if (isDataError) return <div>Error loading orders</div>;
 
-  const totalEntries = paginationData?.total ?? displayData.length;
+  // Calculate totals based on filtered data
+  const totalEntries =
+    orderHistoryArray.length > 0
+      ? (orderHistoryData?.data?.pagination?.total ?? orderHistoryArray.length)
+      : (paginationData?.total ?? displayData.length);
   const totalPages =
+    orderHistoryData?.data?.pagination?.totalPages ??
     paginationData?.totalPages ??
     Math.ceil(displayData.length / entriesPerPage);
-  const entriesPerPageFromAPI = paginationData?.limit ?? entriesPerPage;
+  const entriesPerPageFromAPI =
+    orderHistoryData?.data?.pagination?.limit ??
+    paginationData?.limit ??
+    entriesPerPage;
 
   const handlePageChange = (page: number) => {
     if (page < 1) return;

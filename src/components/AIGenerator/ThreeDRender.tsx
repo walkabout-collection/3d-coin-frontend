@@ -9,11 +9,7 @@ import {
   useCoinDesignStore,
   useQAPromptsStore,
 } from "@/src/store/useCoinStore";
-import {
-  useCreateDesign,
-  useSaveDraft,
-  useUpdateDraft,
-} from "@/src/hooks/useQueries";
+import { useCreateDesign } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import { useRouter } from "next/navigation";
@@ -29,18 +25,11 @@ const getCookie = (name: string): string | null => {
 
 export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   name = "AI Generated 3D Render",
-  onSaveAsDraft,
   onContinue,
   loading = false,
 }) => {
   const router = useRouter();
-  const {
-    front,
-    back,
-    currentDraftId,
-    setCurrentDraftId,
-    getDesignDataForDraft,
-  } = useCoinDesignStore();
+  const { front, back } = useCoinDesignStore();
   const { formData } = useQAPromptsStore();
   const frontImage = front.image?.url || "/images/home/front-side.png";
   const backImage = back.image?.url || "/images/home/front-side.png";
@@ -71,43 +60,25 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   }, []);
 
   const { mutate: createDesign, isPending } = useCreateDesign({
-    onSuccess: () => {
-      toast.success("Design submitted successfully!");
+    onSuccess: (_, variables) => {
+      const isDraft = variables.status === "DRAFT";
+      toast.success(
+        isDraft
+          ? "Design saved as draft successfully!"
+          : "Design submitted successfully!",
+      );
       setShowPaymentModal(false);
       setSelectedPayment(null);
       setAmount(null);
-      router.push("/");
+      setIsProcessing(false);
+      if (!isDraft) {
+        router.push("/");
+      }
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Failed to submit design: " + msg);
+      toast.error("Failed to save design: " + msg);
       console.error("CreateDesign error:", err);
-    },
-  });
-
-  const saveDraftMutation = useSaveDraft({
-    onSuccess: (data) => {
-      setCurrentDraftId(data.id);
-      toast.success("Draft saved successfully!");
-      setIsProcessing(false);
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to save draft";
-      toast.error(errorMessage);
-      setIsProcessing(false);
-    },
-  });
-
-  const updateDraftMutation = useUpdateDraft({
-    onSuccess: () => {
-      toast.success("Draft updated successfully!");
-      setIsProcessing(false);
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update draft";
-      toast.error(errorMessage);
       setIsProcessing(false);
     },
   });
@@ -118,55 +89,28 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       return;
     }
 
-    if (onSaveAsDraft) {
-      setIsProcessing(true);
-      try {
-        await onSaveAsDraft();
-      } finally {
-        setIsProcessing(false);
-      }
-      return;
-    }
-
-    // Direct save implementation
-    setIsProcessing(true);
-    try {
-      const designData = getDesignDataForDraft();
-      // Note: QA prompts data would need to be mapped to appropriate fields
-      // For now, using the flat structure directly
-
-      if (currentDraftId) {
-        // Update existing draft
-        updateDraftMutation.mutate({
-          draftId: currentDraftId,
-          data: designData,
-        });
-      } else {
-        // Create new draft
-        saveDraftMutation.mutate(designData);
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to save draft";
-      toast.error(errorMessage);
-      setIsProcessing(false);
-    }
+    // For draft, we don't need payment or amount, so we can call directly
+    await handleSubmitForQuote(undefined, undefined, undefined, "DRAFT");
   };
 
   const handleSubmitForQuote = async (
     paymentOption?: PaymentOption,
     amountValue?: number,
     email?: string,
+    status: "DRAFT" | "SUBMITTED" = "SUBMITTED",
   ) => {
     const payment = paymentOption || selectedPayment;
     const qty = amountValue !== undefined ? amountValue : amount;
 
-    if (!payment || qty === null) {
+    // For DRAFT status, we don't need payment or amount
+    if (status === "DRAFT") {
+      // Skip payment validation for drafts
+    } else if (!payment || qty === null) {
       setShowPaymentModal(true);
       return;
     }
 
-    if (!isLoggedIn && !email) {
+    if (!isLoggedIn && !email && status !== "DRAFT") {
       setShowPaymentModal(true);
       return;
     }
@@ -292,13 +236,12 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
 
       const designData = {
         name: name,
-        status: "SUBMITTED" as const,
-        totalCoins: qty,
-        email: email,
-        method: payment.name.toUpperCase() as
-          | "STRIPE"
-          | "QUICKBOOKS"
-          | "MANUAL",
+        status: status,
+        totalCoins: status === "DRAFT" ? 0 : (qty ?? undefined),
+        email: email || undefined,
+        method: (status === "DRAFT"
+          ? "STRIPE"
+          : payment!.name.toUpperCase()) as "STRIPE" | "QUICKBOOKS" | "MANUAL",
 
         // FRONT
         frontImage: frontImageKey,
@@ -326,10 +269,10 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
       };
 
       console.log("Submitting design with S3 keys:", designData);
+      setIsProcessing(true);
       createDesign(designData);
 
-      if (onContinue) {
-        setIsProcessing(true);
+      if (onContinue && status !== "DRAFT") {
         try {
           onContinue();
         } finally {
@@ -349,7 +292,7 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
   ) => {
     setSelectedPayment(option);
     setAmount(amount);
-    handleSubmitForQuote(option, amount, email);
+    handleSubmitForQuote(option, amount, email, "SUBMITTED");
   };
 
   const handleModalClose = () => {
@@ -433,10 +376,10 @@ export const ThreeDRender: React.FC<ThreeDRenderProps> = ({
               disabled={loading || isProcessing || isPending}
               className="max-w-[180px] w-full text-md font-base !bg-gray-200 border-none min-w-[140px]"
             >
-              {isProcessing && !onContinue ? (
+              {isProcessing || isPending ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                  <span>{buttonTexts.loading}</span>
+                  <span>Saving...</span>
                 </div>
               ) : (
                 buttonTexts.saveAsDraft

@@ -17,21 +17,31 @@ import {
   getIdempotencyKey,
   clearIdempotencyKey,
 } from "@/src/utils/idempotency";
+import Pagination from "@/src/components/common/Pagination";
 
 const Quotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [internalSort, setInternalSort] = useState("newest");
-  const [sortedDataState, setSortedDataState] = useState<Quote[] | null>();
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 4; // Default limit as per API spec
 
-  const { data: quotesData, isPending, isError, refetch } = useUserQuotes();
+  const {
+    data: quotesData,
+    isPending,
+    isError,
+    error,
+  } = useUserQuotes({
+    page: currentPage,
+    limit: limit,
+  });
+
   const { data: paymentNotificationsData } = usePaymentNotifications();
   const [processingQuoteId, setProcessingQuoteId] = useState<string | null>(
     null,
   );
 
-  // Create a map of quoteId -> payment status from notifications
   const quotePaymentStatusMap = useMemo(() => {
     const map = new Map<string, "SUCCESS" | "PENDING" | "FAILED">();
 
@@ -41,10 +51,8 @@ const Quotes: React.FC = () => {
     ) {
       const notifications = paymentNotificationsData.data.notifications;
 
-      // Process notifications and keep the latest status for each quoteId
       notifications.forEach((notification) => {
         if (notification.quoteId && notification.status) {
-          // Only update if this notification is newer or if we don't have a status yet
           const existingStatus = map.get(notification.quoteId);
           if (!existingStatus || existingStatus !== "SUCCESS") {
             map.set(notification.quoteId, notification.status);
@@ -60,20 +68,17 @@ const Quotes: React.FC = () => {
     useCreateStripeCheckout({
       onSuccess: (data, variables) => {
         if (data.success && data.data.url) {
-          // Clear idempotency key on successful checkout creation
           clearIdempotencyKey(variables.quoteId);
           setProcessingQuoteId(null);
-          window.location.href = data.data.url; // Redirect to Stripe checkout
+          window.location.href = data.data.url;
         }
       },
       onError: (error) => {
         setProcessingQuoteId(null);
         const msg = error instanceof Error ? error.message : String(error);
 
-        // Enhanced error handling
         if (msg.includes("already completed") || msg.includes("already paid")) {
           toast.info("This quote has already been paid.");
-          refetch();
         } else if (msg.includes("duplicate") || msg.includes("idempotency")) {
           toast.warning(
             "A payment session is already being processed for this quote. Please wait.",
@@ -92,26 +97,41 @@ const Quotes: React.FC = () => {
       },
     });
 
-  // Extract quotes array from response
   const quotesArray: Quote[] = useMemo(() => {
     if (!quotesData) return [];
 
-    // Handle both array and paginated response
-    if (Array.isArray(quotesData)) {
-      return quotesData as Quote[];
+    let quotes: Quote[] = [];
+    if (quotesData?.data && Array.isArray(quotesData.data)) {
+      quotes = quotesData.data as Quote[];
+    } else if (Array.isArray(quotesData)) {
+      quotes = quotesData as Quote[];
     }
 
-    // If it's an object with data property
-    if (quotesData.data && Array.isArray(quotesData.data)) {
-      return quotesData.data as Quote[];
-    }
-
-    return [];
+    // Filter out quotes with designStatus: "DRAFT"
+    return quotes.filter(
+      (quote) => quote.designStatus?.toUpperCase() !== "DRAFT",
+    );
   }, [quotesData]);
 
+  const pagination = useMemo(() => {
+    if (!quotesData || !quotesData.pagination) {
+      return null;
+    }
+    return quotesData.pagination;
+  }, [quotesData]);
+
+  // Handle case where page is beyond total pages (API returns empty array)
   useEffect(() => {
-    setSortedDataState(quotesArray);
-  }, [quotesArray]);
+    if (
+      pagination &&
+      quotesArray.length === 0 &&
+      pagination.totalPages > 0 &&
+      currentPage > pagination.totalPages
+    ) {
+      // Redirect to last page if current page is beyond total pages
+      setCurrentPage(pagination.totalPages);
+    }
+  }, [pagination, quotesArray.length, currentPage]);
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
     if (!sortValue || !dataToSort?.length) return dataToSort;
@@ -136,26 +156,18 @@ const Quotes: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    if (quotesArray.length > 0) {
-      setSortedDataState(sortData(quotesArray, internalSort));
-    } else {
-      setSortedDataState([]);
-    }
-  }, [internalSort, quotesArray]);
+  const sortedData = useMemo(() => {
+    return sortData(quotesArray, internalSort);
+  }, [quotesArray, internalSort]);
 
   const filteredData = useMemo(() => {
-    // Ensure we always return an array
-    const dataToFilter = sortedDataState || [];
-
-    if (!searchTerm) return dataToFilter;
-
-    return dataToFilter.filter((row) =>
+    if (!searchTerm) return sortedData;
+    return sortedData.filter((row) =>
       Object.values(row).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase()),
       ),
     );
-  }, [sortedDataState, searchTerm]);
+  }, [sortedData, searchTerm]);
 
   const handleSortChange = (sort: string) => {
     setInternalSort(sort);
@@ -163,10 +175,26 @@ const Quotes: React.FC = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1) return;
+    if (pagination && page > pagination.totalPages) {
+      // If page is beyond total pages, redirect to last page
+      if (pagination.totalPages > 0) {
+        setCurrentPage(pagination.totalPages);
+      }
+      return;
+    }
+
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleStripePayment = (quote: Quote) => {
-    // Prevent duplicate submissions
     if (processingQuoteId === quote.id || isCreatingCheckout) {
       toast.warning("Payment is already being processed. Please wait.");
       return;
@@ -177,10 +205,8 @@ const Quotes: React.FC = () => {
       return;
     }
 
-    // Set processing state
     setProcessingQuoteId(quote.id);
 
-    // Generate or get existing idempotency key
     let idempotencyKey = getIdempotencyKey(quote.id);
     if (!idempotencyKey) {
       idempotencyKey = generateIdempotencyKey(quote.id);
@@ -202,16 +228,24 @@ const Quotes: React.FC = () => {
   const handlePaymentSuccess = () => {
     setIsPaymentModalOpen(false);
     setSelectedQuote(null);
-    refetch();
   };
 
   const getQuoteStatusDisplay = (
     status: string,
     paymentStatus?: string,
     isPaid?: boolean,
+    payments?: Array<{ status: string }>,
   ) => {
-    // If payment is successful, show paid status
-    if (isPaid || paymentStatus === "PAID" || paymentStatus === "SUCCESS") {
+    // Check if payment is successful from multiple sources
+    const hasSuccessfulPayment =
+      isPaid ||
+      paymentStatus === "PAID" ||
+      paymentStatus === "SUCCESS" ||
+      (payments &&
+        Array.isArray(payments) &&
+        payments.some((p) => p.status === "SUCCESS"));
+
+    if (hasSuccessfulPayment) {
       return {
         text: "Payment Completed",
         color: "bg-green-100 text-green-800",
@@ -242,12 +276,113 @@ const Quotes: React.FC = () => {
   ];
 
   if (isPending) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading quotes...</p>
+      </div>
+    );
   }
 
   if (isError) {
-    return <div>Error</div>;
+    // Handle different error types based on API spec
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorWithStatus = error as {
+      status?: number;
+      response?: { status?: number };
+    };
+    const errorStatus =
+      errorWithStatus?.status || errorWithStatus?.response?.status;
+    const isUnauthorized =
+      errorStatus === 401 ||
+      errorMessage.includes("401") ||
+      errorMessage.includes("Unauthorized");
+    const isForbidden =
+      errorStatus === 403 ||
+      errorMessage.includes("403") ||
+      errorMessage.includes("Forbidden");
+    const isValidationError =
+      errorStatus === 400 ||
+      errorMessage.includes("400") ||
+      errorMessage.includes("Validation");
+    const isServerError =
+      errorStatus === 500 ||
+      errorMessage.includes("500") ||
+      errorMessage.includes("Internal");
+
+    if (isUnauthorized) {
+      // Redirect to login on 401
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-red-500">Please login to view your quotes</p>
+        </div>
+      );
+    }
+
+    if (isForbidden) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-red-500">
+            You don&apos;t have permission to access this page
+          </p>
+        </div>
+      );
+    }
+
+    if (isValidationError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+          <p className="text-red-500">Invalid page or limit value.</p>
+          <button
+            onClick={() => {
+              setCurrentPage(1);
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Reset to Default
+          </button>
+        </div>
+      );
+    }
+
+    if (isServerError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+          <p className="text-red-500">
+            Something went wrong. Please try again later.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-red-500">
+          Failed to fetch quotes. Please try again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
+
+  const totalEntries = pagination?.total ?? filteredData.length;
+  const totalPages = pagination?.totalPages ?? 1;
+  const hasNextPage = pagination?.hasNextPage ?? currentPage < totalPages;
+  const hasPreviousPage = pagination?.hasPreviousPage ?? currentPage > 1;
 
   return (
     <div className="min-h-screen">
@@ -268,26 +403,31 @@ const Quotes: React.FC = () => {
         />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {!filteredData || filteredData.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No quotes found</p>
+            <p className="text-gray-500 text-lg">No quotes available</p>
           </div>
         ) : (
           filteredData.map((quote) => {
-            // Check payment status from notifications
             const notificationStatus = quotePaymentStatusMap.get(quote.id);
             const isPaidFromNotification = notificationStatus === "SUCCESS";
 
-            // Enhanced quote with payment status from notifications
+            // Check Payment array for SUCCESS status
+            const hasPaymentSuccess =
+              quote.Payment &&
+              Array.isArray(quote.Payment) &&
+              quote.Payment.some((p) => p.status === "SUCCESS");
+
             const enhancedQuote = {
               ...quote,
-              // Override paymentStatus if we have a SUCCESS notification
               paymentStatus: isPaidFromNotification
                 ? "SUCCESS"
-                : quote.paymentStatus,
-              // Override isPaid if we have a SUCCESS notification
-              isPaid: isPaidFromNotification || quote.isPaid,
+                : hasPaymentSuccess
+                  ? "SUCCESS"
+                  : quote.paymentStatus,
+              isPaid:
+                isPaidFromNotification || hasPaymentSuccess || quote.isPaid,
             };
 
             return (
@@ -298,12 +438,31 @@ const Quotes: React.FC = () => {
                 processingQuoteId={processingQuoteId}
                 onStripePayment={handleStripePayment}
                 onManualPayment={handleManualPayment}
-                getQuoteStatusDisplay={getQuoteStatusDisplay}
+                getQuoteStatusDisplay={(status, paymentStatus, isPaid) =>
+                  getQuoteStatusDisplay(
+                    status,
+                    paymentStatus,
+                    isPaid,
+                    quote.Payment,
+                  )
+                }
               />
             );
           })
         )}
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalEntries={totalEntries}
+        entriesPerPage={limit}
+        onPageChange={handlePageChange}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+        itemLabel="quotes"
+      />
+
       {selectedQuote && (
         <PayNowModal
           isOpen={isPaymentModalOpen}

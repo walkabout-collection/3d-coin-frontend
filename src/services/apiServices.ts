@@ -753,8 +753,13 @@ export const getAdminQuotes = async (
 }> => {
   const queryParams = new URLSearchParams();
 
-  if (params?.page) queryParams.append("page", params.page.toString());
-  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  // Default values: page=1, limit=4 (as per API spec)
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 4;
+
+  queryParams.append("page", page.toString());
+  queryParams.append("limit", limit.toString());
+
   if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
   if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
   if (params?.status) queryParams.append("status", params.status);
@@ -762,34 +767,71 @@ export const getAdminQuotes = async (
   const queryString = queryParams.toString();
   const url = `/quote/admin${queryString ? `?${queryString}` : ""}`;
 
-  const res = await apiClient.get(url, {
-    headers: {
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-    },
-  });
+  try {
+    const res = await apiClient.get(url, {
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
 
-  // Handle both paginated and non-paginated responses
-  if (res.data.pagination) {
-    return res.data;
+    // API Response Structure: { success, message, data: { data: [], pagination: {} } }
+    if (res.data?.success && res.data?.data) {
+      const responseData = res.data.data;
+
+      // Extract quotes array and pagination from nested structure
+      const quotes = Array.isArray(responseData.data) ? responseData.data : [];
+      const pagination = responseData.pagination || {
+        page: page,
+        limit: limit,
+        total: quotes.length,
+        totalPages: Math.ceil(quotes.length / limit) || 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+
+      return {
+        success: true,
+        data: quotes,
+        pagination,
+      };
+    }
+
+    // Fallback for backward compatibility
+    const data = Array.isArray(res.data.data)
+      ? res.data.data
+      : res.data.data?.data || res.data.data || [];
+    return {
+      success: true,
+      data,
+      pagination: {
+        page: page,
+        limit: limit,
+        total: data.length,
+        totalPages: Math.ceil(data.length / limit) || 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
+  } catch (error: unknown) {
+    // Enhance error with status code for better error handling
+    const axiosError = error as {
+      response?: { status?: number; data?: { message?: string } };
+      message?: string;
+    };
+    const status = axiosError.response?.status;
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to fetch admin quotes";
+
+    const enhancedError = new Error(errorMessage);
+    (enhancedError as { status?: number; response?: unknown }).status = status;
+    (enhancedError as { status?: number; response?: unknown }).response =
+      axiosError.response;
+
+    throw enhancedError;
   }
-
-  // If no pagination, return as if it's all on page 1
-  const data = Array.isArray(res.data.data)
-    ? res.data.data
-    : res.data.data?.data || res.data.data || [];
-  return {
-    success: true,
-    data,
-    pagination: {
-      page: 1,
-      limit: data.length,
-      total: data.length,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    },
-  };
 };
 
 export interface GetUserQuotesParams {
@@ -816,8 +858,13 @@ export const getUserQuotes = async (
 }> => {
   const queryParams = new URLSearchParams();
 
-  if (params?.page) queryParams.append("page", params.page.toString());
-  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  // Default values: page=1, limit=4 (as per API spec)
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 4;
+
+  queryParams.append("page", page.toString());
+  queryParams.append("limit", limit.toString());
+
   if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
   if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
   if (params?.status) queryParams.append("status", params.status);
@@ -825,40 +872,71 @@ export const getUserQuotes = async (
   const queryString = queryParams.toString();
   const url = `/quote/user${queryString ? `?${queryString}` : ""}`;
 
-  const res = await apiClient.get(url, {
-    headers: {
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-    },
-  });
+  try {
+    const res = await apiClient.get(url, {
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
 
-  // Handle both paginated and non-paginated responses
-  // Check if response has nested data structure: { success, data: { data: [], pagination: {} } }
-  if (res.data.data && res.data.data.pagination) {
-    return res.data.data;
+    // API Response Structure: { success, message, data: { data: [], pagination: {} } }
+    if (res.data?.success && res.data?.data) {
+      const responseData = res.data.data;
+
+      // Extract quotes array and pagination from nested structure
+      const quotes = Array.isArray(responseData.data) ? responseData.data : [];
+      const pagination = responseData.pagination || {
+        page: page,
+        limit: limit,
+        total: quotes.length,
+        totalPages: Math.ceil(quotes.length / limit) || 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+
+      return {
+        success: true,
+        data: quotes,
+        pagination,
+      };
+    }
+
+    // Fallback for backward compatibility
+    const data = Array.isArray(res.data.data)
+      ? res.data.data
+      : res.data.data?.data || res.data.data || [];
+    return {
+      success: true,
+      data,
+      pagination: {
+        page: page,
+        limit: limit,
+        total: data.length,
+        totalPages: Math.ceil(data.length / limit) || 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
+  } catch (error: unknown) {
+    // Enhance error with status code for better error handling
+    const axiosError = error as {
+      response?: { status?: number; data?: { message?: string } };
+      message?: string;
+    };
+    const status = axiosError.response?.status;
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to fetch user quotes";
+
+    const enhancedError = new Error(errorMessage);
+    (enhancedError as { status?: number; response?: unknown }).status = status;
+    (enhancedError as { status?: number; response?: unknown }).response =
+      axiosError.response;
+
+    throw enhancedError;
   }
-
-  // Check if response has flat structure: { success, data: [], pagination: {} }
-  if (res.data.pagination) {
-    return res.data;
-  }
-
-  // If no pagination, return as if it's all on page 1
-  const data = Array.isArray(res.data.data)
-    ? res.data.data
-    : res.data.data?.data || res.data.data || [];
-  return {
-    success: true,
-    data,
-    pagination: {
-      page: 1,
-      limit: data.length,
-      total: data.length,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    },
-  };
 };
 // delete quote
 export const deleteAdminQuote = async (
@@ -1396,6 +1474,7 @@ export const getUserOrderHistory = async (
       date: string;
       status?: string;
       paymentId?: string;
+      totalCoins?: number | null;
     }>;
     pagination?: {
       page: number;
@@ -1453,8 +1532,15 @@ export const getUserOrderHistory = async (
   return res.data;
 };
 
+export interface GetAdminOrderHistoryParams {
+  page?: number;
+  limit?: number;
+}
+
 // Get admin order history
-export const getAdminOrderHistory = async (): Promise<{
+export const getAdminOrderHistory = async (
+  params?: GetAdminOrderHistoryParams,
+): Promise<{
   success: boolean;
   data: {
     data: Array<{
@@ -1476,7 +1562,20 @@ export const getAdminOrderHistory = async (): Promise<{
     };
   };
 }> => {
-  const res = await apiClient.get("/order/admin/history");
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+  const queryString = queryParams.toString();
+  const url = `/order/admin/history${queryString ? `?${queryString}` : ""}`;
+
+  const res = await apiClient.get(url, {
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+  });
   // Handle nested structure: { data: { data: [...], pagination: {...} } }
   // Also handle flat structure for backward compatibility: { data: [...] }
   if (res.data.data && Array.isArray(res.data.data)) {

@@ -315,16 +315,24 @@ export const useCreateDesign = (
 
 // get all admin quote
 export const useAdminQuotes = (
-  options?: UseQueryOptions<
-    Awaited<ReturnType<typeof api.quote.adminList>>["data"],
-    Error
+  params?: Parameters<typeof getAdminQuotes>[0],
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof getAdminQuotes>>, Error>,
+    "queryKey" | "queryFn"
   >,
-) =>
-  useQuery<Awaited<ReturnType<typeof api.quote.adminList>>["data"], Error>({
-    queryKey: ["adminQuotes"],
-    queryFn: getAdminQuotes,
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 4;
+
+  return useQuery<Awaited<ReturnType<typeof getAdminQuotes>>, Error>({
+    queryKey: ["adminQuotes", page, limit],
+    queryFn: () => getAdminQuotes(params),
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     ...options,
   });
+};
 
 export const useUserQuotes = (
   params?: Parameters<typeof getUserQuotes>[0],
@@ -332,12 +340,19 @@ export const useUserQuotes = (
     UseQueryOptions<Awaited<ReturnType<typeof getUserQuotes>>, Error>,
     "queryKey" | "queryFn"
   >,
-) =>
-  useQuery<Awaited<ReturnType<typeof getUserQuotes>>, Error>({
-    queryKey: ["userQuotes", params],
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 4;
+
+  return useQuery<Awaited<ReturnType<typeof getUserQuotes>>, Error>({
+    queryKey: ["userQuotes", page, limit],
     queryFn: () => getUserQuotes(params),
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     ...options,
   });
+};
 
 // Delete Admin Quote
 export const useDeleteAdminQuote = (
@@ -682,15 +697,24 @@ export const useUserOrderHistory = (
 
 // Get admin order history
 export const useAdminOrderHistory = (
-  options?: Partial<
-    UseQueryOptions<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>
+  params?: Parameters<typeof getAdminOrderHistory>[0],
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>,
+    "queryKey" | "queryFn"
   >,
-) =>
-  useQuery<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>({
-    queryKey: ["adminOrderHistory"],
-    queryFn: getAdminOrderHistory,
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 10;
+
+  return useQuery<Awaited<ReturnType<typeof getAdminOrderHistory>>, Error>({
+    queryKey: ["adminOrderHistory", page, limit],
+    queryFn: () => getAdminOrderHistory(params),
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     ...options,
   });
+};
 
 // --- Payment Preferences Hooks ---
 
