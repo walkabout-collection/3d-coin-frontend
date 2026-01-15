@@ -509,13 +509,37 @@ export const updateDraft = async (
 export const deleteDraft = async (
   draftId: string,
 ): Promise<{ success: boolean; message: string }> => {
-  const res = await apiClient.delete<
-    ApiResponse<{
-      success: boolean;
-      message: string;
-    }>
-  >(`/design/draft/${draftId}`);
-  return res.data.data;
+  try {
+    const res = await apiClient.delete<
+      ApiResponse<{
+        success: boolean;
+        message: string;
+      }>
+    >(`/design/draft/${draftId}`);
+    return res.data.data;
+  } catch (error: unknown) {
+    const axiosError = error as {
+      response?: { status?: number; data?: { message?: string } };
+      message?: string;
+    };
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to delete draft";
+
+    // Check if it's a foreign key constraint error
+    if (
+      errorMessage.includes("foreign key") ||
+      errorMessage.includes("Variant") ||
+      errorMessage.includes("RESTRICT")
+    ) {
+      throw new Error(
+        "Cannot delete this draft. It is being used in a variant and cannot be removed.",
+      );
+    }
+
+    throw new Error(errorMessage);
+  }
 };
 
 /**

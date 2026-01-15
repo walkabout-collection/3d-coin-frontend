@@ -196,24 +196,31 @@ const Orders = () => {
 
   // Helper to extract payment date from order
   const getPaymentDate = (order: UserOrder | OrderDataItem): string | null => {
+    // Priority 1: Check for paymentDate at top level (new API response structure)
     if ("paymentDate" in order && order.paymentDate) {
       return order.paymentDate;
     }
+    // Priority 2: Check Payment array for successful payment's paidAt
     if (
       "Payment" in order &&
       Array.isArray(order.Payment) &&
       order.Payment.length > 0
     ) {
       const payment = order.Payment.find((p) => p.status === "SUCCESS");
-      return payment?.paidAt || null;
+      if (payment?.paidAt) {
+        return payment.paidAt;
+      }
     }
+    // Priority 3: Check payments array (lowercase) for successful payment's paidAt
     if (
       "payments" in order &&
       Array.isArray(order.payments) &&
       order.payments.length > 0
     ) {
       const payment = order.payments.find((p) => p.status === "SUCCESS");
-      return payment?.paidAt || null;
+      if (payment?.paidAt) {
+        return payment.paidAt;
+      }
     }
     return null;
   };
@@ -280,9 +287,7 @@ const Orders = () => {
                 status: userOrder.status || "APPROVED",
                 paymentStatus:
                   userOrder.paymentStatus || getPaymentStatus(userOrder),
-                paymentDate: userOrder.paymentDate
-                  ? formatDate(userOrder.paymentDate)
-                  : getPaymentDate(userOrder),
+                paymentDate: userOrder.paymentDate || getPaymentDate(userOrder),
                 paymentId: userOrder.paymentId || getPaymentId(userOrder),
                 originalOrder: userOrder,
               };
@@ -322,12 +327,7 @@ const Orders = () => {
                 orderDate: getString("date") || getString("orderDate"),
                 status: getString("status") || "APPROVED",
                 paymentStatus: getString("paymentStatus") || "UNPAID",
-                paymentDate: simplified.paymentId
-                  ? formatDate(
-                      getStringOrUndefined("date") ||
-                        getStringOrUndefined("paymentDate"),
-                    )
-                  : null,
+                paymentDate: getStringOrUndefined("paymentDate") || null,
                 paymentId: getStringOrUndefined("paymentId") || null,
               };
             }

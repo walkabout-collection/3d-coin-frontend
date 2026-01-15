@@ -25,9 +25,22 @@ const DraftCard: React.FC<DraftCardProps> = ({ draft, onEdit, onDelete }) => {
       setShowDeleteConfirm(false);
     },
     onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete draft";
-      toast.error(errorMessage);
+      let errorMessage = "Failed to delete draft";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error
+      ) {
+        errorMessage = String(error.message);
+      }
+
+      // Show user-friendly error message
+      toast.error(errorMessage, {
+        autoClose: 5000,
+      });
     },
   });
 

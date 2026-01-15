@@ -177,7 +177,7 @@ const DraftsPage: React.FC = () => {
           </div>
           <Button
             variant="primary"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/standard-builder")}
             className="flex items-center gap-2 max-w-[260px]"
           >
             <Plus className="h-5 w-5" />
