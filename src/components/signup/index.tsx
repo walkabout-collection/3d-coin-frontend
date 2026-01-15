@@ -21,7 +21,7 @@ const signupSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .regex(
       /^(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain at least one uppercase letter and one number"
+      "Password must contain at least one uppercase letter and one number",
     ),
 });
 
@@ -142,6 +142,7 @@ const SignUp = ({}: SignupProps) => {
           src={authPanel}
           alt="Auth Panel"
           fill
+          sizes="50vw"
           priority
           className="absolute object-cover inset-0 w-full h-full"
         />

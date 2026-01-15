@@ -162,6 +162,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 width={80}
                 height={60}
                 priority
+                style={{ width: "auto", height: "auto" }}
               />
               <Image
                 src="/images/navbar/legacy-forge.svg"
@@ -169,6 +170,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 width={150}
                 height={80}
                 priority
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
           </Link>

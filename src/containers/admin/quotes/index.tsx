@@ -21,7 +21,7 @@ const AdminQuotes: React.FC = () => {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const limit = 8; // Changed to 8 quotes per page
+  const entriesPerPage = 8; // Quotes per page
 
   const {
     data: quotesData,
@@ -30,7 +30,7 @@ const AdminQuotes: React.FC = () => {
     refetch,
   } = useAdminQuotes({
     page: currentPage,
-    limit: limit,
+    limit: entriesPerPage,
   });
 
   const viewQuote = (id: string) => {
@@ -123,7 +123,12 @@ const AdminQuotes: React.FC = () => {
     });
   }, [sortedDataState, searchTerm]);
 
-  const handleSortChange = (sort: string) => setInternalSort(sort);
+  const handleSortChange = (sort: string) => {
+    setInternalSort(sort);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -425,13 +430,17 @@ const AdminQuotes: React.FC = () => {
         <ViewQuoteModal id={viewQuoteId} onClose={() => setViewQuoteId(null)} />
       )}
 
-      {/* Pagination - Table Component Style */}
+      {/* Pagination - Matching Orders Page Style */}
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between mt-6 pt-4 mb-10">
           <div className="text-sm text-gray-500">
-            Showing {(currentPage - 1) * limit + 1} to{" "}
-            {Math.min(currentPage * limit, pagination.total)} of{" "}
-            {pagination.total} entries
+            Showing{" "}
+            {(currentPage - 1) * (pagination.limit || entriesPerPage) + 1} to{" "}
+            {Math.min(
+              currentPage * (pagination.limit || entriesPerPage),
+              pagination.total,
+            )}{" "}
+            of {pagination.total} entries
           </div>
 
           <div className="flex items-center gap-2">
