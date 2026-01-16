@@ -1,6 +1,6 @@
 "use client";
 import { useState, forwardRef, useEffect } from "react";
-import { Search as SearchIcon } from "lucide-react"; 
+import { Search as SearchIcon } from "lucide-react";
 import Button from "../button/Button";
 import { SearchProps } from "./types";
 
@@ -17,18 +17,25 @@ const Search = forwardRef<HTMLInputElement, SearchProps>(
       rounded = true,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [searchValue, setSearchValue] = useState(value || "");
-       useEffect(() => {
-      if (searchValue === "" && onSearch) {
-        onSearch("");
+
+    // Sync internal state with controlled value prop
+    useEffect(() => {
+      if (value !== undefined && value !== searchValue) {
+        setSearchValue(value);
       }
-    }, [searchValue, onSearch]);
+    }, [value]); // Only depend on value, not searchValue to avoid loops
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
       setSearchValue(newValue);
+
+      // Call onSearch in real-time for immediate filtering
+      if (onSearch) {
+        onSearch(newValue);
+      }
 
       if (onChange) {
         onChange(e);
@@ -38,7 +45,7 @@ const Search = forwardRef<HTMLInputElement, SearchProps>(
     const handleSearchSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (onSearch) {
-        onSearch(searchValue); 
+        onSearch(searchValue);
       }
     };
 
@@ -89,7 +96,7 @@ const Search = forwardRef<HTMLInputElement, SearchProps>(
         </Button>
       </form>
     );
-  }
+  },
 );
 
 Search.displayName = "Search";

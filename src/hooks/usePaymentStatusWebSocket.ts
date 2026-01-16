@@ -35,7 +35,37 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
       return;
     }
 
+    // Helper function to check if user is authenticated
+    const getCookie = (name: string): string | null => {
+      if (typeof document === "undefined") return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+      return null;
+    };
+
+    // Only connect if user is authenticated (has a token)
+    const token = getCookie("token");
+    if (!token) {
+      // No token, don't attempt to connect
+      return;
+    }
+
+    // In development, optionally skip WebSocket if backend is likely unavailable
+    // Set NEXT_PUBLIC_DISABLE_WS=true to disable WebSocket connections
+    if (
+      process.env.NODE_ENV === "development" &&
+      process.env.NEXT_PUBLIC_DISABLE_WS === "true"
+    ) {
+      return;
+    }
+
     const connectWebSocket = () => {
+      // Skip if we've exceeded max reconnection attempts
+      if (reconnectAttempts.current >= maxReconnectAttempts) {
+        return;
+      }
+
       try {
         // Get WebSocket URL from environment or use default
         let wsUrl =
@@ -46,12 +76,21 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
         // Remove /api prefix if present (WebSocket endpoints typically don't use it)
         wsUrl = wsUrl.replace(/\/api$/, "");
 
+        // Create WebSocket connection
+        // Note: Browser will log connection failures automatically - this is expected
+        // when backend is not available and cannot be fully suppressed
         const ws = new WebSocket(`${wsUrl}/ws/payment-status-updates`);
 
         let pingInterval: NodeJS.Timeout | null = null;
 
         ws.onopen = () => {
-          console.log("Payment status WebSocket connected");
+          // Only log in development if explicitly needed for debugging
+          if (
+            process.env.NODE_ENV === "development" &&
+            process.env.NEXT_PUBLIC_DEBUG_WS === "true"
+          ) {
+            console.log("Payment status WebSocket connected");
+          }
           reconnectAttempts.current = 0;
 
           // Start ping interval to keep connection alive (every 30 seconds)
@@ -125,9 +164,12 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
 
         ws.onerror = () => {
           // WebSocket error events don't provide detailed error info in the event object
-          // Only log errors in development to avoid console spam
-          // The reconnection logic will handle the retry automatically
-          if (process.env.NODE_ENV === "development") {
+          // Silently handle errors - the reconnection logic will handle the retry automatically
+          // Only log in development if explicitly needed for debugging
+          if (
+            process.env.NODE_ENV === "development" &&
+            process.env.NEXT_PUBLIC_DEBUG_WS === "true"
+          ) {
             const readyStateText =
               ws.readyState === WebSocket.CONNECTING
                 ? "CONNECTING"
@@ -146,7 +188,13 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
         };
 
         ws.onclose = () => {
-          console.log("Payment status WebSocket disconnected");
+          // Only log in development if explicitly needed for debugging
+          if (
+            process.env.NODE_ENV === "development" &&
+            process.env.NEXT_PUBLIC_DEBUG_WS === "true"
+          ) {
+            console.log("Payment status WebSocket disconnected");
+          }
 
           // Stop ping interval
           if (pingInterval) {
@@ -163,15 +211,26 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
             reconnectAttempts.current++;
 
             reconnectTimeoutRef.current = setTimeout(() => {
-              console.log(
-                `Attempting to reconnect WebSocket (attempt ${reconnectAttempts.current})...`,
-              );
+              if (
+                process.env.NODE_ENV === "development" &&
+                process.env.NEXT_PUBLIC_DEBUG_WS === "true"
+              ) {
+                console.log(
+                  `Attempting to reconnect WebSocket (attempt ${reconnectAttempts.current})...`,
+                );
+              }
               connectWebSocket();
             }, delay);
           } else {
-            console.error(
-              "Max WebSocket reconnection attempts reached. Please refresh the page.",
-            );
+            // Only log error in development if explicitly needed for debugging
+            if (
+              process.env.NODE_ENV === "development" &&
+              process.env.NEXT_PUBLIC_DEBUG_WS === "true"
+            ) {
+              console.error(
+                "Max WebSocket reconnection attempts reached. Please refresh the page.",
+              );
+            }
             // Don't show error toast - user can still use the app
             // Payment status will refresh when navigating pages or manually refreshing
           }
@@ -179,7 +238,13 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
 
         wsRef.current = ws;
       } catch (error) {
-        console.error("Failed to connect WebSocket:", error);
+        // Only log in development if explicitly needed for debugging
+        if (
+          process.env.NODE_ENV === "development" &&
+          process.env.NEXT_PUBLIC_DEBUG_WS === "true"
+        ) {
+          console.error("Failed to connect WebSocket:", error);
+        }
       }
     };
 
@@ -188,10 +253,26 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+        try {
+          // Only close if connection is open or connecting
+          // Skip closing if already closed to avoid triggering browser error logs
+          const readyState = wsRef.current.readyState;
+          if (
+            readyState === WebSocket.OPEN ||
+            readyState === WebSocket.CONNECTING
+          ) {
+            // Set a flag to prevent error logging during cleanup
+            wsRef.current.onerror = null; // Remove error handler before closing
+            wsRef.current.close(1000, "Component unmounting"); // Normal closure
+          }
+        } catch (err) {
+          // Silently ignore errors during cleanup
+        } finally {
+          wsRef.current = null;
+        }
       }
     };
   }, [enabled, queryClient]);

@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useDraft } from "@/src/hooks/useQueries";
@@ -12,6 +12,11 @@ import {
   FileText,
   Calendar,
   Clock,
+  Send,
+  Sparkles,
+  Image as ImageIcon,
+  Settings,
+  Info,
 } from "lucide-react";
 
 interface DraftDetailPageProps {
@@ -20,6 +25,9 @@ interface DraftDetailPageProps {
 
 const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
   const router = useRouter();
+  const frontImageErrorRef = useRef(false);
+  const backImageErrorRef = useRef(false);
+  const generatorImageErrorRef = useRef(false);
 
   const { data: draft, isLoading, isError, error } = useDraft(draftId);
 
@@ -40,12 +48,50 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
     }
   };
 
+  // Validate image URL - must start with /, http://, https://, or data:
+  const validateImageUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (
+      url.startsWith("/") ||
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+    return null;
+  };
+
+  // Memoize image URLs to prevent recalculation on every render
+  const frontImageUrl = useMemo(() => {
+    if (frontImageErrorRef.current || !draft?.frontImage) {
+      return "/images/home/front-side.png";
+    }
+    return validateImageUrl(draft.frontImage) || "/images/home/front-side.png";
+  }, [draft?.frontImage]);
+
+  const backImageUrl = useMemo(() => {
+    if (backImageErrorRef.current || !draft?.backImage) {
+      return "/images/home/back-side.png";
+    }
+    return validateImageUrl(draft.backImage) || "/images/home/back-side.png";
+  }, [draft?.backImage]);
+
+  const generatorImageUrl = useMemo(() => {
+    if (generatorImageErrorRef.current || !draft?.generatorImage) {
+      return "/images/home/coin-design.png";
+    }
+    return (
+      validateImageUrl(draft.generatorImage) || "/images/home/coin-design.png"
+    );
+  }, [draft?.generatorImage]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-gray-600">Loading draft...</p>
+          <Loader2 className="h-10 w-10 animate-spin text-[#1a2a3a]" />
+          <p className="text-gray-600 font-medium">Loading draft...</p>
         </div>
       </div>
     );
@@ -53,15 +99,17 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
 
   if (isError || !draft) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-lg font-semibold text-red-800 mb-2">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white border border-red-200 rounded-xl p-8 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
                 Error Loading Draft
               </h3>
-              <p className="text-sm text-red-700 mb-4">
+              <p className="text-sm text-gray-600 mb-6">
                 {error instanceof Error
                   ? error.message
                   : "Failed to load draft. Please try again."}
@@ -69,7 +117,7 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
               <Button
                 variant="primary"
                 onClick={() => router.push("/drafts")}
-                className="text-sm px-4 py-2"
+                className="text-sm px-4 py-2 shadow-md"
               >
                 Back to Drafts
               </Button>
@@ -81,205 +129,339 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 md:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-8">
           <Button
             variant="ternary"
             onClick={() => router.push("/drafts")}
-            className="flex items-center gap-2 mb-4"
+            className="flex items-center gap-2 mb-6 hover:bg-gray-100 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Drafts
           </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {draft.name || "Untitled Draft"}
-              </h1>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created: {formatDate(draft.createdAt)}</span>
+
+          {/* Title Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {draft.name || "Untitled Draft"}
+                  </h1>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#1a2a3a] text-white shadow-sm">
+                    DRAFT
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Last updated: {formatDate(draft.updatedAt)}</span>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium">Created:</span>
+                    <span>{formatDate(draft.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium">Updated:</span>
+                    <span>{formatDate(draft.updatedAt)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-              DRAFT
-            </span>
           </div>
         </div>
 
         {/* Design Details */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            Design Details
-          </h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8 mb-6">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-[#1a2a3a] rounded-lg flex items-center justify-center">
+              <ImageIcon className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Design Details</h2>
+          </div>
 
           {/* Images Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* Front Image */}
             {draft.frontImage && (
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-wide">
-                  Front Design
-                </h3>
-                <div className="relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                  <Image
-                    src={draft.frontImage}
-                    alt="Front design"
-                    fill
-                    className="object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "/images/home/front-side.png";
-                    }}
-                  />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <ImageIcon className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Front Design
+                  </h3>
                 </div>
-                {draft.frontDescription && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    <span className="font-medium">Description:</span>{" "}
-                    {draft.frontDescription}
-                  </p>
-                )}
-                {draft.frontText && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Text:</span> {draft.frontText}
-                  </p>
-                )}
-                {draft.frontTextStyle && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Text Style:</span>{" "}
-                    {draft.frontTextStyle}
-                  </p>
-                )}
+                <div className="relative w-full h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex items-center justify-center border border-gray-200 shadow-sm">
+                  {frontImageUrl.startsWith("data:") ? (
+                    <img
+                      src={frontImageUrl}
+                      alt="Front design"
+                      className="absolute inset-0 w-full h-full object-contain"
+                      onError={() => {
+                        if (!frontImageErrorRef.current) {
+                          frontImageErrorRef.current = true;
+                        }
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={frontImageUrl}
+                      alt="Front design"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-contain"
+                      onError={() => {
+                        if (!frontImageErrorRef.current) {
+                          frontImageErrorRef.current = true;
+                        }
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2 bg-gray-50 rounded-lg p-4">
+                  {draft.frontDescription && (
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Description
+                      </span>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {draft.frontDescription}
+                      </p>
+                    </div>
+                  )}
+                  {draft.frontText && (
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Text
+                      </span>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {draft.frontText}
+                      </p>
+                    </div>
+                  )}
+                  {draft.frontTextStyle && (
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Text Style
+                      </span>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {draft.frontTextStyle}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Back Image */}
             {draft.backImage && (
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-wide">
-                  Back Design
-                </h3>
-                <div className="relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                  <Image
-                    src={draft.backImage}
-                    alt="Back design"
-                    fill
-                    className="object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "/images/home/back-side.png";
-                    }}
-                  />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <ImageIcon className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Back Design
+                  </h3>
                 </div>
-                {draft.backDescription && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    <span className="font-medium">Description:</span>{" "}
-                    {draft.backDescription}
-                  </p>
-                )}
-                {draft.backText && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Text:</span> {draft.backText}
-                  </p>
-                )}
-                {draft.backTextStyle && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Text Style:</span>{" "}
-                    {draft.backTextStyle}
-                  </p>
-                )}
+                <div className="relative w-full h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex items-center justify-center border border-gray-200 shadow-sm">
+                  {backImageUrl.startsWith("data:") ? (
+                    <img
+                      src={backImageUrl}
+                      alt="Back design"
+                      className="absolute inset-0 w-full h-full object-contain"
+                      onError={() => {
+                        if (!backImageErrorRef.current) {
+                          backImageErrorRef.current = true;
+                        }
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={backImageUrl}
+                      alt="Back design"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-contain"
+                      onError={() => {
+                        if (!backImageErrorRef.current) {
+                          backImageErrorRef.current = true;
+                        }
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2 bg-gray-50 rounded-lg p-4">
+                  {draft.backDescription && (
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Description
+                      </span>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {draft.backDescription}
+                      </p>
+                    </div>
+                  )}
+                  {draft.backText && (
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Text
+                      </span>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {draft.backText}
+                      </p>
+                    </div>
+                  )}
+                  {draft.backTextStyle && (
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Text Style
+                      </span>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {draft.backTextStyle}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           {/* Generator Image (if AI generated) */}
           {(draft.generatorImage || draft.generatorPrompt) && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-wide mb-3">
-                AI Generator
-              </h3>
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  AI Generator
+                </h3>
+              </div>
               {draft.generatorImage && (
-                <div className="relative w-full max-w-md h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center mb-3">
-                  <Image
-                    src={draft.generatorImage}
-                    alt="Generator image"
-                    fill
-                    className="object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "/images/home/coin-design.png";
-                    }}
-                  />
+                <div className="relative w-full max-w-2xl h-80 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex items-center justify-center mb-4 border border-gray-200 shadow-sm">
+                  {generatorImageUrl.startsWith("data:") ? (
+                    <img
+                      src={generatorImageUrl}
+                      alt="Generator image"
+                      className="absolute inset-0 w-full h-full object-contain"
+                      onError={() => {
+                        if (!generatorImageErrorRef.current) {
+                          generatorImageErrorRef.current = true;
+                        }
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={generatorImageUrl}
+                      alt="Generator image"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-contain"
+                      onError={() => {
+                        if (!generatorImageErrorRef.current) {
+                          generatorImageErrorRef.current = true;
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               )}
               {draft.generatorPrompt && (
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Prompt:</span>{" "}
-                  {draft.generatorPrompt}
-                </p>
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg p-4 border border-yellow-200">
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    AI Prompt
+                  </span>
+                  <p className="text-sm text-gray-700 mt-2 leading-relaxed">
+                    {draft.generatorPrompt}
+                  </p>
+                </div>
               )}
             </div>
           )}
 
           {/* Specifications Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {draft.coinShape && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  Coin Shape
-                </h4>
-                <p className="text-gray-900">{draft.coinShape}</p>
+          {(draft.coinShape ||
+            draft.materialFinish ||
+            draft.subject ||
+            draft.contrastStyle ||
+            draft.detailLevel ||
+            draft.totalCoins) && (
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-[#1a2a3a] rounded-lg flex items-center justify-center">
+                  <Settings className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Specifications
+                </h3>
               </div>
-            )}
-            {draft.materialFinish && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  Material & Finish
-                </h4>
-                <p className="text-gray-900">{draft.materialFinish}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {draft.coinShape && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Coin Shape
+                    </h4>
+                    <p className="text-base font-medium text-gray-900">
+                      {draft.coinShape}
+                    </p>
+                  </div>
+                )}
+                {draft.materialFinish && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Material & Finish
+                    </h4>
+                    <p className="text-base font-medium text-gray-900">
+                      {draft.materialFinish}
+                    </p>
+                  </div>
+                )}
+                {draft.subject && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Subject
+                    </h4>
+                    <p className="text-base font-medium text-gray-900">
+                      {draft.subject}
+                    </p>
+                  </div>
+                )}
+                {draft.contrastStyle && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Contrast Style
+                    </h4>
+                    <p className="text-base font-medium text-gray-900">
+                      {draft.contrastStyle}
+                    </p>
+                  </div>
+                )}
+                {draft.detailLevel && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Detail Level
+                    </h4>
+                    <p className="text-base font-medium text-gray-900">
+                      {draft.detailLevel}
+                    </p>
+                  </div>
+                )}
+                {draft.totalCoins && (
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 shadow-sm">
+                    <h4 className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                      Total Coins
+                    </h4>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {draft.totalCoins}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-            {draft.subject && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  Subject
-                </h4>
-                <p className="text-gray-900">{draft.subject}</p>
-              </div>
-            )}
-            {draft.contrastStyle && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  Contrast Style
-                </h4>
-                <p className="text-gray-900">{draft.contrastStyle}</p>
-              </div>
-            )}
-            {draft.detailLevel && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  Detail Level
-                </h4>
-                <p className="text-gray-900">{draft.detailLevel}</p>
-              </div>
-            )}
-            {draft.totalCoins && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
-                  Total Coins
-                </h4>
-                <p className="text-gray-900">{draft.totalCoins}</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Additional Details */}
           {(draft.frontReference ||
@@ -290,110 +472,128 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
             draft.backComposition ||
             draft.designerInstructions ||
             draft.prohibitedContent) && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-wide">
-                Additional Details
-              </h3>
-
-              {draft.frontReference && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Front Reference
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.frontReference}
-                  </p>
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-[#1a2a3a] rounded-lg flex items-center justify-center">
+                  <Info className="h-5 w-5 text-white" />
                 </div>
-              )}
+                <h3 className="text-xl font-bold text-gray-900">
+                  Additional Details
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {draft.frontReference && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Front Reference
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.frontReference}
+                    </p>
+                  </div>
+                )}
 
-              {draft.frontReferenceImpact && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Front Reference Impact
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.frontReferenceImpact}
-                  </p>
-                </div>
-              )}
+                {draft.frontReferenceImpact && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Front Reference Impact
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.frontReferenceImpact}
+                    </p>
+                  </div>
+                )}
 
-              {draft.frontComposition && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Front Composition
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.frontComposition}
-                  </p>
-                </div>
-              )}
+                {draft.frontComposition && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Front Composition
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.frontComposition}
+                    </p>
+                  </div>
+                )}
 
-              {draft.backReference && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Back Reference
-                  </h4>
-                  <p className="text-sm text-gray-700">{draft.backReference}</p>
-                </div>
-              )}
+                {draft.backReference && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Back Reference
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.backReference}
+                    </p>
+                  </div>
+                )}
 
-              {draft.backReferenceImpact && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Back Reference Impact
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.backReferenceImpact}
-                  </p>
-                </div>
-              )}
+                {draft.backReferenceImpact && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Back Reference Impact
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.backReferenceImpact}
+                    </p>
+                  </div>
+                )}
 
-              {draft.backComposition && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Back Composition
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.backComposition}
-                  </p>
-                </div>
-              )}
+                {draft.backComposition && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Back Composition
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.backComposition}
+                    </p>
+                  </div>
+                )}
 
-              {draft.designerInstructions && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Designer Instructions
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.designerInstructions}
-                  </p>
-                </div>
-              )}
+                {draft.designerInstructions && (
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h4 className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                      Designer Instructions
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.designerInstructions}
+                    </p>
+                  </div>
+                )}
 
-              {draft.prohibitedContent && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-600 mb-1">
-                    Prohibited Content
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {draft.prohibitedContent}
-                  </p>
-                </div>
-              )}
+                {draft.prohibitedContent && (
+                  <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                    <h4 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">
+                      Prohibited Content
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {draft.prohibitedContent}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 justify-end">
-          <Button
-            variant="ternary"
-            onClick={() => router.push(`/drafts/${draftId}/edit`)}
-            className="flex items-center gap-2"
-          >
-            <Edit2 className="h-4 w-4" />
-            Edit Draft
-          </Button>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-4">
+            <Button
+              variant="ternary"
+              onClick={() => router.push(`/drafts/${draftId}/edit`)}
+              className="flex items-center justify-center gap-2 px-6 py-3 hover:bg-gray-100 transition-colors"
+            >
+              <Edit2 className="h-5 w-5" />
+              Edit Draft
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => router.push("/drafts")}
+              className="flex items-center justify-center gap-2 px-6 py-3 shadow-md hover:shadow-lg transition-shadow"
+            >
+              <Send className="h-5 w-5" />
+              Submit for Quote
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -19,7 +19,7 @@ export const sidebarItems: SidebarItem[] = [
   {
     name: "Drafts",
     href: "/drafts",
-    icon: "/images/dashboard/quotes.svg",
+    icon: "/images/dashboard/drafts.svg",
   },
   {
     name: "Tracking",

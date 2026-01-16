@@ -170,6 +170,7 @@ const Login = () => {
           src={authPanel}
           alt="Auth Panel"
           fill
+          sizes="50vw"
           priority
           className="absolute object-cover inset-0 w-full h-full"
         />

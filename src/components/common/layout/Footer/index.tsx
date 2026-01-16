@@ -84,6 +84,7 @@ const Footer: React.FC = () => {
                 width={140}
                 height={140}
                 className="rounded-lg"
+                style={{ width: "auto", height: "auto" }}
               />
             ))}
           </div>

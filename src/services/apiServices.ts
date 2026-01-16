@@ -509,13 +509,37 @@ export const updateDraft = async (
 export const deleteDraft = async (
   draftId: string,
 ): Promise<{ success: boolean; message: string }> => {
-  const res = await apiClient.delete<
-    ApiResponse<{
-      success: boolean;
-      message: string;
-    }>
-  >(`/design/draft/${draftId}`);
-  return res.data.data;
+  try {
+    const res = await apiClient.delete<
+      ApiResponse<{
+        success: boolean;
+        message: string;
+      }>
+    >(`/design/draft/${draftId}`);
+    return res.data.data;
+  } catch (error: unknown) {
+    const axiosError = error as {
+      response?: { status?: number; data?: { message?: string } };
+      message?: string;
+    };
+    const errorMessage =
+      axiosError.response?.data?.message ||
+      axiosError.message ||
+      "Failed to delete draft";
+
+    // Check if it's a foreign key constraint error
+    if (
+      errorMessage.includes("foreign key") ||
+      errorMessage.includes("Variant") ||
+      errorMessage.includes("RESTRICT")
+    ) {
+      throw new Error(
+        "Cannot delete this draft. It is being used in a variant and cannot be removed.",
+      );
+    }
+
+    throw new Error(errorMessage);
+  }
 };
 
 /**
@@ -561,6 +585,18 @@ export const getS3UploadUrl = async (data: {
   key?: string;
 }> => {
   const res = await apiClient.post("/s3/upload-url", data);
+  return res.data;
+};
+
+// Get presigned URL for retrieving from S3
+export const getS3RetrieveUrl = async (
+  fileName: string,
+): Promise<{
+  url?: string;
+}> => {
+  const res = await apiClient.get(
+    `/s3/retrieve-url/${encodeURIComponent(fileName)}`,
+  );
   return res.data;
 };
 
@@ -750,6 +786,10 @@ export const getAdminQuotes = async (
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+  stats?: {
+    pendingQuotes: number;
+    approvedQuotes: number;
+  };
 }> => {
   const queryParams = new URLSearchParams();
 
@@ -775,11 +815,11 @@ export const getAdminQuotes = async (
       },
     });
 
-    // API Response Structure: { success, message, data: { data: [], pagination: {} } }
+    // API Response Structure: { success, message, data: { data: [], pagination: {}, stats: {} } }
     if (res.data?.success && res.data?.data) {
       const responseData = res.data.data;
 
-      // Extract quotes array and pagination from nested structure
+      // Extract quotes array, pagination, and stats from nested structure
       const quotes = Array.isArray(responseData.data) ? responseData.data : [];
       const pagination = responseData.pagination || {
         page: page,
@@ -789,11 +829,16 @@ export const getAdminQuotes = async (
         hasNextPage: false,
         hasPreviousPage: false,
       };
+      const stats = responseData.stats || {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
+      };
 
       return {
         success: true,
         data: quotes,
         pagination,
+        stats,
       };
     }
 
@@ -811,6 +856,10 @@ export const getAdminQuotes = async (
         totalPages: Math.ceil(data.length / limit) || 0,
         hasNextPage: false,
         hasPreviousPage: false,
+      },
+      stats: {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
       },
     };
   } catch (error: unknown) {
@@ -855,6 +904,10 @@ export const getUserQuotes = async (
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+  stats?: {
+    pendingQuotes: number;
+    approvedQuotes: number;
+  };
 }> => {
   const queryParams = new URLSearchParams();
 
@@ -880,11 +933,11 @@ export const getUserQuotes = async (
       },
     });
 
-    // API Response Structure: { success, message, data: { data: [], pagination: {} } }
+    // API Response Structure: { success, message, data: { data: [], pagination: {}, stats: {} } }
     if (res.data?.success && res.data?.data) {
       const responseData = res.data.data;
 
-      // Extract quotes array and pagination from nested structure
+      // Extract quotes array, pagination, and stats from nested structure
       const quotes = Array.isArray(responseData.data) ? responseData.data : [];
       const pagination = responseData.pagination || {
         page: page,
@@ -894,11 +947,16 @@ export const getUserQuotes = async (
         hasNextPage: false,
         hasPreviousPage: false,
       };
+      const stats = responseData.stats || {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
+      };
 
       return {
         success: true,
         data: quotes,
         pagination,
+        stats,
       };
     }
 
@@ -916,6 +974,10 @@ export const getUserQuotes = async (
         totalPages: Math.ceil(data.length / limit) || 0,
         hasNextPage: false,
         hasPreviousPage: false,
+      },
+      stats: {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
       },
     };
   } catch (error: unknown) {

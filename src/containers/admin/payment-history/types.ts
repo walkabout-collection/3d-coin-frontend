@@ -9,4 +9,7 @@ export interface PaymentDataItem {
   customer?: string;
   customerEmail?: string;
   status?: string;
+  // Raw values for sorting
+  rawDate?: number;
+  rawTotal?: number;
 }

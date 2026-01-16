@@ -22,20 +22,29 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/favicon.ico") ||
     pathname === "/"
   ) {
-    // If user is already logged in, redirect away from login/signup
+    // If user is already logged in with a valid token, redirect away from login/signup
     if (
       token &&
       (pathname.startsWith("/login") || pathname.startsWith("/signup"))
     ) {
       try {
         const payload = jwtDecode<TokenPayload>(token);
+
+        // Check if token is expired
+        if (payload.exp && Date.now() >= payload.exp * 1000) {
+          // Token is expired, allow access to login/signup
+          return NextResponse.next();
+        }
+
+        // Token is valid and not expired, redirect based on role
         if (payload.role) {
           const redirectPath =
             payload.role === "ADMIN" ? "/admin" : "/dashboard";
           return NextResponse.redirect(new URL(redirectPath, req.url));
         }
       } catch (err) {
-        // Invalid token, allow access to login/signup
+        // Invalid token (can't decode), allow access to login/signup
+        return NextResponse.next();
       }
     }
     return NextResponse.next();
