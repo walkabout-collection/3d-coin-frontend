@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps } from "./types";
 import { useLogout, useGetUserProfile } from "@/src/hooks/useQueries";
@@ -14,6 +15,12 @@ import {
   LogOut,
   ChevronRight,
 } from "lucide-react";
+
+interface TokenPayload {
+  role?: "USER" | "ADMIN";
+  exp?: number;
+}
+
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
@@ -38,6 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [userRole, setUserRole] = useState<"USER" | "ADMIN" | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const popupRef = useRef<HTMLDivElement>(null);
@@ -85,6 +93,18 @@ const Navbar: React.FC<NavbarProps> = ({
 
       setIsLoggedIn(newLoggedIn);
 
+      // Decode token to get user role
+      if (token) {
+        try {
+          const payload = jwtDecode<TokenPayload>(token);
+          setUserRole(payload.role || "USER");
+        } catch (err) {
+          setUserRole(null);
+        }
+      } else {
+        setUserRole(null);
+      }
+
       // If user just logged in (wasn't logged in before, but now is), refetch profile
       if (!previousLoggedIn && newLoggedIn) {
         // Invalidate and refetch user profile
@@ -102,6 +122,16 @@ const Navbar: React.FC<NavbarProps> = ({
     const token = getCookie("token");
     previousLoggedInRef.current = !!token;
     setIsLoggedIn(!!token);
+
+    // Decode initial token
+    if (token) {
+      try {
+        const payload = jwtDecode<TokenPayload>(token);
+        setUserRole(payload.role || "USER");
+      } catch (err) {
+        setUserRole(null);
+      }
+    }
 
     checkAuth();
     window.addEventListener("authChanged", checkAuth);
@@ -270,7 +300,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     {/* Menu Items */}
                     <div className="py-1.5">
                       <Link
-                        href="/dashboard"
+                        href={userRole === "ADMIN" ? "/admin" : "/dashboard"}
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-all duration-150 group"
                         onClick={() => setIsPopupOpen(false)}
                       >
@@ -281,7 +311,11 @@ const Navbar: React.FC<NavbarProps> = ({
                         <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-400 transition-colors opacity-0 group-hover:opacity-100" />
                       </Link>
                       <Link
-                        href="/dashboard/account-setting"
+                        href={
+                          userRole === "ADMIN"
+                            ? "/admin/account-setting"
+                            : "/dashboard/account-setting"
+                        }
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-all duration-150 group"
                         onClick={() => setIsPopupOpen(false)}
                       >

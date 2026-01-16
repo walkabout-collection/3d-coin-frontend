@@ -96,9 +96,6 @@ const ApproveQuoteModal: React.FC<ApproveQuoteModalProps> = ({
           <p className="text-gray-700 mb-6 leading-relaxed">
             Set the total price for the coin and approve the quote.
           </p>
-          <p className="text-gray-600 mb-6">
-            Set the total price for the coin and approve the quote.
-          </p>
 
           <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="flex justify-between items-center">
