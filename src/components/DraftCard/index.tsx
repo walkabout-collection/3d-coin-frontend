@@ -222,12 +222,16 @@ const DraftCard: React.FC<DraftCardProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">
             {draft.name || "Untitled Draft"}
           </h3>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <FileText className="h-3.5 w-3.5" />
-            <span className="uppercase tracking-wide">
-              {draft.generatorPrompt || draft.generatorImage
-                ? "AI Generator"
-                : "Standard Builder"}
+          {/* Builder Type Badge */}
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                (draft.builderType || "Standard Builder") === "AI Generator"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-green-100 text-green-700"
+              }`}
+            >
+              {draft.builderType || "Standard Builder"}
             </span>
           </div>
         </div>

@@ -146,12 +146,23 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
                   <h1 className="text-3xl font-bold text-gray-900">
                     {draft.name || "Untitled Draft"}
                   </h1>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#1a2a3a] text-white shadow-sm">
                     DRAFT
+                  </span>
+                  {/* Builder Type Badge */}
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide shadow-sm ${
+                      (draft.builderType || "Standard Builder") ===
+                      "AI Generator"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {draft.builderType || "Standard Builder"}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
@@ -330,7 +341,9 @@ const DraftDetailPage: React.FC<DraftDetailPageProps> = ({ draftId }) => {
           </div>
 
           {/* Generator Image (if AI generated) */}
-          {(draft.generatorImage || draft.generatorPrompt) && (
+          {(draft.builderType === "AI Generator" ||
+            (!draft.builderType &&
+              (draft.generatorImage || draft.generatorPrompt))) && (
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg flex items-center justify-center">

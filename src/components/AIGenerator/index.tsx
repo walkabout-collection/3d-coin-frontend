@@ -463,8 +463,55 @@ import {
 const AIGenerator: React.FC = () => {
   const { state, uploadData, goTo, goBack, setUploadData, reset } =
     useAiFlowStore();
-  const { reset: resetDesignCoin } = useCoinDesignStore();
+  const {
+    front,
+    back,
+    currentDraftId,
+    reset: resetDesignCoin,
+  } = useCoinDesignStore();
   const { resetFormData } = useQAPromptsStore();
+
+  // Check if draft data is loaded and automatically show design interface
+  useEffect(() => {
+    // If we have draft data (images loaded), automatically show design interface
+    if (currentDraftId && (front.image || back.image)) {
+      console.log(
+        "[AIGenerator] Draft data detected, showing design interface:",
+        {
+          currentDraftId,
+          hasFrontImage: !!front.image,
+          hasBackImage: !!back.image,
+          frontImageUrl: front.image?.url?.substring(0, 50),
+          backImageUrl: back.image?.url?.substring(0, 50),
+        },
+      );
+      // Only navigate if we're not already on the design interface
+      if (!state.showDesignInterface) {
+        goTo("design");
+        window.history.pushState(
+          { screen: "design" },
+          "",
+          window.location.href,
+        );
+      }
+    } else if (currentDraftId) {
+      console.log("[AIGenerator] Draft ID exists but no images:", {
+        currentDraftId,
+        hasFrontImage: !!front.image,
+        hasBackImage: !!back.image,
+        frontPrompt: front.prompt?.substring(0, 30),
+        backPrompt: back.prompt?.substring(0, 30),
+      });
+    }
+  }, [
+    currentDraftId,
+    front.image,
+    back.image,
+    state.showDesignInterface,
+    goTo,
+    front.prompt,
+    back.prompt,
+  ]);
 
   useEffect(() => {
     const handlePopState = () => goBack();

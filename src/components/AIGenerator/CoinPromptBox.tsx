@@ -1,20 +1,14 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import Button from "../common/button/Button";
-import { Paperclip, XCircle, AlertCircle } from "lucide-react";
+import { Paperclip, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import ChatbotDrawer from "./ChatbotDrawer";
 import { chatbotQuestions, initialChatbotState } from "./data";
 import { toast } from "react-toastify";
-import {
-  useGenerateCompleteCoin,
-  useGenerateCoinDesign,
-  useGenerationStatus,
-  useCancelGeneration,
-} from "@/src/hooks/useQueries";
+import { useGenerateCompleteCoin } from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
 import { validateAIGenerationInput } from "@/src/utils/validation";
-import RequestQueue from "@/src/components/common/RequestQueue";
 
 interface CoinPromptBoxProps {
   onGenerate?: (variants?: string[]) => void;
@@ -23,25 +17,7 @@ interface CoinPromptBoxProps {
 interface ChatbotState {
   isDrawerOpen: boolean;
 }
-
-const base64ToFile = (base64String: string, fileName: string): File => {
-  const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
-  if (!matches) {
-    throw new Error("Invalid base64 string");
-  }
-  const mime = matches[1];
-  const data = matches[2];
-  const byteString = atob(data);
-  const n = byteString.length;
-  const u8arr = new Uint8Array(n);
-
-  for (let i = 0; i < n; i++) {
-    u8arr[i] = byteString.charCodeAt(i);
-  }
-
-  return new File([u8arr], fileName, { type: mime });
-};
-
+``;
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const { setDesignId, setFrontImage, setBackImage } = useCoinDesignStore();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -53,83 +29,75 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   );
   const [prompt, setPrompt] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
 
-  // Queue-based generation hooks
-  const generateMutation = useGenerateCoinDesign({
-    onSuccess: (data) => {
-      if (data.success && data.data?.requestId) {
-        setCurrentRequestId(data.data.requestId);
-        toast.success("Generation request queued successfully");
-      }
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === "object" &&
-              error !== null &&
-              "response" in error &&
-              typeof error.response === "object" &&
-              error.response !== null &&
-              "status" in error.response &&
-              error.response.status === 429
-            ? "Too many requests. Please try again later."
-            : "Failed to start generation";
-      setError({ message: errorMessage });
-      toast.error(errorMessage);
-    },
-  });
-
-  const { data: status } = useGenerationStatus(
-    currentRequestId,
-    !!currentRequestId,
-  );
-
-  const cancelMutation = useCancelGeneration({
-    onSuccess: () => {
-      setCurrentRequestId(null);
-      toast.success("Generation cancelled");
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to cancel generation";
-      toast.error(errorMessage);
-    },
-  });
-
-  // Legacy API hook (keep for backward compatibility)
-  const { mutate: generateCompleteCoinMutate, isPending: isGeneratingLegacy } =
+  // Generate Complete Coin API hook - generates both front and back sides in a single call
+  const { mutate: generateCompleteCoinMutate, isPending: isGenerating } =
     useGenerateCompleteCoin({
       onSuccess: (res) => {
-        console.log("Complete Coin API Response:", res);
+        console.log("Generate Complete Coin API Response:", res);
 
         if (res.success && res.data) {
           const { designId, front, back } = res.data;
 
-          toast.success("Generated successfully!");
+          toast.success("Both sides generated successfully! 🎉");
           setError(undefined);
 
+          // Store design ID for later use
           setDesignId(designId);
 
+          // Create data URIs from base64 strings
           const frontImageUrl = `data:image/png;base64,${front.imageBase64}`;
           const backImageUrl = `data:image/png;base64,${back.imageBase64}`;
 
+          // Set both front and back images in the store
           setFrontImage(frontImageUrl);
           setBackImage(backImageUrl);
 
+          // Call onGenerate callback with both images
           if (onGenerate) onGenerate([frontImageUrl, backImageUrl]);
         } else {
-          console.error("Invalid response from Complete Coin API:", res);
+          console.error(
+            "Invalid response from Generate Complete Coin API:",
+            res,
+          );
           toast.error("Failed to process images from API");
+          setError({
+            message: "Failed to process images from API. Please try again.",
+          });
         }
       },
-      onError: (error) => {
-        console.error("Complete Coin API Error:", error);
-        setError({
-          message: "Failed to generate coin. Please try again.",
-        });
-        toast.error("Failed to generate coin.");
+      onError: (error: unknown) => {
+        console.error("Generate Complete Coin API Error:", error);
+
+        // Extract error message from various error formats
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" &&
+                error !== null &&
+                "response" in error &&
+                typeof error.response === "object" &&
+                error.response !== null &&
+                "data" in error.response &&
+                typeof error.response.data === "object" &&
+                error.response.data !== null &&
+                "error" in error.response.data &&
+                typeof error.response.data.error === "object" &&
+                error.response.data.error !== null &&
+                "message" in error.response.data.error
+              ? String(error.response.data.error.message)
+              : typeof error === "object" &&
+                  error !== null &&
+                  "response" in error &&
+                  typeof error.response === "object" &&
+                  error.response !== null &&
+                  "status" in error.response &&
+                  error.response.status === 429
+                ? "Too many requests. Please try again later."
+                : "Failed to generate coin. Please try again.";
+
+        setError({ message: errorMessage });
+        toast.error(errorMessage);
       },
     });
 
@@ -180,68 +148,37 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
       return;
     }
 
+    // At least one input is required: prompt, image file, or image URL
     if (!prompt.trim() && !uploadedFile && !previewImage) {
       setError({ message: "Please provide a prompt or upload an image." });
       return;
     }
 
-    // Use queue-based API for new implementation
-    try {
-      await generateMutation.mutateAsync({
-        prompt: prompt.trim() || undefined,
-        imageFile: uploadedFile,
-        imageUrl: undefined,
-      });
-    } catch {
-      // Error handled by mutation
+    // Prepare request data for Generate Complete Coin API
+    // The API accepts: prompt (optional), imageUrl (optional), image (File, optional)
+    // At least one must be provided (already validated above)
+    const requestData: {
+      prompt?: string;
+      imageUrl?: string;
+      image?: File;
+    } = {};
+
+    // Add prompt if provided
+    if (prompt.trim()) {
+      requestData.prompt = prompt.trim();
     }
 
-    // Keep legacy API as fallback (commented out, can be enabled if needed)
-    // let fileToSend: File | undefined;
-    // if (uploadedFile) {
-    //   fileToSend = uploadedFile;
-    // } else if (previewImage && previewImage.startsWith("data:")) {
-    //   fileToSend = base64ToFile(previewImage, "preview.png");
-    // }
-    // generateCompleteCoinMutate({
-    //   prompt: prompt.trim() || undefined,
-    //   image: fileToSend,
-    // });
+    // Add image file if uploaded
+    if (uploadedFile) {
+      requestData.image = uploadedFile;
+    }
+    // Note: imageUrl is not currently supported in this component's UI
+    // but can be added later if needed
+
+    // Call Generate Complete Coin API
+    // This will generate BOTH front and back sides in a single API call
+    generateCompleteCoinMutate(requestData);
   };
-
-  const handleCancel = async () => {
-    if (!currentRequestId) return;
-    try {
-      await cancelMutation.mutateAsync(currentRequestId);
-    } catch {
-      // Error handled by mutation
-    }
-  };
-
-  // Check if generation is in progress
-  const isGenerating =
-    generateMutation.isPending ||
-    status?.data?.status === "QUEUED" ||
-    status?.data?.status === "PROCESSING";
-  const isCompleted = status?.data?.status === "COMPLETED";
-  const isFailed = status?.data?.status === "FAILED";
-
-  // Show result when completed
-  useEffect(() => {
-    if (isCompleted && status?.data?.designId) {
-      toast.success("Generation completed!");
-      // TODO: Handle design display - may need to fetch design data
-      setCurrentRequestId(null);
-    }
-  }, [isCompleted, status?.data?.designId]);
-
-  // Show error when failed
-  useEffect(() => {
-    if (isFailed && status?.data?.error) {
-      toast.error(`Generation failed: ${status.data.error}`);
-      setCurrentRequestId(null);
-    }
-  }, [isFailed, status?.data?.error]);
 
   const handleChatbotClick = () => {
     setChatbotState((prev) => ({ ...prev, isDrawerOpen: !prev.isDrawerOpen }));
@@ -273,47 +210,6 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
             <br />
             POCKET AT A TIME
           </h2>
-
-          {/* Request Queue */}
-          <div className="mb-4 max-w-3xl mx-auto">
-            <RequestQueue />
-          </div>
-
-          {/* Generation Status */}
-          {status?.data && (
-            <div
-              className={`mb-4 max-w-3xl mx-auto p-4 rounded-lg ${
-                status.data.status === "COMPLETED"
-                  ? "bg-green-50 border border-green-200"
-                  : status.data.status === "FAILED"
-                    ? "bg-red-50 border border-red-200"
-                    : "bg-blue-50 border border-blue-200"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <strong className="text-sm">Status:</strong>{" "}
-                  <span className="text-sm">{status.data.status}</span>
-                  {status.data.queuePosition && (
-                    <span className="ml-2 text-sm">
-                      (Position: #{status.data.queuePosition})
-                    </span>
-                  )}
-                </div>
-                {(status.data.status === "QUEUED" ||
-                  status.data.status === "PROCESSING") && (
-                  <Button
-                    variant="ternary"
-                    onClick={handleCancel}
-                    disabled={cancelMutation.isPending}
-                    className="text-xs !px-3 !py-1"
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Validation Errors */}
           {validationErrors.length > 0 && (
@@ -414,22 +310,12 @@ const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
                     type="button"
                     variant="primary"
                     className="!bg-blue-900 hover:!bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold text-sm min-w-[140px] flex items-center justify-center gap-2"
-                    disabled={
-                      isGenerating ||
-                      isGeneratingLegacy ||
-                      validationErrors.length > 0
-                    }
+                    disabled={isGenerating || validationErrors.length > 0}
                   >
-                    {isGenerating || isGeneratingLegacy ? (
+                    {isGenerating ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>
-                          {status?.data?.status === "QUEUED"
-                            ? "Queued..."
-                            : status?.data?.status === "PROCESSING"
-                              ? "Processing..."
-                              : "Processing..."}
-                        </span>
+                        <span>Generating...</span>
                       </>
                     ) : (
                       "GENERATE"

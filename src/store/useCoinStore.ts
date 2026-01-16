@@ -266,6 +266,7 @@ export const useCoinDesignStore = create<CoinDesignStore>((set, get) => ({
     // Transform to flat API structure
     return {
       name: `AI Generator Draft - ${new Date().toLocaleDateString()}`,
+      builderType: "AI Generator" as const,
       generatorPrompt: state.front.prompt || state.back.prompt || undefined,
       generatorImage:
         state.front.image?.url || state.back.image?.url || undefined,
@@ -283,40 +284,82 @@ export const useCoinDesignStore = create<CoinDesignStore>((set, get) => ({
     backDescription?: string;
     backImage?: string;
   }) => {
+    // Handle missing or partial data gracefully
+    // Validate image URLs - must be non-empty strings
+    const frontImageUrl =
+      draftData.frontImage && draftData.frontImage.trim()
+        ? draftData.frontImage.trim()
+        : null;
+    const backImageUrl =
+      draftData.backImage && draftData.backImage.trim()
+        ? draftData.backImage.trim()
+        : null;
+    const frontPrompt =
+      draftData.frontDescription || draftData.generatorPrompt || "";
+    const backPrompt = draftData.backDescription || "";
+
+    console.log("[useCoinStore] Loading draft data:", {
+      rawFrontImage: draftData.frontImage,
+      rawBackImage: draftData.backImage,
+      hasFrontImage: !!frontImageUrl,
+      hasBackImage: !!backImageUrl,
+      frontImageUrl: frontImageUrl?.substring(0, 80),
+      backImageUrl: backImageUrl?.substring(0, 80),
+      frontPrompt: frontPrompt.substring(0, 30),
+      backPrompt: backPrompt.substring(0, 30),
+    });
+
     set({
       designId: null, // Will be set when draft is loaded
-      front: draftData.frontImage
+      front: frontImageUrl
         ? {
             ...initialTabState,
             image: {
               id: `front-${Date.now()}`,
-              url: draftData.frontImage,
+              url: frontImageUrl,
               timestamp: Date.now(),
             },
-            prompt:
-              draftData.frontDescription || draftData.generatorPrompt || "",
+            prompt: frontPrompt,
           }
         : {
             ...initialTabState,
-            prompt:
-              draftData.frontDescription || draftData.generatorPrompt || "",
+            prompt: frontPrompt,
           },
-      back: draftData.backImage
+      back: backImageUrl
         ? {
             ...initialTabState,
             image: {
               id: `back-${Date.now()}`,
-              url: draftData.backImage,
+              url: backImageUrl,
               timestamp: Date.now(),
             },
-            prompt: draftData.backDescription || "",
+            prompt: backPrompt,
           }
         : {
             ...initialTabState,
-            prompt: draftData.backDescription || "",
+            prompt: backPrompt,
           },
       additionalVariants: [],
     });
+
+    // Verify images were set
+    const state = get();
+    console.log(
+      "[useCoinStore] After loading - Front image:",
+      state.front.image?.url?.substring(0, 80),
+    );
+    console.log(
+      "[useCoinStore] After loading - Back image:",
+      state.back.image?.url?.substring(0, 80),
+    );
+    console.log(
+      "[useCoinStore] After loading - Front prompt:",
+      state.front.prompt?.substring(0, 30),
+    );
+    console.log(
+      "[useCoinStore] After loading - Back prompt:",
+      state.back.prompt?.substring(0, 30),
+    );
   },
 
   // ============ UTILITY ============

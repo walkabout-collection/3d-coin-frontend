@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { AxiosError } from "axios";
 import ViewQuoteModal from "@/src/components/admin/ViewQuoteModal/ViewQuoteModal";
 import ImageViewerModal from "@/src/components/common/ImageViewerModal";
+import { Trash2 } from "lucide-react";
 
 const AdminQuotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +28,8 @@ const AdminQuotes: React.FC = () => {
     alt: string;
     title?: string;
   } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const entriesPerPage = 8; // Quotes per page
 
   const {
@@ -220,9 +223,44 @@ const AdminQuotes: React.FC = () => {
         toast.error("Quote cannot be deleted. It is linked to an order.");
         return;
       }
-      deleteQuote(id);
+      // Show confirmation modal
+      setQuoteToDelete(quote);
+      setShowDeleteConfirm(true);
     }
   };
+
+  const handleConfirmDelete = () => {
+    if (quoteToDelete) {
+      deleteQuote(quoteToDelete.id);
+      setShowDeleteConfirm(false);
+      setQuoteToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setQuoteToDelete(null);
+  };
+
+  // Handle ESC key to close delete confirmation modal
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowDeleteConfirm(false);
+        setQuoteToDelete(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [showDeleteConfirm]);
 
   const canDeleteQuote = (quote: Quote): boolean => {
     return quote.status !== "APPROVED" && !quote.orderId;
@@ -573,6 +611,75 @@ const AdminQuotes: React.FC = () => {
           title={viewerImage.title}
           onClose={() => setViewerImage(null)}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200"
+          onClick={handleCancelDelete}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Icon */}
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                <Trash2 className="h-8 w-8 text-red-600" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                Delete Quote?
+              </h3>
+
+              {/* Message */}
+              <p className="text-sm text-gray-600 text-center mb-6 leading-relaxed">
+                Are you sure you want to delete this quote? This action cannot
+                be undone and all associated data will be permanently removed.
+              </p>
+
+              {/* Quote Info */}
+              {quoteToDelete && (
+                <div className="bg-gray-50 rounded-lg p-3 mb-6">
+                  <p className="text-xs text-gray-500 mb-1">Quote ID</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {quoteToDelete.id.slice(0, 8)}...
+                  </p>
+                  {quoteToDelete.user && (
+                    <>
+                      <p className="text-xs text-gray-500 mt-2 mb-1">
+                        Customer
+                      </p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {quoteToDelete.user.firstName}{" "}
+                        {quoteToDelete.user.lastName}
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="flex justify-center gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={handleCancelDelete}
+                  className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isDeleting ? "Deleting..." : "Yes, Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

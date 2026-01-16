@@ -226,13 +226,31 @@ const ArtWork = () => {
           <div className="relative w-[335px] h-[335px] z-10 rounded-full overflow-hidden">
             {/* Artwork Image - Show if preview image exists for current tab */}
             {currentPreviewImage ? (
-              <Image
-                src={currentPreviewImage}
-                alt={`${activeTab} artwork`}
-                width={335}
-                height={335}
-                className="w-full h-full "
-              />
+              currentPreviewImage.startsWith("data:") ||
+              currentPreviewImage.startsWith("http://") ||
+              currentPreviewImage.startsWith("https://") ? (
+                <img
+                  src={currentPreviewImage}
+                  alt={`${activeTab} artwork`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error("Image load error:", currentPreviewImage);
+                    e.currentTarget.src = "/images/home/coin-design.png";
+                  }}
+                />
+              ) : (
+                <Image
+                  src={currentPreviewImage}
+                  alt={`${activeTab} artwork`}
+                  width={335}
+                  height={335}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                  onError={() => {
+                    console.error("Image load error:", currentPreviewImage);
+                  }}
+                />
+              )
             ) : (
               /* Base Coin Design - Show when no artwork */
               <Image

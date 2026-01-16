@@ -379,6 +379,7 @@ export interface DraftDesign {
   name: string;
   status: "DRAFT";
   totalCoins?: number;
+  builderType?: "AI Generator" | "Standard Builder";
   generatorPrompt?: string;
   generatorImage?: string;
   designerInstructions?: string;
@@ -415,6 +416,7 @@ export interface DraftDesign {
 export interface SaveDraftRequest {
   name?: string;
   totalCoins?: number;
+  builderType?: "AI Generator" | "Standard Builder";
   generatorPrompt?: string;
   generatorImage?: string;
   designerInstructions?: string;

@@ -69,7 +69,19 @@ const DraftsPage: React.FC = () => {
   // The middleware will redirect to login if not authenticated
 
   const handleEdit = (draftId: string) => {
-    // Load draft and navigate to appropriate page
+    // Find the draft to get its builderType
+    const draft = draftsList.find((d) => d.id === draftId);
+    if (!draft) {
+      // Fallback: navigate to edit page which will handle routing
+      router.push(`/drafts/${draftId}/edit`);
+      return;
+    }
+
+    // Get builderType with fallback
+    const builderType = draft.builderType || "Standard Builder";
+
+    // Route based on builderType
+    // The edit page will handle loading the draft and routing to the correct view
     router.push(`/drafts/${draftId}/edit`);
   };
 
