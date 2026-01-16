@@ -83,7 +83,7 @@ const QuickBooksSync: React.FC = () => {
     }
   };
 
-  const handleRetryAll = async () => {
+  const handleRetryAll = async (): Promise<void> => {
     try {
       const result = await retryFailedSyncs.mutateAsync();
       const successCount = result.data.succeeded || 0;
