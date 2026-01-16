@@ -56,7 +56,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   useEffect(() => {
     if (isOpen && isLoggedIn && preferencesData?.data?.preferredPaymentMethod) {
       const preferred = preferencesData.data.preferredPaymentMethod;
-      // Find matching option - payment options use uppercase IDs (QUICKBOOKS, STRIPE, MANUAL)
+      // Find matching option - payment options use uppercase IDs (STRIPE, MANUAL)
+      // Note: QuickBooks is no longer available for users
       const matchingOption = paymentOptions.find((opt) => opt.id === preferred);
       if (matchingOption) {
         setSelected(matchingOption.id);

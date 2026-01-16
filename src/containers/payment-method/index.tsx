@@ -6,19 +6,14 @@ import { PaymentOption } from "./types";
 import {
   usePaymentPreferences,
   useUpdatePreferredPaymentMethod,
-  useQuickBooksConnectionStatus,
 } from "@/src/hooks/useQueries";
 import ManagePaymentMethods from "@/src/components/ManagePaymentMethods";
-import QuickBooksOAuthModal from "@/src/components/QuickBooks/QuickBooksOAuthModal";
-import QuickBooksConnectionStatus from "@/src/components/QuickBooks/QuickBooksConnectionStatus";
-import QuickBooksTransactions from "@/src/components/QuickBooks/QuickBooksTransactions";
 import { toast } from "react-toastify";
 import type { PaymentMethod } from "@/src/types/paymentPreferences";
 
 const PaymentMethodContainer: React.FC = () => {
   const [selected, setSelected] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isQuickBooksModalOpen, setIsQuickBooksModalOpen] = useState(false);
 
   // Check if user is logged in
   const getCookie = (name: string): string | null => {
@@ -48,11 +43,6 @@ const PaymentMethodContainer: React.FC = () => {
       enabled: isLoggedIn,
     });
 
-  // Check QuickBooks connection status when QuickBooks is selected
-  const { data: quickBooksStatus } = useQuickBooksConnectionStatus({
-    enabled: isLoggedIn && selected === "quickbooks",
-  });
-
   const { mutate: updatePreferredMethod, isPending: isUpdating } =
     useUpdatePreferredPaymentMethod({
       onSuccess: () => {
@@ -69,7 +59,7 @@ const PaymentMethodContainer: React.FC = () => {
     const lowerId = id.toLowerCase();
     if (lowerId === "stripe") return "STRIPE";
     if (lowerId === "manual") return "MANUAL";
-    if (lowerId === "quickbooks") return "QUICKBOOKS";
+    // QuickBooks removed - no longer available for users
     return null;
   };
 
@@ -100,17 +90,7 @@ const PaymentMethodContainer: React.FC = () => {
       if (paymentMethod) {
         updatePreferredMethod({ paymentMethod });
       }
-
-      // If QuickBooks is selected and not connected, open OAuth modal
-      if (option.id === "quickbooks" && !quickBooksStatus?.data?.connected) {
-        setIsQuickBooksModalOpen(true);
-      }
     }
-  };
-
-  const handleQuickBooksConnectSuccess = () => {
-    // Refetch connection status after successful connection
-    // The query will automatically refetch when enabled
   };
 
   return (
@@ -179,23 +159,6 @@ const PaymentMethodContainer: React.FC = () => {
         </div>
       )}
 
-      {/* QuickBooks Connection Status and Transactions */}
-      {isLoggedIn && selected === "quickbooks" && (
-        <div className="mt-8 space-y-6">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <QuickBooksConnectionStatus
-              onReconnect={() => setIsQuickBooksModalOpen(true)}
-            />
-          </div>
-
-          {quickBooksStatus?.data?.connected && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <QuickBooksTransactions limit={10} />
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Saved Payment Methods (only for logged-in users) */}
       {isLoggedIn && (
         <div className="mt-8">
@@ -213,13 +176,6 @@ const PaymentMethodContainer: React.FC = () => {
           </p>
         </div>
       )}
-
-      {/* QuickBooks OAuth Modal */}
-      <QuickBooksOAuthModal
-        isOpen={isQuickBooksModalOpen}
-        onClose={() => setIsQuickBooksModalOpen(false)}
-        onSuccess={handleQuickBooksConnectSuccess}
-      />
     </div>
   );
 };
