@@ -125,6 +125,7 @@ export const useStandardBuilderStore = create<StandardBuilderState>(
       // Transform nested structure to flat API structure
       return {
         name: `Standard Builder Draft - ${new Date().toLocaleDateString()}`,
+        builderType: "Standard Builder" as const,
         coinShape: state.dimensions.coinDiameter
           ? `Diameter: ${state.dimensions.coinDiameter}${state.dimensions.coinThickness ? `, Thickness: ${state.dimensions.coinThickness}` : ""}`
           : undefined,
@@ -158,38 +159,78 @@ export const useStandardBuilderStore = create<StandardBuilderState>(
       backText?: string;
       generatorPrompt?: string;
       generatorImage?: string;
+      description?: string; // Packaging preferences
+      text?: string; // Packaging back text
     }) => {
       // Parse coinShape (e.g., "Diameter: 30mm, Thickness: 3mm")
+      // Handle gracefully if coinShape is missing or malformed
       let coinDiameter = "";
       let coinThickness = "";
       if (draftData.coinShape) {
-        const diameterMatch = draftData.coinShape.match(/Diameter:\s*([^,]+)/);
-        const thicknessMatch = draftData.coinShape.match(/Thickness:\s*(.+)/);
-        coinDiameter = diameterMatch ? diameterMatch[1].trim() : "";
-        coinThickness = thicknessMatch ? thicknessMatch[1].trim() : "";
+        try {
+          const diameterMatch =
+            draftData.coinShape.match(/Diameter:\s*([^,]+)/i);
+          const thicknessMatch =
+            draftData.coinShape.match(/Thickness:\s*(.+)/i);
+          coinDiameter = diameterMatch ? diameterMatch[1].trim() : "";
+          coinThickness = thicknessMatch ? thicknessMatch[1].trim() : "";
+        } catch (error) {
+          console.warn("Error parsing coinShape:", error);
+          // Keep defaults as empty strings
+        }
       }
 
       // Parse frontText and backText into top/bottom
+      // Handle gracefully if text is missing
       const frontTextParts = draftData.frontText?.split("\n") || [];
       const backTextParts = draftData.backText?.split("\n") || [];
 
+      // Handle packaging data if available
+      const packagingPreferences = draftData.description || "";
+      const packagingBackText = draftData.text || "";
+
+      // Validate image URLs - must be non-empty strings
+      const frontPreviewImage =
+        draftData.frontImage && draftData.frontImage.trim()
+          ? draftData.frontImage.trim()
+          : draftData.generatorImage && draftData.generatorImage.trim()
+            ? draftData.generatorImage.trim()
+            : null;
+      const backPreviewImage =
+        draftData.backImage && draftData.backImage.trim()
+          ? draftData.backImage.trim()
+          : null;
+
+      console.log("[useStandardBuilderStore] Loading draft data:", {
+        rawFrontImage: draftData.frontImage,
+        rawBackImage: draftData.backImage,
+        rawGeneratorImage: draftData.generatorImage,
+        hasFrontImage: !!frontPreviewImage,
+        hasBackImage: !!backPreviewImage,
+        frontImageUrl: frontPreviewImage?.substring(0, 80),
+        backImageUrl: backPreviewImage?.substring(0, 80),
+        coinDiameter,
+        coinThickness,
+        material: draftData.materialFinish,
+      });
+
       set({
         dimensions: {
-          coinDiameter,
-          coinThickness,
+          coinDiameter: coinDiameter || "",
+          coinThickness: coinThickness || "",
         },
         material: draftData.materialFinish || "",
-        edgeType: "", // Not available in flat structure
+        edgeType: "", // Not stored in draft structure - user will need to reselect
         textRings: {
           front: {
             top: frontTextParts[0] || "",
             bottom: frontTextParts[1] || "",
-            noText: !draftData.frontText,
+            noText: !draftData.frontText || draftData.frontText.trim() === "",
           },
           back: {
             top: backTextParts[0] || "",
             bottom: backTextParts[1] || "",
-            noText: !draftData.backText,
+            noText: !draftData.backText || draftData.backText.trim() === "",
           },
         },
         artwork: {
@@ -198,21 +239,39 @@ export const useStandardBuilderStore = create<StandardBuilderState>(
               draftData.frontDescription || draftData.generatorPrompt || "",
             attachedImage: null,
             uploadedImage: null,
-            previewImage:
-              draftData.frontImage || draftData.generatorImage || null,
+            previewImage: frontPreviewImage,
           },
           back: {
             prompt: draftData.backDescription || "",
             attachedImage: null,
             uploadedImage: null,
-            previewImage: draftData.backImage || null,
+            previewImage: backPreviewImage,
           },
         },
         packaging: {
-          preferences: "",
-          backText: "",
+          preferences: packagingPreferences || "",
+          backText: packagingBackText || "",
         },
       });
+
+      // Verify images were set
+      const state = get();
+      console.log(
+        "[useStandardBuilderStore] After loading - Front previewImage:",
+        state.artwork.front.previewImage?.substring(0, 80),
+      );
+      console.log(
+        "[useStandardBuilderStore] After loading - Back previewImage:",
+        state.artwork.back.previewImage?.substring(0, 80),
+      );
+      console.log(
+        "[useStandardBuilderStore] After loading - Front prompt:",
+        state.artwork.front.prompt?.substring(0, 30),
+      );
+      console.log(
+        "[useStandardBuilderStore] After loading - Back prompt:",
+        state.artwork.back.prompt?.substring(0, 30),
+      );
     },
 
     reset: () =>

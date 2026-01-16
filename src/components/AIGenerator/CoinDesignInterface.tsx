@@ -8,6 +8,7 @@ import {
   useGenerateCoinSide,
   useSaveDraft,
   useUpdateDraft,
+  useUserDrafts,
 } from "@/src/hooks/useQueries";
 import { useCoinDesignStore } from "@/src/store/useCoinStore";
 import {
@@ -57,6 +58,9 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
     getDesignDataForDraft,
   } = useCoinDesignStore();
 
+  // Get all drafts to check for duplicates
+  const { data: allDrafts } = useUserDrafts();
+
   const currentTab = activeTab === "front" ? front : back;
   const setPrompt = activeTab === "front" ? setFrontPrompt : setBackPrompt;
   const setAttachedImage =
@@ -66,6 +70,16 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
   const replaceImage =
     activeTab === "front" ? replaceFrontImage : replaceBackImage;
   const setImage = activeTab === "front" ? setFrontImage : setBackImage;
+
+  // Debug: Log current tab state
+  useEffect(() => {
+    console.log(`[CoinDesignInterface] ${activeTab} tab state:`, {
+      hasImage: !!currentTab.image,
+      imageUrl: currentTab.image?.url?.substring(0, 50),
+      hasPrompt: !!currentTab.prompt,
+      prompt: currentTab.prompt?.substring(0, 30),
+    });
+  }, [activeTab, currentTab.image, currentTab.prompt]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -79,6 +93,19 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
       window.removeEventListener("authChanged", checkAuth);
     };
   }, []);
+
+  // Debug: Log when images are loaded from draft
+  useEffect(() => {
+    console.log("[CoinDesignInterface] Current state:", {
+      hasFrontImage: !!front.image,
+      hasBackImage: !!back.image,
+      frontImageUrl: front.image?.url?.substring(0, 50),
+      backImageUrl: back.image?.url?.substring(0, 50),
+      currentDraftId,
+      frontPrompt: front.prompt?.substring(0, 30),
+      backPrompt: back.prompt?.substring(0, 30),
+    });
+  }, [front.image, back.image, currentDraftId, front.prompt, back.prompt]);
 
   const { mutate: generateCoinSideMutate, isPending: isGenerating } =
     useGenerateCoinSide({
@@ -291,8 +318,50 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
           data: designData,
         });
       } else {
-        // Create new draft
-        saveDraftMutation.mutate(designData);
+        // Check for existing draft to prevent duplicates
+        // First check by designId if available, then by image matching
+        const existingDraft = allDrafts?.find((draft) => {
+          // Must be an AI Generator draft
+          if (draft.builderType !== "AI Generator") {
+            return false;
+          }
+
+          // If we have a designId, try to match by it (if backend stores it)
+          // For now, match by images and generator data
+          const frontImageMatch =
+            draft.frontImage === designData.frontImage ||
+            (!draft.frontImage && !designData.frontImage);
+          const backImageMatch =
+            draft.backImage === designData.backImage ||
+            (!draft.backImage && !designData.backImage);
+          const generatorImageMatch =
+            draft.generatorImage === designData.generatorImage ||
+            (!draft.generatorImage && !designData.generatorImage);
+          const generatorPromptMatch =
+            draft.generatorPrompt === designData.generatorPrompt ||
+            (!draft.generatorPrompt && !designData.generatorPrompt);
+
+          // Consider it a duplicate if images and prompts match
+          return (
+            frontImageMatch &&
+            backImageMatch &&
+            generatorImageMatch &&
+            generatorPromptMatch
+          );
+        });
+
+        if (existingDraft) {
+          // Update existing draft instead of creating duplicate
+          setCurrentDraftId(existingDraft.id);
+          updateDraftMutation.mutate({
+            draftId: existingDraft.id,
+            data: designData,
+          });
+          toast.info("Draft updated (found existing draft with same design)");
+        } else {
+          // Create new draft
+          saveDraftMutation.mutate(designData);
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -483,13 +552,73 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
               <div className="w-full max-w-lg aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shadow-xl relative">
                 {currentTab.image ? (
                   <>
-                    <Image
-                      src={currentTab.image.url}
-                      alt={`${activeTab} Preview`}
-                      width={600}
-                      height={600}
-                      className="w-full h-full object-cover"
-                    />
+                    {/* 
+                      Backend returns presigned URLs (https://) or Data URLs (data:)
+                      Both are ready to use directly in <img> tags.
+                      Note: Presigned URLs expire after 1 hour - if image fails to load,
+                      it might be expired. User should refresh the draft to get new URLs.
+                    */}
+                    {currentTab.image.url.startsWith("data:") ||
+                    currentTab.image.url.startsWith("http://") ||
+                    currentTab.image.url.startsWith("https://") ? (
+                      <img
+                        src={currentTab.image.url}
+                        alt={`${activeTab} Preview`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error(
+                            `[CoinDesignInterface] ${activeTab} image load error:`,
+                            {
+                              url: currentTab.image?.url?.substring(0, 100),
+                              fullUrl: currentTab.image?.url,
+                              error:
+                                "Failed to load image - might be expired presigned URL (1 hour validity)",
+                              suggestion:
+                                "Refresh draft to get new presigned URLs",
+                            },
+                          );
+                          // Set fallback image
+                          e.currentTarget.src = "/images/home/coin-design.png";
+                          toast.error(
+                            `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} image failed to load. ` +
+                              "If using a draft, the URL may have expired. Please refresh.",
+                          );
+                        }}
+                        onLoad={() => {
+                          console.log(
+                            `[CoinDesignInterface] ${activeTab} image loaded successfully:`,
+                            currentTab.image?.url?.substring(0, 80),
+                          );
+                        }}
+                      />
+                    ) : (
+                      <Image
+                        src={currentTab.image.url}
+                        alt={`${activeTab} Preview`}
+                        width={600}
+                        height={600}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                        onError={() => {
+                          console.error(
+                            `[CoinDesignInterface] ${activeTab} image load error (Next.js Image):`,
+                            {
+                              url: currentTab.image?.url?.substring(0, 100),
+                              fullUrl: currentTab.image?.url,
+                            },
+                          );
+                          toast.error(
+                            `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} image failed to load`,
+                          );
+                        }}
+                        onLoad={() => {
+                          console.log(
+                            `[CoinDesignInterface] ${activeTab} image loaded successfully (Next.js Image):`,
+                            currentTab.image?.url?.substring(0, 80),
+                          );
+                        }}
+                      />
+                    )}
                     {/* Remove Icon on Preview */}
                     <button
                       onClick={handleRemoveCurrentImage}

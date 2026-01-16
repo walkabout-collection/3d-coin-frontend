@@ -6,6 +6,7 @@ import { bottomButtons } from "@/src/containers/design-summary/data";
 import { PaymentOption } from "@/src/containers/payment-method/types";
 import Input from "@/src/components/common/input";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
+import { useCoinDesignStore } from "@/src/store/useCoinStore";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useCreateDesign, useUpdateDraft } from "@/src/hooks/useQueries";
@@ -63,6 +64,14 @@ const DesignSummarySection = () => {
     textRings,
     currentDraftId,
   } = useStandardBuilderStore();
+
+  // Check if this is an AI Generator design (has data in AI Generator store)
+  const {
+    front: aiFront,
+    back: aiBack,
+    designId: aiDesignId,
+  } = useCoinDesignStore();
+  const isAIGeneratorDesign = !!(aiFront.image || aiBack.image || aiDesignId);
 
   const { mutate: updateDraft, isPending: isUpdatingDraft } = useUpdateDraft({
     onSuccess: () => {
@@ -280,6 +289,7 @@ const DesignSummarySection = () => {
         const draftUpdateData = {
           name: designData.name,
           totalCoins: designData.totalCoins,
+          builderType: "Standard Builder" as const,
           generatorPrompt: designData.generatorPrompt,
           generatorImage: designData.generatorImage,
           frontImage: designData.frontImage,
@@ -318,6 +328,15 @@ const DesignSummarySection = () => {
   };
 
   const handleSaveAsDraft = async () => {
+    // Prevent saving AI Generator designs as drafts in design-summary
+    // AI Generator designs should only be saved in CoinDesignInterface
+    if (isAIGeneratorDesign) {
+      toast.warning(
+        "AI Generator designs should be saved from the AI Generator interface. Please use the 'Save as Draft' button in the AI Generator design view.",
+      );
+      return;
+    }
+
     // For draft, we don't need payment or amount, so we can call directly
     await handleSubmitForQuote(undefined, undefined, undefined, "DRAFT");
   };
@@ -492,7 +511,7 @@ const DesignSummarySection = () => {
 
       {/* Action Buttons */}
       <div className="flex justify-center gap-4">
-        {isLoggedIn && (
+        {isLoggedIn && !isAIGeneratorDesign && (
           <Button
             type="button"
             variant="ternary"

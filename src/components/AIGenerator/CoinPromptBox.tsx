@@ -17,7 +17,7 @@ interface CoinPromptBoxProps {
 interface ChatbotState {
   isDrawerOpen: boolean;
 }
-
+``;
 const CoinPromptBox: React.FC<CoinPromptBoxProps> = ({ onGenerate }) => {
   const { setDesignId, setFrontImage, setBackImage } = useCoinDesignStore();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
