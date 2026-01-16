@@ -21,6 +21,16 @@ export interface Payment {
   receiptGeneratedAt?: string | null;
 }
 
+export interface CoinDesign {
+  id: string;
+  frontImage?: string;
+  backImage?: string;
+  generatorImage?: string;
+  frontDescription?: string;
+  backDescription?: string;
+  name?: string;
+}
+
 export interface Quote {
   status: string;
   user: User | null;
@@ -43,6 +53,8 @@ export interface Quote {
   coinDesignId?: string;
   packagingId?: string | null;
   User?: User | null;
+  coinDesign?: CoinDesign | null;
+  CoinDesign?: CoinDesign | null; // Also check uppercase version
   Order?: {
     id: string;
     userId: string | null;

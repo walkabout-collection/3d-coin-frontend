@@ -12,6 +12,7 @@ import { quotesCards } from "./data";
 import { toast } from "react-toastify";
 import { AxiosError } from "axios";
 import ViewQuoteModal from "@/src/components/admin/ViewQuoteModal/ViewQuoteModal";
+import ImageViewerModal from "@/src/components/common/ImageViewerModal";
 
 const AdminQuotes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +22,11 @@ const AdminQuotes: React.FC = () => {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [viewQuoteId, setViewQuoteId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewerImage, setViewerImage] = useState<{
+    url: string;
+    alt: string;
+    title?: string;
+  } | null>(null);
   const entriesPerPage = 8; // Quotes per page
 
   const {
@@ -67,12 +73,15 @@ const AdminQuotes: React.FC = () => {
     );
   }, [quotesData]);
 
-  // Extract pagination info
-  const pagination = useMemo(() => {
-    if (!quotesData || !quotesData.pagination) {
+  // Note: Pagination info is available in quotesData.pagination but not used in this component
+  // as we're doing client-side pagination on filtered data
+
+  // Extract stats from API response
+  const stats = useMemo(() => {
+    if (!quotesData || !quotesData.stats) {
       return null;
     }
-    return quotesData.pagination;
+    return quotesData.stats;
   }, [quotesData]);
 
   const sortData = (dataToSort: Quote[], sortValue: string) => {
@@ -150,6 +159,7 @@ const AdminQuotes: React.FC = () => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, internalSort]);
 
   // Calculate pagination based on filtered data (client-side)
@@ -242,20 +252,28 @@ const AdminQuotes: React.FC = () => {
     { value: "oldest", label: "Oldest To Newest" },
   ];
 
+  // Use stats from API if available, otherwise calculate from quotes array (fallback)
   const pendingQuotesCount = useMemo(() => {
+    if (stats?.pendingQuotes !== undefined) {
+      return stats.pendingQuotes;
+    }
+    // Fallback: calculate from quotes array
     if (!quotesArray?.length) return 0;
     return quotesArray.filter(
       (quote) => quote.status?.toUpperCase() === "PENDING",
     ).length;
-  }, [quotesArray]);
+  }, [stats, quotesArray]);
 
   const approveQuotesCount = useMemo(() => {
+    if (stats?.approvedQuotes !== undefined) {
+      return stats.approvedQuotes;
+    }
+    // Fallback: calculate from quotes array
     if (!quotesArray?.length) return 0;
-    // Filter out APPROVED quotes (quotesArray already excludes DRAFT)
     return quotesArray.filter(
-      (quote) => quote.status?.toUpperCase() !== "APPROVED",
+      (quote) => quote.status?.toUpperCase() === "APPROVED",
     ).length;
-  }, [quotesArray]);
+  }, [stats, quotesArray]);
 
   return (
     <div className="min-h-screen">
@@ -342,97 +360,150 @@ const AdminQuotes: React.FC = () => {
           <p className="text-gray-500 text-lg">No quotes found</p>
         </div>
       ) : (
-        paginatedData.map((quote) => (
-          <div
-            key={quote.id}
-            className="bg-gray-100 p-6 rounded-lg flex justify-between items-center mb-2"
-          >
-            <div className="flex-1">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-md font-bold text-black">Name:</span>
-                  <span className="text-sm text-gray-900">
-                    {quote.user
-                      ? `${quote.user.firstName} ${quote.user.lastName}`
-                      : "Customer"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-md font-bold text-black">
-                    Order No:
-                  </span>
-                  <span className="text-sm text-gray-900">
-                    {quote.orderId ? (
-                      quote.orderId
-                    ) : (
-                      <span className="text-gray-500 italic">
-                        Pending Order Number
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-md font-bold text-black">Email:</span>
-                  <span className="text-sm text-gray-900">
-                    {quote.user ? quote.user.email : quote.email}
-                  </span>
-                </div>
-              </div>
-            </div>
+        paginatedData.map((quote) => {
+          // API returns CoinDesign (uppercase) with presigned URLs
+          const coinDesign = quote.CoinDesign || quote.coinDesign;
+          const frontImage = coinDesign?.frontImage;
+          const backImage = coinDesign?.backImage;
+          const generatorImage = coinDesign?.generatorImage;
+          // Use frontImage as primary, fallback to generatorImage, then backImage
+          const displayImage = frontImage || generatorImage || backImage;
 
-            <div className="flex flex-col items-center gap-6">
-              <span className="text-black px-3 py-1 rounded-md text-sm font-semibold bg-gray-200">
-                {quote.status}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className={`p-2 text-xs rounded-full bg-gray-200 ${
-                    canDeleteQuote(quote)
-                      ? "cursor-pointer hover:bg-gray-300"
-                      : "cursor-not-allowed opacity-50"
-                  }`}
-                  onClick={() => handleDelete(quote.id)}
-                  disabled={isDeleting || !canDeleteQuote(quote)}
-                  title={
-                    !canDeleteQuote(quote)
-                      ? quote.status === "APPROVED"
-                        ? "Approved quotes cannot be deleted"
-                        : "Quote linked to an order cannot be deleted"
-                      : "Delete quote"
-                  }
-                >
-                  <Image
-                    src="/images/dashboard/delete.svg"
-                    alt="Delete"
-                    width={20}
-                    height={20}
-                  />
-                </button>
-                <button
-                  onClick={() => viewQuote(quote.id)}
-                  className="px-3 py-2 text-xs rounded-full bg-gray-200 cursor-pointer"
-                >
-                  <Image
-                    src="/images/dashboard/view-icon.svg"
-                    alt="View"
-                    width={20}
-                    height={20}
-                  />
-                </button>
-                <Button
-                  variant="primary"
-                  className="px-3 py-1 text-xs rounded-full max-w-[140px]"
-                  onClick={() => handleApprove(quote.id)}
-                >
-                  Add to Order
-                </Button>
+          // Get image URL - API returns presigned URLs directly
+          const getImageUrl = (imageUrl: string | null | undefined): string => {
+            // API returns presigned URLs (full URLs) or null
+            if (!imageUrl) return "/images/home/coin-design.png";
+            // Presigned URLs are already full URLs, use directly
+            return imageUrl;
+          };
+
+          return (
+            <div
+              key={quote.id}
+              className="bg-gray-100 p-6 rounded-lg flex justify-between items-center mb-2"
+            >
+              <div className="flex-1 flex items-center gap-4">
+                {/* Image Preview */}
+                {displayImage && (
+                  <div
+                    className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0 border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      const imageUrl = getImageUrl(displayImage);
+                      if (imageUrl) {
+                        setViewerImage({
+                          url: imageUrl,
+                          alt: "Quote design",
+                          title: `Quote Design - ${quote.user ? `${quote.user.firstName} ${quote.user.lastName}` : "Customer"}`,
+                        });
+                      }
+                    }}
+                    title="Click to view full image"
+                  >
+                    <Image
+                      src={getImageUrl(displayImage)}
+                      alt="Quote design"
+                      fill
+                      className="object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/images/home/coin-design.png";
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-md font-bold text-black">Name:</span>
+                    <span className="text-sm text-gray-900">
+                      {quote.user
+                        ? `${quote.user.firstName} ${quote.user.lastName}`
+                        : "Customer"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-md font-bold text-black">
+                      Order No:
+                    </span>
+                    <span className="text-sm text-gray-900">
+                      {quote.orderId ? (
+                        quote.orderId
+                      ) : (
+                        <span className="text-gray-500 italic">
+                          Pending Order Number
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-md font-bold text-black">Email:</span>
+                    <span className="text-sm text-gray-900">
+                      {quote.user ? quote.user.email : quote.email}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-6">
+                <span className="text-black px-3 py-1 rounded-md text-sm font-semibold bg-gray-200">
+                  {quote.status}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    className={`p-2 text-xs rounded-full bg-gray-200 ${
+                      canDeleteQuote(quote)
+                        ? "cursor-pointer hover:bg-gray-300"
+                        : "cursor-not-allowed opacity-50"
+                    }`}
+                    onClick={() => handleDelete(quote.id)}
+                    disabled={isDeleting || !canDeleteQuote(quote)}
+                    title={
+                      !canDeleteQuote(quote)
+                        ? quote.status === "APPROVED"
+                          ? "Approved quotes cannot be deleted"
+                          : "Quote linked to an order cannot be deleted"
+                        : "Delete quote"
+                    }
+                  >
+                    <Image
+                      src="/images/dashboard/delete.svg"
+                      alt="Delete"
+                      width={20}
+                      height={20}
+                    />
+                  </button>
+                  <button
+                    onClick={() => viewQuote(quote.id)}
+                    className="px-3 py-2 text-xs rounded-full bg-gray-200 cursor-pointer"
+                  >
+                    <Image
+                      src="/images/dashboard/view-icon.svg"
+                      alt="View"
+                      width={20}
+                      height={20}
+                    />
+                  </button>
+                  <Button
+                    variant="primary"
+                    className="px-3 py-1 text-xs rounded-full max-w-[140px]"
+                    onClick={() => handleApprove(quote.id)}
+                  >
+                    Add to Order
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
 
-      {isModalOpen && <AddQuoteModal onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && (
+        <AddQuoteModal
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
       {isApproveModalOpen && selectedQuote && (
         <ApproveQuoteModal
           quote={selectedQuote}
@@ -492,6 +563,16 @@ const AdminQuotes: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Image Viewer Modal */}
+      {viewerImage && (
+        <ImageViewerModal
+          imageUrl={viewerImage.url}
+          alt={viewerImage.alt}
+          title={viewerImage.title}
+          onClose={() => setViewerImage(null)}
+        />
       )}
     </div>
   );

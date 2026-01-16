@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,6 +7,10 @@ import Input from "../../common/input";
 import Button from "../../common/button/Button";
 import ImageUpload from "../../common/imageUpload";
 import { X } from "lucide-react";
+import { useCreateDesign } from "@/src/hooks/useQueries";
+import { uploadBase64ToS3 } from "@/src/services/apiServices";
+import { toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -26,9 +30,16 @@ type FormData = z.infer<typeof formSchema>;
 
 interface AddQuoteModalProps {
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const AddQuoteModal: React.FC<AddQuoteModalProps> = ({ onClose }) => {
+const AddQuoteModal: React.FC<AddQuoteModalProps> = ({
+  onClose,
+  onSuccess,
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+
   const {
     register,
     handleSubmit,
@@ -47,10 +58,82 @@ const AddQuoteModal: React.FC<AddQuoteModalProps> = ({ onClose }) => {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log("Form Data:", data);
-    reset();
-    onClose();
+  const { mutate: createDesign } = useCreateDesign({
+    onSuccess: () => {
+      toast.success("Quote created successfully");
+      queryClient.invalidateQueries({ queryKey: ["adminQuotes"] });
+      reset();
+      onClose();
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: (error) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create quote";
+      toast.error(errorMessage);
+      setIsSubmitting(false);
+    },
+  });
+
+  // Convert File to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Failed to convert file to base64"));
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
+
+    try {
+      // Upload image to S3 if provided
+      let imageKey: string | undefined;
+      if (data.image) {
+        try {
+          const base64Image = await fileToBase64(data.image);
+          const fileName = `quote-image-${Date.now()}.${data.image.name.split(".").pop() || "png"}`;
+          imageKey = await uploadBase64ToS3(base64Image, fileName);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to upload image";
+          toast.error(`Image upload failed: ${errorMessage}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Create design/quote
+      const designData = {
+        name: `${data.firstName} ${data.lastName} - Quote`,
+        email: data.email,
+        status: "SUBMITTED" as const,
+        method: "MANUAL" as const,
+        designerInstructions: data.description,
+        frontImage: imageKey,
+        frontDescription: data.description,
+        // Store contact number in feedback field if needed
+        feedback: data.contactNumber
+          ? `Contact: ${data.contactNumber}`
+          : undefined,
+      };
+
+      createDesign(designData);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create quote";
+      toast.error(errorMessage);
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileChange = (file: File | null) => {
@@ -180,8 +263,9 @@ const AddQuoteModal: React.FC<AddQuoteModalProps> = ({ onClose }) => {
                 type="submit"
                 variant="primary"
                 className="px-8 py-3 shadow-md hover:shadow-lg transition-shadow"
+                disabled={isSubmitting}
               >
-                Add Quote
+                {isSubmitting ? "Creating..." : "Add Quote"}
               </Button>
             </div>
           </form>

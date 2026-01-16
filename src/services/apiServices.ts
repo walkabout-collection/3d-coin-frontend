@@ -588,6 +588,18 @@ export const getS3UploadUrl = async (data: {
   return res.data;
 };
 
+// Get presigned URL for retrieving from S3
+export const getS3RetrieveUrl = async (
+  fileName: string,
+): Promise<{
+  url?: string;
+}> => {
+  const res = await apiClient.get(
+    `/s3/retrieve-url/${encodeURIComponent(fileName)}`,
+  );
+  return res.data;
+};
+
 // Convert blob URL to base64
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 const _blobUrlToBase64 = async (blobUrl: string): Promise<string> => {
@@ -774,6 +786,10 @@ export const getAdminQuotes = async (
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+  stats?: {
+    pendingQuotes: number;
+    approvedQuotes: number;
+  };
 }> => {
   const queryParams = new URLSearchParams();
 
@@ -799,11 +815,11 @@ export const getAdminQuotes = async (
       },
     });
 
-    // API Response Structure: { success, message, data: { data: [], pagination: {} } }
+    // API Response Structure: { success, message, data: { data: [], pagination: {}, stats: {} } }
     if (res.data?.success && res.data?.data) {
       const responseData = res.data.data;
 
-      // Extract quotes array and pagination from nested structure
+      // Extract quotes array, pagination, and stats from nested structure
       const quotes = Array.isArray(responseData.data) ? responseData.data : [];
       const pagination = responseData.pagination || {
         page: page,
@@ -813,11 +829,16 @@ export const getAdminQuotes = async (
         hasNextPage: false,
         hasPreviousPage: false,
       };
+      const stats = responseData.stats || {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
+      };
 
       return {
         success: true,
         data: quotes,
         pagination,
+        stats,
       };
     }
 
@@ -835,6 +856,10 @@ export const getAdminQuotes = async (
         totalPages: Math.ceil(data.length / limit) || 0,
         hasNextPage: false,
         hasPreviousPage: false,
+      },
+      stats: {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
       },
     };
   } catch (error: unknown) {
@@ -879,6 +904,10 @@ export const getUserQuotes = async (
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+  stats?: {
+    pendingQuotes: number;
+    approvedQuotes: number;
+  };
 }> => {
   const queryParams = new URLSearchParams();
 
@@ -904,11 +933,11 @@ export const getUserQuotes = async (
       },
     });
 
-    // API Response Structure: { success, message, data: { data: [], pagination: {} } }
+    // API Response Structure: { success, message, data: { data: [], pagination: {}, stats: {} } }
     if (res.data?.success && res.data?.data) {
       const responseData = res.data.data;
 
-      // Extract quotes array and pagination from nested structure
+      // Extract quotes array, pagination, and stats from nested structure
       const quotes = Array.isArray(responseData.data) ? responseData.data : [];
       const pagination = responseData.pagination || {
         page: page,
@@ -918,11 +947,16 @@ export const getUserQuotes = async (
         hasNextPage: false,
         hasPreviousPage: false,
       };
+      const stats = responseData.stats || {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
+      };
 
       return {
         success: true,
         data: quotes,
         pagination,
+        stats,
       };
     }
 
@@ -940,6 +974,10 @@ export const getUserQuotes = async (
         totalPages: Math.ceil(data.length / limit) || 0,
         hasNextPage: false,
         hasPreviousPage: false,
+      },
+      stats: {
+        pendingQuotes: 0,
+        approvedQuotes: 0,
       },
     };
   } catch (error: unknown) {

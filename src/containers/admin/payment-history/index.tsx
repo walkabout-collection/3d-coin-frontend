@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { TableColumn } from "@/src/components/common/Table/types";
 import { PaymentDataItem } from "./types";
 import AdminTable from "@/src/components/admin/AdminTable";
@@ -37,6 +37,7 @@ const formatDate = (dateString: string | undefined): string => {
 
 const AdminPaymentHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortValue, setSortValue] = useState("newest");
   const entriesPerPage = 10;
 
   const { data: orderHistoryData, isPending, isError } = useAdminOrderHistory();
@@ -49,7 +50,14 @@ const AdminPaymentHistory = () => {
         ? orderHistoryData.data
         : [];
 
-  const displayData: PaymentDataItem[] = historyArray.map((item) => ({
+  // Store raw data for sorting
+  const rawData = historyArray.map((item) => ({
+    ...item,
+    rawDate: item.date ? new Date(item.date).getTime() : 0,
+    rawTotal: item.total || 0,
+  }));
+
+  const displayData: PaymentDataItem[] = rawData.map((item) => ({
     paymentMethod: formatPaymentMethod(item.paymentMethod),
     originalPaymentMethod: item.paymentMethod, // Store original value for status edit check
     orderTotal: `$${item.total.toFixed(2)}`,
@@ -58,7 +66,64 @@ const AdminPaymentHistory = () => {
     customer: item.customer,
     customerEmail: item.customerEmail,
     status: item.status || item.paymentStatus, // Support both field names
+    // Store raw values for sorting
+    rawDate: item.rawDate,
+    rawTotal: item.rawTotal,
   }));
+
+  // Sort the data based on sortValue
+  const sortedData = useMemo(() => {
+    const data = [...displayData];
+
+    if (sortValue === "newest") {
+      return data.sort(
+        (a, b) =>
+          ((b as PaymentDataItem).rawDate || 0) -
+          ((a as PaymentDataItem).rawDate || 0),
+      );
+    } else if (sortValue === "oldest") {
+      return data.sort(
+        (a, b) =>
+          ((a as PaymentDataItem).rawDate || 0) -
+          ((b as PaymentDataItem).rawDate || 0),
+      );
+    } else if (sortValue === "amount_asc") {
+      return data.sort(
+        (a, b) =>
+          ((a as PaymentDataItem).rawTotal || 0) -
+          ((b as PaymentDataItem).rawTotal || 0),
+      );
+    } else if (sortValue === "amount_desc") {
+      return data.sort(
+        (a, b) =>
+          ((b as PaymentDataItem).rawTotal || 0) -
+          ((a as PaymentDataItem).rawTotal || 0),
+      );
+    } else if (sortValue === "customer_asc") {
+      return data.sort((a, b) =>
+        (a.customer || "").localeCompare(b.customer || ""),
+      );
+    } else if (sortValue === "customer_desc") {
+      return data.sort((a, b) =>
+        (b.customer || "").localeCompare(a.customer || ""),
+      );
+    } else if (sortValue === "status_asc") {
+      return data.sort((a, b) =>
+        (a.status || "").localeCompare(b.status || ""),
+      );
+    } else if (sortValue === "status_desc") {
+      return data.sort((a, b) =>
+        (b.status || "").localeCompare(a.status || ""),
+      );
+    }
+
+    return data;
+  }, [displayData, sortValue]);
+
+  const handleSortChange = useCallback((sort: string) => {
+    setSortValue(sort);
+    setCurrentPage(1); // Reset to first page when sorting changes
+  }, []);
 
   const paymentColumns: TableColumn<PaymentDataItem>[] = [
     {
@@ -123,20 +188,31 @@ const AdminPaymentHistory = () => {
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">
         Payment History
       </h1>
-      {displayData.length > 0 ? (
+      {sortedData.length > 0 ? (
         <AdminTable
           columns={paymentColumns}
-          data={displayData}
+          data={sortedData}
           alternatingRows={true}
           searchable={true}
           searchPlaceholder="Search payments..."
           sortable={true}
-          currentSort="newest"
+          currentSort={sortValue}
+          onSortChange={handleSortChange}
+          sortOptions={[
+            { value: "newest", label: "Newest To Oldest" },
+            { value: "oldest", label: "Oldest To Newest" },
+            { value: "amount_asc", label: "Amount (Low to High)" },
+            { value: "amount_desc", label: "Amount (High to Low)" },
+            { value: "customer_asc", label: "Customer (A to Z)" },
+            { value: "customer_desc", label: "Customer (Z to A)" },
+            { value: "status_asc", label: "Status (A to Z)" },
+            { value: "status_desc", label: "Status (Z to A)" },
+          ]}
           pagination={{
             currentPage,
             entriesPerPage,
-            totalEntries: displayData.length,
-            totalPages: Math.ceil(displayData.length / entriesPerPage),
+            totalEntries: sortedData.length,
+            totalPages: Math.ceil(sortedData.length / entriesPerPage),
             onPageChange: (page: number) => setCurrentPage(page),
           }}
         />
