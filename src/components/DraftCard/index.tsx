@@ -292,7 +292,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleView}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[#1a2a3a] text-white hover:bg-[#2a3a4a] transition-colors text-sm font-medium shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[#1a2a3a] text-white hover:bg-[#2a3a4a] transition-colors text-sm font-medium shadow-sm cursor-pointer"
                 title="View"
               >
                 <Eye className="h-4 w-4" />
@@ -300,7 +300,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
               </button>
               <button
                 onClick={handleEdit}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm font-medium cursor-pointer"
                 title="Edit"
               >
                 <Edit2 className="h-4 w-4" />
@@ -309,7 +309,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
               <button
                 onClick={handleDeleteClick}
                 disabled={deleteDraftMutation.isPending}
-                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Delete"
               >
                 <Trash2 className="h-4 w-4" />
@@ -318,7 +318,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
             {onSubmit && (
               <button
                 onClick={handleSubmit}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978] text-white hover:from-[#193359] hover:via-[#244978] hover:to-[#2d5b94] transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#121C2A] via-[#193359] to-[#244978] text-white hover:from-[#193359] hover:via-[#244978] hover:to-[#2d5b94] transition-all text-sm font-semibold shadow-md hover:shadow-lg cursor-pointer"
                 title="Submit Draft"
               >
                 <Send className="h-4 w-4" />

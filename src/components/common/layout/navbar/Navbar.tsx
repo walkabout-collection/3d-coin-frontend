@@ -45,6 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [userRole, setUserRole] = useState<"USER" | "ADMIN" | null>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -161,6 +162,27 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Handle Escape key to close logout confirmation modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showLogoutConfirm) {
+        handleCancelLogout();
+      }
+    };
+
+    if (showLogoutConfirm) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      if (showLogoutConfirm) {
+        document.body.style.overflow = "unset";
+      }
+    };
+  }, [showLogoutConfirm]);
+
   const isActiveLink = (href: string): boolean => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
@@ -174,8 +196,17 @@ const Navbar: React.FC<NavbarProps> = ({
   };
 
   const handleLogout = () => {
-    logout();
     setIsPopupOpen(false);
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    setShowLogoutConfirm(false);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -247,7 +278,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <div className="relative">
                   {/* Profile Avatar/Button */}
                   <button
-                    className="w-12 h-12 rounded-full relative overflow-hidden border-2 border-white/30 hover:border-amber-400 transition-all duration-200 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 hover:scale-105 active:scale-95"
+                    className="w-12 h-12 rounded-full relative overflow-hidden border-2 border-white/30 hover:border-amber-400 transition-all duration-200 flex items-center justify-center bg-gradient-to-br from-amber-400 to-amber-600 hover:scale-105 active:scale-95 cursor-pointer"
                     onClick={togglePopup}
                     aria-label="User menu"
                     aria-expanded={isPopupOpen}
@@ -333,7 +364,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     {/* Logout Button */}
                     <div className="px-1.5 pb-1.5">
                       <button
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 rounded-lg group"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-all duration-150 rounded-lg group cursor-pointer"
                         onClick={handleLogout}
                       >
                         <LogOut className="h-4 w-4 text-red-500 group-hover:text-red-600 transition-colors" />
@@ -363,6 +394,53 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200"
+          onClick={handleCancelLogout}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Icon */}
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                <LogOut className="h-8 w-8 text-red-600" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                Are you sure you want to logout?
+              </h3>
+
+              {/* Message */}
+              <p className="text-sm text-gray-600 text-center mb-6 leading-relaxed">
+                You will need to log in again to access your account and
+                continue your work.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={handleCancelLogout}
+                  className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmLogout}
+                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-sm hover:shadow-md cursor-pointer"
+                >
+                  Yes, Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

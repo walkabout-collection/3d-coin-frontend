@@ -128,7 +128,7 @@ const DraftEditPage: React.FC<DraftEditPageProps> = ({ draftId }) => {
               </p>
               <button
                 onClick={() => router.push("/drafts")}
-                className="text-sm px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="text-sm px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
               >
                 Back to Drafts
               </button>
