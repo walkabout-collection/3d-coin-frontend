@@ -79,6 +79,11 @@ import {
   getAdminQuickBooksUnmappedTransactions,
   mapAdminQuickBooksTransaction,
   retryAdminQuickBooksFailedSyncs,
+  getQuickBooksStatus,
+  connectQuickBooks,
+  createQuickBooksInvoiceForQuote,
+  getAdminPaymentTransactions,
+  type TransactionFilters,
   generateCoinDesign,
   getGenerationStatus,
   getQueuePosition,
@@ -1225,6 +1230,71 @@ export const useRetryAdminQuickBooksFailedSyncs = (
     ...options,
   });
 };
+
+// --- QuickBooks Integration Hooks (Guide-compatible) ---
+
+// Get QuickBooks status (guide endpoint)
+export const useQuickBooksStatus = (
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof getQuickBooksStatus>>, Error>,
+    "queryKey" | "queryFn"
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getQuickBooksStatus>>, Error>({
+    queryKey: ["quickBooksStatus"],
+    queryFn: getQuickBooksStatus,
+    ...options,
+  });
+
+// Connect QuickBooks (guide endpoint)
+export const useConnectQuickBooks = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectQuickBooks>>,
+    Error,
+    void
+  >,
+) =>
+  useMutation<Awaited<ReturnType<typeof connectQuickBooks>>, Error, void>({
+    mutationFn: () => connectQuickBooks(),
+    ...options,
+  });
+
+// Create QuickBooks invoice for quote (guide endpoint)
+export const useCreateQuickBooksInvoiceForQuote = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQuickBooksInvoiceForQuote>>,
+    Error,
+    Parameters<typeof createQuickBooksInvoiceForQuote>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof createQuickBooksInvoiceForQuote>>,
+    Error,
+    Parameters<typeof createQuickBooksInvoiceForQuote>[0]
+  >({
+    mutationFn: createQuickBooksInvoiceForQuote,
+    ...options,
+  });
+
+// --- Admin Payment Transactions Hook ---
+
+// Get admin payment transactions
+export const useAdminPaymentTransactions = (
+  filters?: TransactionFilters,
+  options?: Omit<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminPaymentTransactions>>,
+      Error
+    >,
+    "queryKey" | "queryFn"
+  >,
+) =>
+  useQuery<Awaited<ReturnType<typeof getAdminPaymentTransactions>>, Error>({
+    queryKey: ["admin", "payment-transactions", filters],
+    queryFn: () => getAdminPaymentTransactions(filters),
+    staleTime: 30000, // 30 seconds
+    ...options,
+  });
 
 // --- AI Generation Hooks (Queue-based) ---
 

@@ -62,7 +62,7 @@ export const routes = {
     metaTitle: "Legacy Forge | Blog",
     description:
       "Read the latest articles on coin design, industry trends, and tips from the Legacy Forge team.",
-  },    
+  },
   ABOUT_US: {
     title: "About Us",
     path: "/about-us",
@@ -84,114 +84,100 @@ export const routes = {
     description:
       "Review and manage your custom coin designs with Legacy Forge.",
   },
-  DASHBOARD : {
+  DASHBOARD: {
     title: "Dashboard",
     path: "/dashboard",
     metaTitle: "Legacy Forge | Dashboard",
     description:
       "Access your account dashboard to manage your custom coin designs and orders.",
   },
-  ORDERS : {
+  ORDERS: {
     title: "Orders",
     path: "/dashboard/orders",
     metaTitle: "Legacy Forge | Orders",
-    description:
-      "Review and manage your custom coin orders with Legacy Forge.",
+    description: "Review and manage your custom coin orders with Legacy Forge.",
   },
-  QUOTES : {
+  QUOTES: {
     title: "Quotes",
     path: "/dashboard/quotes",
     metaTitle: "Legacy Forge | Quotes",
-    description:
-      "Review and manage your custom coin quotes with Legacy Forge.",
+    description: "Review and manage your custom coin quotes with Legacy Forge.",
   },
-  PAYMENT_METHOD : {
+  PAYMENT_METHOD: {
     title: "Payment Method",
     path: "/dashboard/payment-method",
     metaTitle: "Legacy Forge | Payment Method",
-    description:
-      "Manage your payment methods with Legacy Forge.",
+    description: "Manage your payment methods with Legacy Forge.",
   },
-  PAYMENT_HISTORY : {
+  PAYMENT_HISTORY: {
     title: "Payment History",
     path: "/dashboard/payment-history",
     metaTitle: "Legacy Forge | Payment History",
-    description:
-      "Review your payment history with Legacy Forge.",
+    description: "Review your payment history with Legacy Forge.",
   },
-  ACCOUNT_SETTING : {
+  ACCOUNT_SETTING: {
     title: "Account Setting",
     path: "/dashboard/account-setting",
     metaTitle: "Legacy Forge | Account Setting",
-    description:
-      "Manage your account settings with Legacy Forge.",    
+    description: "Manage your account settings with Legacy Forge.",
   },
-  TRACKING : {
+  TRACKING: {
     title: "Tracking",
     path: "/dashboard/tracking",
     metaTitle: "Legacy Forge | Tracking",
-    description:
-      "Track your custom coin orders with Legacy Forge.",
+    description: "Track your custom coin orders with Legacy Forge.",
   },
-    STANDARD: {
+  STANDARD: {
     title: "Standard Builder",
     path: "/standard-builder",
     metaTitle: "Legacy Forge | Standard 3D Coin Builder",
     description:
       "Build a classic round coin with Legacy Forge’s Standard 3D Builder and real-time previews.",
-    },
-      DIMENSIONS: {
-        title: "Dimensions",
-        path: "/standard-builder/dimensions",
-        metaTitle: "Legacy Forge | Coin Dimensions",
-        description:
-          "Choose coin diameter and thickness for your custom coin design.",
-      },
-      MATERIAL: {
-        title: "Material",
-        path: "/standard-builder/material",
-        metaTitle: "Legacy Forge | Coin Materials",
-        description:
-          "Select from premium materials to craft your custom coin.",
-      },
-      EDGE_TYPE: {
-        title: "Edge Type",
-        path: "/standard-builder/edge-type",
-        metaTitle: "Legacy Forge | Coin Edge Types",
-        description:
-          "Pick the perfect edge style to enhance your coin’s design.",
-      },
-      TEXT_RINGS: {
-        title: "Text Rings",
-        path: "/standard-builder/text-rings",
-        metaTitle: "Legacy Forge | Coin Text Rings",
-        description:
-          "Add custom text rings around your coin for personalization.",
-      },
-      ARTWORK: {
-        title: "Artwork",
-        path: "/standard-builder/artwork",
-        metaTitle: "Legacy Forge | Coin Artwork",
-        description:
-          "Upload or choose artwork to be engraved on your coin.",
-      },
-      CONFIRM_PACKAGING: {
-        title: "Confirm Packaging",
-        path: "/standard-builder/confirm-packaging",
-        metaTitle: "Legacy Forge | Confirm Packaging",
-        description:
-          "Review and confirm the packaging details for your custom coin.",
-      },
-      PACKAGING: {
-        title: "Packaging",
-        path: "/standard-builder/packaging",
-        metaTitle: "Legacy Forge | Packaging",
-        description:
-          "Choose packaging options for your custom coin.",
-      },
-     
-  
-
+  },
+  DIMENSIONS: {
+    title: "Dimensions",
+    path: "/standard-builder/dimensions",
+    metaTitle: "Legacy Forge | Coin Dimensions",
+    description:
+      "Choose coin diameter and thickness for your custom coin design.",
+  },
+  MATERIAL: {
+    title: "Material",
+    path: "/standard-builder/material",
+    metaTitle: "Legacy Forge | Coin Materials",
+    description: "Select from premium materials to craft your custom coin.",
+  },
+  EDGE_TYPE: {
+    title: "Edge Type",
+    path: "/standard-builder/edge-type",
+    metaTitle: "Legacy Forge | Coin Edge Types",
+    description: "Pick the perfect edge style to enhance your coin’s design.",
+  },
+  TEXT_RINGS: {
+    title: "Text Rings",
+    path: "/standard-builder/text-rings",
+    metaTitle: "Legacy Forge | Coin Text Rings",
+    description: "Add custom text rings around your coin for personalization.",
+  },
+  ARTWORK: {
+    title: "Artwork",
+    path: "/standard-builder/artwork",
+    metaTitle: "Legacy Forge | Coin Artwork",
+    description: "Upload or choose artwork to be engraved on your coin.",
+  },
+  CONFIRM_PACKAGING: {
+    title: "Confirm Packaging",
+    path: "/standard-builder/confirm-packaging",
+    metaTitle: "Legacy Forge | Confirm Packaging",
+    description:
+      "Review and confirm the packaging details for your custom coin.",
+  },
+  PACKAGING: {
+    title: "Packaging",
+    path: "/standard-builder/packaging",
+    metaTitle: "Legacy Forge | Packaging",
+    description: "Choose packaging options for your custom coin.",
+  },
 } as const;
 
 export const adminRoutes = {
@@ -206,45 +192,37 @@ export const adminRoutes = {
     title: "Orders",
     path: "/admin/orders",
     metaTitle: "Legacy Forge | Orders",
-    description:
-      "Review and manage your custom coin orders with Legacy Forge.",
+    description: "Review and manage your custom coin orders with Legacy Forge.",
   },
   QUOTES: {
     title: "Quotes",
     path: "/admin/quotes",
     metaTitle: "Legacy Forge | Quotes",
-    description:
-      "Review and manage your custom coin quotes with Legacy Forge.",
+    description: "Review and manage your custom coin quotes with Legacy Forge.",
   },
   PAYMENT_METHOD: {
-    title: "Payment Method",
+    title: "QuickBooks Integration",
     path: "/admin/payment-method",
-    metaTitle: "Legacy Forge | Payment Method",
+    metaTitle: "Legacy Forge | QuickBooks Integration",
     description:
-      "Manage your payment methods with Legacy Forge.",
+      "Monitor and manage QuickBooks integrations across all users with Legacy Forge.",
   },
   PAYMENT_HISTORY: {
     title: "Payment History",
     path: "/admin/payment-history",
     metaTitle: "Legacy Forge | Payment History",
-    description:
-      "Review your payment history with Legacy Forge.",
+    description: "Review your payment history with Legacy Forge.",
   },
   ACCOUNT_SETTING: {
     title: "Account Setting",
     path: "/admin/account-setting",
     metaTitle: "Legacy Forge | Account Setting",
-    description:
-      "Manage your account settings with Legacy Forge.",
+    description: "Manage your account settings with Legacy Forge.",
   },
   TRACKING: {
     title: "Tracking",
     path: "/admin/tracking",
     metaTitle: "Legacy Forge | Tracking",
-    description:
-      "Track your custom coin orders with Legacy Forge.",
+    description: "Track your custom coin orders with Legacy Forge.",
   },
 } as const;
-
-
-

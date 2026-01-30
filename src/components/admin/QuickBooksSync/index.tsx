@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   useAdminQuickBooksSyncStatus,
   useSyncAdminQuickBooksPayment,
   useRetryAdminQuickBooksFailedSyncs,
+  useAdminQuickBooksConnections,
 } from "@/src/hooks/useQueries";
 import {
   RefreshCw,
@@ -27,11 +28,35 @@ const QuickBooksSync: React.FC = () => {
     refetch,
   } = useAdminQuickBooksSyncStatus();
 
+  const { data: connectionsData } = useAdminQuickBooksConnections();
   const syncPayment = useSyncAdminQuickBooksPayment();
   const retryFailedSyncs = useRetryAdminQuickBooksFailedSyncs();
   const [syncingPaymentId, setSyncingPaymentId] = useState<string | null>(null);
 
-  const handleSyncPayment = async (paymentId: string) => {
+  // Create a map of userId -> hasConnection for quick lookup
+  const userConnectionsMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (connectionsData?.data) {
+      connectionsData.data.forEach((connection) => {
+        map.set(connection.userId, !connection.isExpired);
+      });
+    }
+    return map;
+  }, [connectionsData]);
+
+  const handleSyncPayment = async (paymentId: string, userId: string) => {
+    // Check if user has QuickBooks connection before syncing
+    const hasConnection = userConnectionsMap.get(userId);
+    if (!hasConnection) {
+      toast.error(
+        "Cannot sync: This user's QuickBooks account is not connected. Please ask them to connect their QuickBooks account first.",
+        {
+          autoClose: 6000,
+        },
+      );
+      return;
+    }
+
     setSyncingPaymentId(paymentId);
     try {
       await syncPayment.mutateAsync(paymentId);
@@ -57,10 +82,11 @@ const QuickBooksSync: React.FC = () => {
         // Handle specific error codes
         if (
           errorCode === "ERR_6001" ||
-          errorMessage?.includes("not connected")
+          errorMessage?.includes("not connected") ||
+          errorMessage?.includes("No user with QuickBooks connection")
         ) {
           errorMessage =
-            "Cannot sync: User's QuickBooks account is not connected. The user needs to connect their QuickBooks account first.";
+            "Cannot sync: User's QuickBooks account is not connected. The user needs to connect their QuickBooks account first. You can check connections in the 'Connections' tab.";
         }
       } else if (error instanceof Error) {
         errorMessage = error.message;
@@ -68,15 +94,16 @@ const QuickBooksSync: React.FC = () => {
         // Check for specific error messages
         if (
           errorMessage.includes("not connected") ||
-          errorMessage.includes("ERR_6001")
+          errorMessage.includes("ERR_6001") ||
+          errorMessage.includes("No user with QuickBooks connection")
         ) {
           errorMessage =
-            "Cannot sync: User's QuickBooks account is not connected. The user needs to connect their QuickBooks account first.";
+            "Cannot sync: User's QuickBooks account is not connected. The user needs to connect their QuickBooks account first. You can check connections in the 'Connections' tab.";
         }
       }
 
       toast.error(errorMessage, {
-        autoClose: 5000,
+        autoClose: 6000,
       });
     } finally {
       setSyncingPaymentId(null);
@@ -279,20 +306,41 @@ const QuickBooksSync: React.FC = () => {
       key: "actions",
       label: "Actions",
       width: "w-24",
-      render: (_value, row) => (
-        <Button
-          variant="ternary"
-          onClick={() => handleSyncPayment(row.paymentId)}
-          disabled={syncingPaymentId === row.paymentId}
-          className="text-xs !px-2 !py-1"
-        >
-          {syncingPaymentId === row.paymentId ? (
-            <RefreshCw className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-        </Button>
-      ),
+      render: (_value, row) => {
+        const hasConnection = userConnectionsMap.get(row.userId);
+        const isDisabled = !hasConnection || syncingPaymentId === row.paymentId;
+        const isSyncing = syncingPaymentId === row.paymentId;
+
+        return (
+          <div className="relative group">
+            <Button
+              variant="ternary"
+              onClick={() => handleSyncPayment(row.paymentId, row.userId)}
+              disabled={isDisabled}
+              className="text-xs !px-2 !py-1"
+              title={
+                !hasConnection
+                  ? "User's QuickBooks account is not connected"
+                  : undefined
+              }
+            >
+              {isSyncing ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+            {!hasConnection && (
+              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
+                  User not connected
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

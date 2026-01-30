@@ -1,12 +1,18 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
 import { dashboardCards } from "./data";
 import { DashboardProps } from "./types";
-import { useGetAdminStats, useAdminOrderHistory } from "@/src/hooks/useQueries";
+import {
+  useGetAdminStats,
+  useAdminOrderHistory,
+  useAdminQuickBooksConnections,
+} from "@/src/hooks/useQueries";
 import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
+import { toast } from "react-toastify";
 
 // Format payment method display
 const formatPaymentMethod = (method: string | undefined): string => {
@@ -41,7 +47,46 @@ const formatDate = (dateString: string | undefined): string => {
 export default function AdminDashboard({
   cards = dashboardCards,
 }: DashboardProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: stats } = useGetAdminStats();
+  const { data: connectionsData, refetch: refetchConnections } =
+    useAdminQuickBooksConnections();
+
+  // Handle QuickBooks OAuth redirects
+  useEffect(() => {
+    // Check for error parameter (if backend sends it)
+    const error = searchParams.get("quickbooks_error");
+    if (error) {
+      const decodedError = decodeURIComponent(error);
+      toast.error(decodedError || "QuickBooks connection failed");
+      // Clean up URL
+      router.replace("/admin");
+      return;
+    }
+
+    // Check if user just returned from OAuth (success case)
+    // Backend redirects to /admin after successful OAuth
+    const oauthRedirect = sessionStorage.getItem("quickbooks_oauth_redirect");
+    if (oauthRedirect === "pending") {
+      // User initiated OAuth, check if connection was successful
+      // Refetch connections to see if new connection was added
+      refetchConnections().then(() => {
+        // Check if we have connections now (or if user's connection exists)
+        if (connectionsData?.data && connectionsData.data.length > 0) {
+          toast.success("QuickBooks connected successfully!");
+        }
+        sessionStorage.removeItem("quickbooks_oauth_redirect");
+      });
+    }
+  }, [searchParams, router, refetchConnections, connectionsData]);
+
+  // Optional: Log connections for debugging
+  useEffect(() => {
+    if (connectionsData?.data) {
+      console.log("QuickBooks connections:", connectionsData.data);
+    }
+  }, [connectionsData]);
 
   // Fetch recent orders (limit 10)
   const { data: orderHistoryData, isPending: isOrdersPending } =
