@@ -312,17 +312,19 @@ const QuickBooksSync: React.FC = () => {
         const isSyncing = syncingPaymentId === row.paymentId;
 
         return (
-          <div className="relative group">
+          <div
+            className="relative group"
+            title={
+              !hasConnection
+                ? "User's QuickBooks account is not connected"
+                : undefined
+            }
+          >
             <Button
               variant="ternary"
               onClick={() => handleSyncPayment(row.paymentId, row.userId)}
               disabled={isDisabled}
               className="text-xs !px-2 !py-1"
-              title={
-                !hasConnection
-                  ? "User's QuickBooks account is not connected"
-                  : undefined
-              }
             >
               {isSyncing ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />

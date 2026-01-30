@@ -1,9 +1,10 @@
 "use client";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { XCircle, AlertCircle } from "lucide-react";
 import Button from "@/src/components/common/button/Button";
 
-export default function QuickBooksErrorPage() {
+function QuickBooksErrorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message =
@@ -54,5 +55,26 @@ export default function QuickBooksErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function QuickBooksErrorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                <XCircle className="h-12 w-12 text-gray-400 animate-pulse" />
+              </div>
+            </div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <QuickBooksErrorContent />
+    </Suspense>
   );
 }
