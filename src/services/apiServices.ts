@@ -2211,3 +2211,141 @@ export const retryAdminQuickBooksFailedSyncs = async (): Promise<{
   const res = await apiClient.post("/admin/quickbooks/retry-failed-syncs");
   return res.data;
 };
+
+// --- Admin Payment Transactions API ---
+
+export interface TransactionFilters {
+  method?: "QUICKBOOKS" | "STRIPE" | "MANUAL";
+  status?: "SUCCESS" | "PENDING" | "FAILED" | "REFUNDED";
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export interface PaymentTransaction {
+  paymentId: string;
+  transactionId: string;
+  method: "QUICKBOOKS" | "STRIPE" | "MANUAL";
+  status: "SUCCESS" | "PENDING" | "FAILED" | "REFUNDED";
+  amount: number;
+  paidAt: string | null;
+  createdAt: string;
+  customer: string;
+  customerEmail: string | null;
+  userId: string | null;
+  quoteId: string | null;
+  orderId: string | null;
+  orderTotal: number | null;
+  totalCoins: number | null;
+  coinDesignName: string | null;
+  quickbooksInvoiceId: string | null;
+  quickbooksSyncStatus: string | null;
+  quickbooksLastSyncAt: string | null;
+  stripeCheckoutSessionId: string | null;
+  stripeCustomerId: string | null;
+  paymentProof: string | null;
+  receiptUrl: string | null;
+}
+
+export interface PaymentTransactionsResponse {
+  transactions: PaymentTransaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+  summary: {
+    totalTransactions: number;
+    byMethod: {
+      QUICKBOOKS: number;
+      STRIPE: number;
+      MANUAL: number;
+    };
+    byStatus: {
+      SUCCESS: number;
+      PENDING: number;
+      FAILED: number;
+      REFUNDED: number;
+    };
+  };
+}
+
+// Get admin payment transactions
+export const getAdminPaymentTransactions = async (
+  filters?: TransactionFilters,
+): Promise<{
+  success: boolean;
+  data: PaymentTransactionsResponse;
+  message?: string;
+}> => {
+  const params = new URLSearchParams();
+
+  if (filters?.method) params.append("method", filters.method);
+  if (filters?.status) params.append("status", filters.status);
+  if (filters?.startDate) params.append("startDate", filters.startDate);
+  if (filters?.endDate) params.append("endDate", filters.endDate);
+  if (filters?.page) params.append("page", filters.page.toString());
+  if (filters?.limit) params.append("limit", filters.limit.toString());
+  if (filters?.search) params.append("search", filters.search);
+
+  const queryString = params.toString();
+  const url = `/admin/quickbooks/payment-transactions${
+    queryString ? `?${queryString}` : ""
+  }`;
+
+  const res = await apiClient.get(url);
+  return res.data;
+};
+
+// --- QuickBooks Integration API (Guide-compatible endpoints) ---
+
+// Get QuickBooks connection status (guide endpoint: GET /api/quickbooks/status)
+export const getQuickBooksStatus = async (): Promise<{
+  success: boolean;
+  data: {
+    connected: boolean;
+    expired: boolean;
+    connectedAt?: string;
+    expiresAt?: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get("/quickbooks/status");
+  return res.data;
+};
+
+// Initiate QuickBooks connection (guide endpoint: GET /api/quickbooks/connect)
+export const connectQuickBooks = async (): Promise<{
+  success: boolean;
+  data: {
+    authUri: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.get("/quickbooks/connect");
+  return res.data;
+};
+
+// Create QuickBooks invoice (guide endpoint: POST /api/quickbooks/invoice/create)
+export const createQuickBooksInvoiceForQuote = async (data: {
+  quoteId: string;
+  amount: number;
+  customerEmail: string;
+  customerName?: string;
+}): Promise<{
+  success: boolean;
+  data: {
+    paymentId: string;
+    invoiceId: string;
+    message: string;
+  };
+  message?: string;
+}> => {
+  const res = await apiClient.post("/quickbooks/invoice/create", data);
+  return res.data;
+};

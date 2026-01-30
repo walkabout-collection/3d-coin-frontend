@@ -8,6 +8,7 @@ import {
   useUpdatePreferredPaymentMethod,
 } from "@/src/hooks/useQueries";
 import ManagePaymentMethods from "@/src/components/ManagePaymentMethods";
+import QuickBooksConnectionGuide from "@/src/components/QuickBooks/QuickBooksConnectionGuide";
 import { toast } from "react-toastify";
 import type { PaymentMethod } from "@/src/types/paymentPreferences";
 
@@ -156,6 +157,22 @@ const PaymentMethodContainer: React.FC = () => {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* QuickBooks Connection (only for logged-in users) */}
+      {isLoggedIn && (
+        <div className="mt-8">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              QuickBooks Integration
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Connect your QuickBooks account to create invoices and sync
+              payments automatically.
+            </p>
+            <QuickBooksConnectionGuide />
+          </div>
         </div>
       )}
 

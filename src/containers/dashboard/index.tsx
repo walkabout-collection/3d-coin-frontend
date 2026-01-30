@@ -1,7 +1,7 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { dashboardCards } from "./data";
 import { DashboardProps } from "./types";
 import {
@@ -9,12 +9,14 @@ import {
   useUserOrders,
   useUserOrderHistory,
   useUserDrafts,
+  useQuickBooksStatus,
 } from "@/src/hooks/useQueries";
 import Table from "@/src/components/common/Table";
 import { TableColumn } from "@/src/components/common/Table/types";
 import Button from "@/src/components/common/button/Button";
 import { UserOrder } from "@/src/services/apiServices";
 import { OrderDataItem } from "../orders/types";
+import { toast } from "react-toastify";
 
 // Format payment method display
 const formatPaymentMethod = (method: string | undefined): string => {
@@ -48,7 +50,40 @@ const formatDate = (dateString: string | number | undefined): string => {
 
 export default function Dashboard({ cards = dashboardCards }: DashboardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: stats } = useGetUserStats();
+  const { data: quickBooksStatus } = useQuickBooksStatus();
+
+  // Handle QuickBooks OAuth redirects
+  useEffect(() => {
+    // Check for error parameter
+    const error = searchParams.get("quickbooks_error");
+    if (error) {
+      const decodedError = decodeURIComponent(error);
+      toast.error(decodedError || "QuickBooks connection failed");
+      // Clean up URL
+      router.replace("/dashboard");
+      return;
+    }
+
+    // Check for success (user just connected QuickBooks via OAuth redirect)
+    // We detect this by checking sessionStorage flag set during OAuth flow
+    const oauthRedirect = sessionStorage.getItem("quickbooks_oauth_redirect");
+    if (oauthRedirect === "pending" && quickBooksStatus?.data?.connected) {
+      // User just completed OAuth and is now connected
+      toast.success("QuickBooks connected successfully!");
+      sessionStorage.removeItem("quickbooks_oauth_redirect");
+    } else if (
+      oauthRedirect === "pending" &&
+      !quickBooksStatus?.data?.connected
+    ) {
+      // Still waiting for connection status to update
+      // Keep the flag and check again when status updates
+    } else if (oauthRedirect && oauthRedirect !== "pending") {
+      // Clean up old flags
+      sessionStorage.removeItem("quickbooks_oauth_redirect");
+    }
+  }, [searchParams, quickBooksStatus, router]);
 
   // Fetch recent orders (limit 10)
   const { data: orderHistoryData, isPending: isHistoryPending } =
