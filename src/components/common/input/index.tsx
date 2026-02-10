@@ -84,7 +84,7 @@ const Input = forwardRef<
             <select
               ref={ref as React.Ref<HTMLSelectElement>}
               className={`${combinedStyles} pr-14`}
-              {...(!register && { defaultValue: "" })}
+              {...(!register && !("value" in props) && { defaultValue: "" })}
               {...register}
               {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
             >

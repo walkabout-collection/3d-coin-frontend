@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
 import { materialOptions } from "./data";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
+import Coin3DViewer from "@/src/components/common/Coin3DViewer";
 
 const Material = () => {
   const router = useRouter();
-  const { material, setMaterial } = useStandardBuilderStore();
+  const { material, setMaterial, dimensions, edgeType, textRings, artwork } =
+    useStandardBuilderStore();
 
   const handleMaterialSelect = (materialId: string) => {
     setMaterial(materialId);
@@ -21,28 +23,26 @@ const Material = () => {
   };
 
   const handleGoBack = () => {
-    router.push("/standard-builder"); 
+    router.push("/standard-builder");
   };
 
   return (
     <div className="min-h-screen flex flex-row items-start justify-center py-6">
-      {/* Left Side - Coin Image */}
+      {/* Left Side - 3D Coin Viewer */}
       <div className="flex justify-between mb-12 relative w-full max-w-2xl mr-8">
-        <div className="flex flex-col items-center">
-          <Image
-            src="/images/home/coin-design.png"
-            alt="Coin"
-            width={335}
-            height={335}
-            className="z-10"
-          />
-          <Image
-            src="/images/home/frame.png"
-            alt="Coin Base"
-            width={494}
-            height={143}
-            className="mt-[-50px] z-0"
-          />
+        <div className="flex flex-col items-center w-full">
+          <div className="w-full h-[500px] relative bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-lg p-4">
+            <Coin3DViewer
+              materialId={material || "gold"}
+              dimensions={dimensions}
+              edgeType={edgeType}
+              textRings={textRings}
+              artwork={artwork}
+              className="w-full h-full"
+              autoRotate={true}
+              enableControls={true}
+            />
+          </div>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import ImageUpload from "@/src/components/common/imageUpload";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
 import { useGenerateCoinSide } from "@/src/hooks/useQueries";
+import Coin3DViewer from "@/src/components/common/Coin3DViewer";
 import {
   validateAIGenerationInput,
   validateAIGenerationImageFile,
@@ -16,7 +17,14 @@ import {
 
 const ArtWork = () => {
   const router = useRouter();
-  const { artwork, updateArtworkSide } = useStandardBuilderStore();
+  const {
+    artwork,
+    updateArtworkSide,
+    material,
+    dimensions,
+    edgeType,
+    textRings,
+  } = useStandardBuilderStore();
   const [activeTab, setActiveTab] = useState<"front" | "back">("front");
   const [error, setError] = useState<{ message: string } | undefined>(
     undefined,
@@ -175,21 +183,7 @@ const ArtWork = () => {
     );
   };
 
-  const base64ToFile = (base64String: string, fileName: string): File => {
-    const matches = base64String.match(/^data:(.*?);base64,(.*)$/);
-    if (!matches) {
-      throw new Error("Invalid base64 string");
-    }
-    const mime = matches[1];
-    const data = matches[2];
-    const byteString = atob(data);
-    const n = byteString.length;
-    const u8arr = new Uint8Array(n);
-    for (let i = 0; i < n; i++) {
-      u8arr[i] = byteString.charCodeAt(i);
-    }
-    return new File([u8arr], fileName, { type: mime });
-  };
+  // Removed unused base64ToFile function
 
   const handleContinue = () => {
     console.log("Artwork Saved:", artwork);
@@ -213,63 +207,25 @@ const ArtWork = () => {
     );
   };
 
-  // Get the current tab's preview image (inserted artwork)
-  const currentPreviewImage =
-    activeTab === "front" ? front.previewImage : back.previewImage;
+  // Removed unused currentPreviewImage variable
 
   return (
     <div className="min-h-screen flex flex-row items-start justify-center py-6">
-      {/* Left Side - Coin Image */}
+      {/* Left Side - 3D Coin Viewer with Artwork */}
       <div className="flex justify-between mb-12 relative w-full max-w-2xl mr-8">
-        <div className="flex flex-col items-center relative">
-          {/* Coin Design Container */}
-          <div className="relative w-[335px] h-[335px] z-10 rounded-full overflow-hidden">
-            {/* Artwork Image - Show if preview image exists for current tab */}
-            {currentPreviewImage ? (
-              currentPreviewImage.startsWith("data:") ||
-              currentPreviewImage.startsWith("http://") ||
-              currentPreviewImage.startsWith("https://") ? (
-                <img
-                  src={currentPreviewImage}
-                  alt={`${activeTab} artwork`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error("Image load error:", currentPreviewImage);
-                    e.currentTarget.src = "/images/home/coin-design.png";
-                  }}
-                />
-              ) : (
-                <Image
-                  src={currentPreviewImage}
-                  alt={`${activeTab} artwork`}
-                  width={335}
-                  height={335}
-                  className="w-full h-full object-cover"
-                  unoptimized
-                  onError={() => {
-                    console.error("Image load error:", currentPreviewImage);
-                  }}
-                />
-              )
-            ) : (
-              /* Base Coin Design - Show when no artwork */
-              <Image
-                src="/images/home/coin-design.png"
-                alt="Coin"
-                width={335}
-                height={335}
-                className="w-full h-full object-cover"
-              />
-            )}
+        <div className="flex flex-col items-center w-full">
+          <div className="w-full h-[500px] relative bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-lg p-4">
+            <Coin3DViewer
+              materialId={material || "gold"}
+              dimensions={dimensions}
+              edgeType={edgeType}
+              textRings={textRings}
+              artwork={artwork}
+              className="w-full h-full"
+              autoRotate={true}
+              enableControls={true}
+            />
           </div>
-          {/* Frame at bottom */}
-          <Image
-            src="/images/home/frame.png"
-            alt="Coin Base"
-            width={494}
-            height={143}
-            className="mt-[-50px] z-0"
-          />
         </div>
       </div>
 

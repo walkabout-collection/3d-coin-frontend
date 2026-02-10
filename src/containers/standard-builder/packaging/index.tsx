@@ -1,14 +1,22 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Input from "@/src/components/common/input";
 import Button from "@/src/components/common/button/Button";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
+import Coin3DViewer from "@/src/components/common/Coin3DViewer";
 
 const Packaging = () => {
   const router = useRouter();
-  const { packaging, setPackaging } = useStandardBuilderStore();
+  const {
+    packaging,
+    setPackaging,
+    material,
+    dimensions,
+    edgeType,
+    textRings,
+    artwork,
+  } = useStandardBuilderStore();
 
   const handleContinue = () => {
     console.log("Packaging Data:", packaging);
@@ -17,16 +25,21 @@ const Packaging = () => {
 
   return (
     <div className="min-h-screen flex flex-row items-start justify-center py-6">
-      {/* Left Side - Coin Image */}
-      <div className="flex justify-between  w-full max-w-2xl mr-8 py-12">
-        <div className="flex items-center mt-10">
-          <Image
-            src="/images/standard/packaging.png"
-            alt="Packaging Image"
-            width={494}
-            height={143}
-            className="mt-[-50px] z-0"
-          />
+      {/* Left Side - 3D Coin Viewer */}
+      <div className="flex justify-between w-full max-w-2xl mr-8 py-12">
+        <div className="flex items-center w-full">
+          <div className="w-full h-[500px] relative bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-lg p-4">
+            <Coin3DViewer
+              materialId={material || "gold"}
+              dimensions={dimensions}
+              edgeType={edgeType}
+              textRings={textRings}
+              artwork={artwork}
+              className="w-full h-full"
+              autoRotate={true}
+              enableControls={true}
+            />
+          </div>
         </div>
       </div>
 
@@ -55,7 +68,8 @@ const Packaging = () => {
           </div>
           <p className="text-gray-600 mb-6 mt-4 text-lg font-medium">
             <span className="font-semibold text-black">Note:</span> Write
-            packaging insert design description - Design team will provide proof.
+            packaging insert design description - Design team will provide
+            proof.
           </p>
 
           <div className="mt-6">

@@ -1,15 +1,16 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Input from "@/src/components/common/input";
 import Button from "@/src/components/common/button/Button";
 import { coinDiameters, coinThicknesses } from "./data";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
+import Coin3DViewer from "@/src/components/common/Coin3DViewer";
 
 const Dimensions = () => {
   const router = useRouter();
-  const { dimensions, setDimensions } = useStandardBuilderStore();
+  const { dimensions, setDimensions, material, edgeType, textRings, artwork } =
+    useStandardBuilderStore();
 
   const handleContinue = () => {
     if (dimensions.coinDiameter && dimensions.coinThickness) {
@@ -20,21 +21,19 @@ const Dimensions = () => {
   return (
     <div className="min-h-screen flex flex-row items-start justify-center py-10 ">
       <div className="flex justify-between mb-12 relative w-full max-w-2xl mr-8">
-        <div className="flex flex-col items-center">
-          <Image
-            src="/images/home/coin-design.png"
-            alt="Coin"
-            width={335}
-            height={335}
-            className="z-10"
-          />
-          <Image
-            src="/images/home/frame.png"
-            alt="Coin Base"
-            width={494}
-            height={143}
-            className="mt-[-50px] z-0"
-          />
+        <div className="flex flex-col items-center w-full">
+          <div className="w-full h-[500px] relative bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-lg p-4">
+            <Coin3DViewer
+              materialId={material || "gold"}
+              dimensions={dimensions}
+              edgeType={edgeType}
+              textRings={textRings}
+              artwork={artwork}
+              className="w-full h-full"
+              autoRotate={true}
+              enableControls={true}
+            />
+          </div>
         </div>
       </div>
 
@@ -57,7 +56,10 @@ const Dimensions = () => {
               bg="bg-gray-100"
               value={dimensions.coinDiameter}
               onChange={(e) =>
-                setDimensions({ coinDiameter: e.target.value, coinThickness: dimensions.coinThickness })
+                setDimensions({
+                  coinDiameter: e.target.value,
+                  coinThickness: dimensions.coinThickness,
+                })
               }
             />
           </div>
@@ -75,7 +77,10 @@ const Dimensions = () => {
               bg="bg-gray-100"
               value={dimensions.coinThickness}
               onChange={(e) =>
-                setDimensions({ coinDiameter: dimensions.coinDiameter, coinThickness: e.target.value })
+                setDimensions({
+                  coinDiameter: dimensions.coinDiameter,
+                  coinThickness: e.target.value,
+                })
               }
             />
           </div>
@@ -96,9 +101,7 @@ const Dimensions = () => {
         </Button>
       </div>
     </div>
-
   );
 };
 
 export default Dimensions;
-

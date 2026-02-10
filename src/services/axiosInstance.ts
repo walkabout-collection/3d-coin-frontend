@@ -10,6 +10,21 @@
 // export default apiClient;
 
 import axios from "axios";
+
+// Get API base URL based on environment
+const getApiBaseUrl = () => {
+  // Allow environment variable to override
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  // Use production URL in production builds
+  if (process.env.NODE_ENV === "production") {
+    return "https://api.legacyforgecoins.com/api";
+  }
+  // Default to localhost for development
+  return "http://localhost:8000/api";
+};
+
 const refreshAccessToken = async () => {
   const refreshToken = getCookie("refreshToken");
 
@@ -17,10 +32,9 @@ const refreshAccessToken = async () => {
     throw new Error("No refresh token found");
   }
 
-  const res = await axios.post(
-    `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000/api"}/auth/refresh-token`,
-    { refreshToken },
-  );
+  const res = await axios.post(`${getApiBaseUrl()}/auth/refresh-token`, {
+    refreshToken,
+  });
 
   const { accessToken, refreshToken: newRefreshToken } = res.data.data;
 
@@ -56,7 +70,7 @@ const setCookie = (name: string, value: string, maxAge: number) => {
 };
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000/api",
+  baseURL: getApiBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },

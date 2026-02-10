@@ -67,11 +67,22 @@ export const usePaymentStatusWebSocket = (enabled: boolean = true) => {
       }
 
       try {
-        // Get WebSocket URL from environment or use default
-        let wsUrl =
-          process.env.NEXT_PUBLIC_WS_URL ||
-          process.env.NEXT_PUBLIC_BASE_URL?.replace(/^http/, "ws") ||
-          "ws://localhost:8000";
+        // Get WebSocket URL from environment or use default based on environment
+        let wsUrl: string;
+
+        if (process.env.NEXT_PUBLIC_WS_URL) {
+          // Allow explicit WebSocket URL override
+          wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+        } else if (process.env.NEXT_PUBLIC_BASE_URL) {
+          // Derive from base URL (convert http/https to ws/wss)
+          wsUrl = process.env.NEXT_PUBLIC_BASE_URL.replace(/^http/, "ws");
+        } else if (process.env.NODE_ENV === "production") {
+          // Use production WebSocket URL in production builds
+          wsUrl = "wss://api.legacyforgecoins.com";
+        } else {
+          // Default to localhost for development
+          wsUrl = "ws://localhost:8000";
+        }
 
         // Remove /api prefix if present (WebSocket endpoints typically don't use it)
         wsUrl = wsUrl.replace(/\/api$/, "");
