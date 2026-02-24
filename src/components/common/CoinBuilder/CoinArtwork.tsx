@@ -39,10 +39,7 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
         loadedTexture.wrapS = THREE.ClampToEdgeWrapping;
         loadedTexture.wrapT = THREE.ClampToEdgeWrapping;
 
-        // Center the texture on the placeholder mesh
-        // The placeholder mesh should have centered UVs (0.5, 0.5 is center)
-        // We want to fit the image to cover the placeholder while maintaining aspect ratio
-        // Type guard for texture image to access width and height
+        // Get image dimensions
         const image = loadedTexture.image as
           | HTMLImageElement
           | HTMLCanvasElement
@@ -50,33 +47,95 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
           | ImageBitmap
           | null;
         const imageElement = image instanceof HTMLImageElement ? image : null;
-        const imageAspect = imageElement
-          ? imageElement.width / imageElement.height
-          : 1;
 
-        // Placeholder mesh is circular/square (1:1 aspect ratio)
-        // Strategy: Fit image to cover the entire placeholder area, centered
-        if (imageAspect > 1) {
-          // Image is wider than tall - fit to height, center horizontally
-          const scale = 1; // Use full height
-          loadedTexture.repeat.set(scale / imageAspect, scale);
-          loadedTexture.offset.set((1 - scale / imageAspect) / 2, 0);
-        } else if (imageAspect < 1) {
-          // Image is taller than wide - fit to width, center vertically
-          const scale = 1; // Use full width
-          loadedTexture.repeat.set(scale, scale * imageAspect);
-          loadedTexture.offset.set(0, (1 - scale * imageAspect) / 2);
-        } else {
-          // Image is square - perfect fit, no offset needed
-          loadedTexture.repeat.set(1, 1);
-          loadedTexture.offset.set(0, 0);
+        if (!imageElement) {
+          setTexture(loadedTexture);
+          return;
         }
 
-        // Ensure texture is centered (UV coordinates should be centered at 0.5, 0.5)
-        // If the placeholder mesh UVs are already centered, this should work
-        // If not, we may need to adjust based on the actual UV layout
+        const imageAspect = imageElement.width / imageElement.height;
+        // Use high resolution for better quality circular mask
+        const size = Math.max(imageElement.width, imageElement.height);
+        // Ensure minimum size for quality
+        const canvasSize = Math.max(size, 512);
 
-        setTexture(loadedTexture);
+        // Create a canvas to apply circular mask and fill the entire circle
+        const canvas = document.createElement("canvas");
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (!ctx) {
+          setTexture(loadedTexture);
+          return;
+        }
+
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // Create circular clipping path first
+        const centerX = canvasSize / 2;
+        const centerY = canvasSize / 2;
+        const circleRadius = canvasSize / 2;
+
+        // Start with circular clipping path to ensure perfect circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Calculate image positioning to fill the entire circle while maintaining aspect ratio
+        // Strategy: Scale image to cover the entire circle (cover mode, not fit mode)
+        let drawX = 0;
+        let drawY = 0;
+        let drawWidth = canvasSize;
+        let drawHeight = canvasSize;
+
+        if (imageAspect > 1) {
+          // Image is wider than tall - scale to cover width, may crop top/bottom
+          drawHeight = canvasSize / imageAspect;
+          drawY = (canvasSize - drawHeight) / 2;
+        } else if (imageAspect < 1) {
+          // Image is taller than wide - scale to cover height, may crop left/right
+          drawWidth = canvasSize * imageAspect;
+          drawX = (canvasSize - drawWidth) / 2;
+        }
+        // If square, no adjustment needed
+
+        // Draw the image onto the canvas (will be clipped to circle)
+        ctx.drawImage(imageElement, drawX, drawY, drawWidth, drawHeight);
+
+        // Apply additional circular mask using composite operation for clean edges
+        // This ensures perfect circular shape with anti-aliasing
+        const maskCanvas = document.createElement("canvas");
+        maskCanvas.width = canvasSize;
+        maskCanvas.height = canvasSize;
+        const maskCtx = maskCanvas.getContext("2d");
+
+        if (maskCtx) {
+          // Create white circle on transparent background
+          maskCtx.fillStyle = "white";
+          maskCtx.beginPath();
+          maskCtx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
+          maskCtx.fill();
+
+          // Apply mask using destination-in to keep only the circular area
+          ctx.globalCompositeOperation = "destination-in";
+          ctx.drawImage(maskCanvas, 0, 0);
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        // Create texture from the circular canvas
+        const circularTexture = new THREE.CanvasTexture(canvas);
+        circularTexture.flipY = false;
+        circularTexture.wrapS = THREE.ClampToEdgeWrapping;
+        circularTexture.wrapT = THREE.ClampToEdgeWrapping;
+        circularTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        circularTexture.magFilter = THREE.LinearFilter;
+        circularTexture.generateMipmaps = true;
+        circularTexture.needsUpdate = true;
+
+        setTexture(circularTexture);
       },
       undefined,
       (error) => {
@@ -110,8 +169,17 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
       // Clone material to avoid affecting other meshes
       const clonedMaterial = material.clone();
       clonedMaterial.map = texture;
-      clonedMaterial.transparent = false;
+      // Enable transparency to show circular mask edges
+      clonedMaterial.transparent = true;
       clonedMaterial.opacity = 1;
+      // Use alphaTest to ensure clean circular edges
+      clonedMaterial.alphaTest = 0.01;
+      // Adjust material properties for natural image visibility
+      clonedMaterial.metalness = 0.0;
+      clonedMaterial.roughness = 0.7;
+      clonedMaterial.emissive = new THREE.Color(0.0, 0.0, 0.0);
+      clonedMaterial.emissiveIntensity = 0.0;
+      clonedMaterial.color = new THREE.Color(1.0, 1.0, 1.0);
       clonedMaterial.needsUpdate = true;
 
       if (reliefType === "embossed") {
