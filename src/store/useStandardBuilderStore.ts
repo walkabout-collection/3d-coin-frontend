@@ -82,21 +82,25 @@ export const useStandardBuilderStore = create<StandardBuilderState>(
     material: "",
     edgeType: "",
     textRings: {
-      front: { top: "", bottom: "", noText: false },
-      back: { top: "", bottom: "", noText: false },
+      front: { top: "YOUR TEXT HERE", bottom: "CUSTOM TEXT", noText: false },
+      back: { top: "YOUR TEXT HERE", bottom: "CUSTOM TEXT", noText: false },
     },
     artwork: {
       front: {
         prompt: "",
         attachedImage: null,
         uploadedImage: null,
-        previewImage: null,
+        // Default placeholder image - simple gray square
+        previewImage:
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EFront Image%3C/text%3E%3C/svg%3E",
       },
       back: {
         prompt: "",
         attachedImage: null,
         uploadedImage: null,
-        previewImage: null,
+        // Default placeholder image - simple gray square
+        previewImage:
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EBack Image%3C/text%3E%3C/svg%3E",
       },
     },
     packaging: {
@@ -280,21 +284,29 @@ export const useStandardBuilderStore = create<StandardBuilderState>(
         material: "",
         edgeType: "",
         textRings: {
-          front: { top: "", bottom: "", noText: false },
-          back: { top: "", bottom: "", noText: false },
+          front: {
+            top: "YOUR TEXT HERE",
+            bottom: "CUSTOM TEXT",
+            noText: false,
+          },
+          back: { top: "YOUR TEXT HERE", bottom: "CUSTOM TEXT", noText: false },
         },
         artwork: {
           front: {
             prompt: "",
             attachedImage: null,
             uploadedImage: null,
-            previewImage: null,
+            // Default placeholder image - simple gray square
+            previewImage:
+              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EFront Image%3C/text%3E%3C/svg%3E",
           },
           back: {
             prompt: "",
             attachedImage: null,
             uploadedImage: null,
-            previewImage: null,
+            // Default placeholder image - simple gray square
+            previewImage:
+              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EBack Image%3C/text%3E%3C/svg%3E",
           },
         },
         packaging: {

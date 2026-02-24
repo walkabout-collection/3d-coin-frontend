@@ -3,7 +3,7 @@ import React, { useMemo, useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { CoinText } from "./CoinText";
+import { CoinTextTexture } from "./CoinTextTexture";
 import { CoinArtwork } from "./CoinArtwork";
 import { getTexturePath } from "@/src/utils/materialTextures";
 
@@ -18,8 +18,14 @@ interface TextRings {
 }
 
 interface Artwork {
-  front: { previewImage: string | null };
-  back: { previewImage: string | null };
+  front: {
+    previewImage: string | null;
+    uploadedImage: File | null;
+  };
+  back: {
+    previewImage: string | null;
+    uploadedImage: File | null;
+  };
 }
 
 interface ModularCoinProps {
@@ -36,10 +42,26 @@ interface ModularCoinProps {
 const mmToUnits = (mm: number): number => mm / 10; // 1 unit = 10mm
 
 // Helper to parse dimensions
-const parseDimension = (dim: string): number => {
-  if (!dim) return 25; // Default 25mm
+const parseDimension = (dim: string, defaultValue: number = 25): number => {
+  if (!dim) return defaultValue;
   const match = dim.match(/(\d+\.?\d*)/);
-  return match ? parseFloat(match[1]) : 25;
+  return match ? parseFloat(match[1]) : defaultValue;
+};
+
+// Helper to get text color based on material for good contrast
+const getTextColorForMaterial = (materialId: string): string => {
+  // Map materials to text colors that provide good contrast
+  const materialColorMap: Record<string, string> = {
+    gold: "#000000", // Black on gold
+    silver: "#000000", // Black on silver
+    copper: "#000000", // Black on copper
+    "black-nickel": "#FFFFFF", // White on black nickel
+    "antique-gold": "#000000", // Black on antique gold
+    "antique-silver": "#000000", // Black on antique silver
+    bronze: "#000000", // Black on bronze
+    "antique-bronze": "#000000", // Black on antique bronze
+  };
+  return materialColorMap[materialId] || "#000000"; // Default to black
 };
 
 export const ModularCoin: React.FC<ModularCoinProps> = ({
@@ -68,6 +90,9 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     [dimensions?.coinThickness],
   );
   const radius = diameter / 2;
+
+  // Base scale multiplier for coin visibility (used throughout the component)
+  const BASE_SCALE_MULTIPLIER = 30;
 
   // Load textures for each part (Top Face, Bottom Face, Edge)
   const [topFaceTextures, setTopFaceTextures] = React.useState<{
@@ -362,7 +387,7 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     // ============================================
     // COIN SIZE CONTROL - Base scale multiplier for visibility
     // ============================================
-    const BASE_SCALE_MULTIPLIER = 35;
+    // BASE_SCALE_MULTIPLIER is defined at component level
 
     const box = new THREE.Box3().setFromObject(scene);
     const size = box.getSize(new THREE.Vector3());
@@ -416,7 +441,7 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     const minScale = BASE_SCALE_MULTIPLIER * 0.3; // Minimum 30% of base scale
     scaleX = Math.max(scaleX, minScale);
     scaleY = Math.max(scaleY, minScale);
-    scaleZ = Math.max(scaleZ, minScale * 0.5);
+    scaleZ = Math.max(scaleZ, minScale); // Fixed: Z should use same minimum as X/Y for proper thickness scaling
 
     // Center the model (only once, don't re-center on every update)
     const isFirstLoad =
@@ -437,6 +462,9 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     // Reset scale first to avoid cumulative scaling, then apply new scale
     scene.scale.set(1, 1, 1);
     scene.scale.set(scaleX, scaleY, scaleZ);
+
+    // Force matrix update to ensure thickness changes are immediately visible
+    scene.updateMatrixWorld(true);
 
     // Apply textures to meshes based on their names
     // First pass: Log all mesh names for debugging
@@ -536,12 +564,22 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
         if (isPlaceholderMesh) {
           // Don't apply textures to placeholder meshes - they're just geometry
           // Text/images will be rendered/mapped programmatically into these areas
+          // Text area meshes will get textures applied by CoinTextTexture component
+          // Image placeholder meshes will get textures applied by CoinArtwork component
+
+          child.visible = true; // Ensure mesh is visible
+
           if (process.env.NODE_ENV === "development") {
+            const isTextArea =
+              meshName === "Front_Top_Text_Area" ||
+              meshName === "Front_Bottom_Text_Area" ||
+              meshName === "Back_Top_Text_Area" ||
+              meshName === "Back_Bottom_Text_Area";
             console.log(
-              `  🎯 Placeholder mesh "${meshName}" - skipping texture application`,
+              `  🎯 Placeholder mesh "${meshName}" - ${isTextArea ? "ready for text texture" : "ready for image texture"}`,
             );
           }
-          return; // Skip this mesh
+          return; // Skip texture application (text/images will be applied by CoinTextTexture/CoinArtwork)
         }
 
         // Match meshes by exact GLB names (updated: designer changed _1 to 001 suffix)
@@ -855,9 +893,8 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     topFaceTextures,
     bottomFaceTextures,
     edgeTextures,
-    dimensions,
-    diameter,
-    thickness,
+    dimensions?.coinDiameter,
+    dimensions?.coinThickness,
     materialId,
     validEdgeType,
   ]);
@@ -869,19 +906,67 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     }
   });
 
-  // Get actual positions of text area meshes from the GLB
-  // These meshes are recessed geometry where text should appear
-  const [textAreaPositions, setTextAreaPositions] = React.useState<{
-    frontTop: [number, number, number] | null;
-    frontBottom: [number, number, number] | null;
-    backTop: [number, number, number] | null;
-    backBottom: [number, number, number] | null;
-  }>({
-    frontTop: null,
-    frontBottom: null,
-    backTop: null,
-    backBottom: null,
-  });
+  // Calculate text area positions using designer-provided coordinates
+  // Designer-provided coordinates (in mm):
+  // Front_Top_Text_Area: X: -0.000001 mm, Y: -6.5706 mm, Z: 0.31801 mm
+  // Front_Bottom_Text_Area: X: 0.000001 mm, Y: -6.5706 mm, Z: 0.31801 mm
+  // Back_Top_Text_Area: X: -0 mm, Y: -6.573 mm, Z: -0.23215 mm
+  // Back_Bottom_Text_Area: X: 0 mm, Y: 6.573 mm, Z: -0.23215 mm
+  // Convert mm to units and scale with actual coin dimensions
+  const textAreaPositions = React.useMemo(() => {
+    // Get actual dimensions to calculate scaling ratios
+    const actualDiameter = parseDimension(dimensions?.coinDiameter || "25", 25);
+    const actualThickness = parseDimension(
+      dimensions?.coinThickness || "2.5",
+      2.5,
+    );
+    const baseDiameter = 25; // mm
+    const baseThickness = 2.5; // mm
+
+    const diameterRatio = actualDiameter / baseDiameter;
+    const thicknessRatio = actualThickness / baseThickness;
+
+    // X and Y positions scale with diameter, Z position scales with thickness
+    const frontTopX =
+      mmToUnits(-0.000001) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const frontTopY =
+      mmToUnits(-6.5706) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const frontTopZ =
+      mmToUnits(0.31801) * BASE_SCALE_MULTIPLIER * thicknessRatio;
+
+    const frontBottomX =
+      mmToUnits(0.000001) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const frontBottomY =
+      mmToUnits(-6.5706) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const frontBottomZ =
+      mmToUnits(0.31801) * BASE_SCALE_MULTIPLIER * thicknessRatio;
+
+    const backTopX = mmToUnits(0) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const backTopY = mmToUnits(-6.573) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const backTopZ =
+      mmToUnits(-0.23215) * BASE_SCALE_MULTIPLIER * thicknessRatio;
+
+    const backBottomX = mmToUnits(0) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const backBottomY =
+      mmToUnits(6.573) * BASE_SCALE_MULTIPLIER * diameterRatio;
+    const backBottomZ =
+      mmToUnits(-0.23215) * BASE_SCALE_MULTIPLIER * thicknessRatio;
+
+    return {
+      frontTop: [frontTopX, frontTopY, frontTopZ] as [number, number, number],
+      frontBottom: [frontBottomX, frontBottomY, frontBottomZ] as [
+        number,
+        number,
+        number,
+      ],
+      backTop: [backTopX, backTopY, backTopZ] as [number, number, number],
+      backBottom: [backBottomX, backBottomY, backBottomZ] as [
+        number,
+        number,
+        number,
+      ],
+    };
+  }, [dimensions?.coinDiameter, dimensions?.coinThickness]);
 
   // Get actual positions of image placeholder meshes from the GLB
   const [imagePlaceholderPositions, setImagePlaceholderPositions] =
@@ -902,25 +987,56 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     back: null,
   });
 
-  // Track if we've already extracted positions to prevent infinite loops
-  const positionsExtractedRef = useRef(false);
+  // Store references to text area meshes for direct texture application
+  const [textAreaMeshes, setTextAreaMeshes] = React.useState<{
+    frontTop: THREE.Mesh | null;
+    frontBottom: THREE.Mesh | null;
+    backTop: THREE.Mesh | null;
+    backBottom: THREE.Mesh | null;
+  }>({
+    frontTop: null,
+    frontBottom: null,
+    backTop: null,
+    backBottom: null,
+  });
+
+  // Create object URLs from uploaded images and clean them up
+  const frontImageUrl = useMemo(() => {
+    if (artwork?.front?.previewImage) {
+      return artwork.front.previewImage;
+    }
+    if (artwork?.front?.uploadedImage) {
+      return URL.createObjectURL(artwork.front.uploadedImage);
+    }
+    return null;
+  }, [artwork?.front?.previewImage, artwork?.front?.uploadedImage]);
+
+  const backImageUrl = useMemo(() => {
+    if (artwork?.back?.previewImage) {
+      return artwork.back.previewImage;
+    }
+    if (artwork?.back?.uploadedImage) {
+      return URL.createObjectURL(artwork.back.uploadedImage);
+    }
+    return null;
+  }, [artwork?.back?.previewImage, artwork?.back?.uploadedImage]);
+
+  // Cleanup object URLs when component unmounts or images change
+  useEffect(() => {
+    return () => {
+      if (frontImageUrl && frontImageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(frontImageUrl);
+      }
+      if (backImageUrl && backImageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(backImageUrl);
+      }
+    };
+  }, [frontImageUrl, backImageUrl]);
 
   // Extract positions from placeholder meshes in the GLB
-  // This runs after the scene is loaded and scaled
+  // This runs after the scene is loaded and scaled, and re-runs when dimensions change
   useEffect(() => {
-    if (!scene || positionsExtractedRef.current) return;
-
-    const textAreas: {
-      frontTop: THREE.Vector3 | null;
-      frontBottom: THREE.Vector3 | null;
-      backTop: THREE.Vector3 | null;
-      backBottom: THREE.Vector3 | null;
-    } = {
-      frontTop: null,
-      frontBottom: null,
-      backTop: null,
-      backBottom: null,
-    };
+    if (!scene) return;
 
     const imagePlaceholders: {
       front: THREE.Vector3 | null;
@@ -938,60 +1054,54 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
       back: null,
     };
 
+    const foundTextAreaMeshes: {
+      frontTop: THREE.Mesh | null;
+      frontBottom: THREE.Mesh | null;
+      backTop: THREE.Mesh | null;
+      backBottom: THREE.Mesh | null;
+    } = {
+      frontTop: null,
+      frontBottom: null,
+      backTop: null,
+      backBottom: null,
+    };
+
     // Wait a frame to ensure scene is fully loaded and scaled
     const timeoutId = setTimeout(() => {
       scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           const meshName = child.name;
 
-          // Get world position AFTER scaling (accounting for all parent transforms including scale)
-          const worldPosition = new THREE.Vector3();
-          child.getWorldPosition(worldPosition);
-
-          if (meshName === "Front_Top_Text_Area") {
-            textAreas.frontTop = worldPosition.clone();
-          } else if (meshName === "Front_Bottom_Text_Area") {
-            textAreas.frontBottom = worldPosition.clone();
-          } else if (meshName === "Back_Top_Text_Area") {
-            textAreas.backTop = worldPosition.clone();
-          } else if (meshName === "Back_Bottom_Text_Area") {
-            textAreas.backBottom = worldPosition.clone();
-          } else if (meshName === "Front_Image_Placeholder") {
+          if (meshName === "Front_Image_Placeholder") {
+            // Get world position AFTER scaling (accounting for all parent transforms including scale)
+            const worldPosition = new THREE.Vector3();
+            child.getWorldPosition(worldPosition);
             imagePlaceholders.front = worldPosition.clone();
             foundPlaceholderMeshes.front = child;
           } else if (meshName === "Back_Image_Placeholder") {
+            // Get world position AFTER scaling (accounting for all parent transforms including scale)
+            const worldPosition = new THREE.Vector3();
+            child.getWorldPosition(worldPosition);
             imagePlaceholders.back = worldPosition.clone();
             foundPlaceholderMeshes.back = child;
+          } else if (meshName === "Front_Top_Text_Area") {
+            foundTextAreaMeshes.frontTop = child;
+          } else if (meshName === "Front_Bottom_Text_Area") {
+            foundTextAreaMeshes.frontBottom = child;
+          } else if (meshName === "Back_Top_Text_Area") {
+            foundTextAreaMeshes.backTop = child;
+          } else if (meshName === "Back_Bottom_Text_Area") {
+            foundTextAreaMeshes.backBottom = child;
           }
         }
       });
 
       // Update placeholder meshes state
       setPlaceholderMeshes(foundPlaceholderMeshes);
+      setTextAreaMeshes(foundTextAreaMeshes);
 
-      // Update state with found positions (already scaled)
-      setTextAreaPositions({
-        frontTop: textAreas.frontTop
-          ? [textAreas.frontTop.x, textAreas.frontTop.y, textAreas.frontTop.z]
-          : null,
-        frontBottom: textAreas.frontBottom
-          ? [
-              textAreas.frontBottom.x,
-              textAreas.frontBottom.y,
-              textAreas.frontBottom.z,
-            ]
-          : null,
-        backTop: textAreas.backTop
-          ? [textAreas.backTop.x, textAreas.backTop.y, textAreas.backTop.z]
-          : null,
-        backBottom: textAreas.backBottom
-          ? [
-              textAreas.backBottom.x,
-              textAreas.backBottom.y,
-              textAreas.backBottom.z,
-            ]
-          : null,
-      });
+      // Text area positions are now calculated using designer-provided coordinates in useMemo above
+      // No need to set them here as they're computed directly
 
       setImagePlaceholderPositions({
         front: imagePlaceholders.front
@@ -1010,24 +1120,16 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
           : null,
       });
 
-      // Mark as extracted to prevent re-running
-      positionsExtractedRef.current = true;
-
       if (process.env.NODE_ENV === "development") {
-        console.log("📍 Text Area Positions Found (scaled):", {
-          frontTop: textAreas.frontTop
-            ? `${textAreas.frontTop.x.toFixed(3)}, ${textAreas.frontTop.y.toFixed(3)}, ${textAreas.frontTop.z.toFixed(3)}`
-            : "NOT FOUND",
-          frontBottom: textAreas.frontBottom
-            ? `${textAreas.frontBottom.x.toFixed(3)}, ${textAreas.frontBottom.y.toFixed(3)}, ${textAreas.frontBottom.z.toFixed(3)}`
-            : "NOT FOUND",
-          backTop: textAreas.backTop
-            ? `${textAreas.backTop.x.toFixed(3)}, ${textAreas.backTop.y.toFixed(3)}, ${textAreas.backTop.z.toFixed(3)}`
-            : "NOT FOUND",
-          backBottom: textAreas.backBottom
-            ? `${textAreas.backBottom.x.toFixed(3)}, ${textAreas.backBottom.y.toFixed(3)}, ${textAreas.backBottom.z.toFixed(3)}`
-            : "NOT FOUND",
-        });
+        console.log(
+          "📍 Text Area Positions (Designer Coordinates - converted and scaled):",
+          {
+            frontTop: `${textAreaPositions.frontTop[0].toFixed(3)}, ${textAreaPositions.frontTop[1].toFixed(3)}, ${textAreaPositions.frontTop[2].toFixed(3)}`,
+            frontBottom: `${textAreaPositions.frontBottom[0].toFixed(3)}, ${textAreaPositions.frontBottom[1].toFixed(3)}, ${textAreaPositions.frontBottom[2].toFixed(3)}`,
+            backTop: `${textAreaPositions.backTop[0].toFixed(3)}, ${textAreaPositions.backTop[1].toFixed(3)}, ${textAreaPositions.backTop[2].toFixed(3)}`,
+            backBottom: `${textAreaPositions.backBottom[0].toFixed(3)}, ${textAreaPositions.backBottom[1].toFixed(3)}, ${textAreaPositions.backBottom[2].toFixed(3)}`,
+          },
+        );
         console.log("📍 Image Placeholder Positions Found (scaled):", {
           front: imagePlaceholders.front
             ? `${imagePlaceholders.front.x.toFixed(3)}, ${imagePlaceholders.front.y.toFixed(3)}, ${imagePlaceholders.front.z.toFixed(3)}`
@@ -1044,38 +1146,28 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
             ? `✅ ${foundPlaceholderMeshes.back.name}`
             : "❌ NOT FOUND",
         });
+        console.log("📍 Text Area Meshes Found:", {
+          frontTop: foundTextAreaMeshes.frontTop
+            ? `✅ ${foundTextAreaMeshes.frontTop.name}`
+            : "❌ NOT FOUND",
+          frontBottom: foundTextAreaMeshes.frontBottom
+            ? `✅ ${foundTextAreaMeshes.frontBottom.name}`
+            : "❌ NOT FOUND",
+          backTop: foundTextAreaMeshes.backTop
+            ? `✅ ${foundTextAreaMeshes.backTop.name}`
+            : "❌ NOT FOUND",
+          backBottom: foundTextAreaMeshes.backBottom
+            ? `✅ ${foundTextAreaMeshes.backBottom.name}`
+            : "❌ NOT FOUND",
+        });
       }
     }, 100); // Small delay to ensure scene is scaled
 
     return () => clearTimeout(timeoutId);
-  }, [scene]);
+  }, [scene, dimensions?.coinDiameter, dimensions?.coinThickness]); // Re-run when dimensions change
 
-  // Fallback positions if meshes not found (use calculated positions)sudo systemctl restart nginx
-
-  const BASE_SCALE_MULTIPLIER = 35;
-  const edgeTextRadius = radius * 0.88;
-  const scaledRadius = edgeTextRadius * BASE_SCALE_MULTIPLIER;
-  const scaledThickness = thickness * BASE_SCALE_MULTIPLIER;
-
-  const frontTopPos: [number, number, number] = textAreaPositions.frontTop || [
-    0,
-    scaledRadius,
-    scaledThickness / 2,
-  ];
-  const frontBottomPos: [number, number, number] =
-    textAreaPositions.frontBottom || [0, -scaledRadius, scaledThickness / 2];
-  const backTopPos: [number, number, number] = textAreaPositions.backTop || [
-    0,
-    scaledRadius,
-    -scaledThickness / 2,
-  ];
-  const backBottomPos: [number, number, number] =
-    textAreaPositions.backBottom || [0, -scaledRadius, -scaledThickness / 2];
-
-  const frontImagePos: [number, number, number] | null =
-    imagePlaceholderPositions.front || null;
-  const backImagePos: [number, number, number] | null =
-    imagePlaceholderPositions.back || null;
+  // Text area positions are now set using designer-provided coordinates
+  // No fallback needed as we use exact coordinates from the 3D designer
 
   // Debug logging for text and artwork data (only log when data actually changes)
   const prevTextRingsRef = useRef<string>("");
@@ -1139,85 +1231,107 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
       {/* eslint-disable-next-line react/no-unknown-property */}
       <primitive object={scene} />
 
-      {/* Front Text - Use extracted positions from GLB */}
-      {textRings && !textRings.front.noText && textAreaPositions.frontTop && (
+      {/* Front Text - Apply as texture to text area meshes */}
+      {textRings && !textRings.front.noText && (
         <>
-          {textRings.front.top && textRings.front.top.trim() && (
-            <CoinText
-              text={textRings.front.top}
-              position={textAreaPositions.frontTop}
-              depth={-0.5}
-              fontSize={radius * BASE_SCALE_MULTIPLIER * 0.12}
-              visible={true}
-            />
-          )}
+          {textRings.front.top &&
+            textRings.front.top.trim() &&
+            textAreaMeshes.frontTop && (
+              <CoinTextTexture
+                text={textRings.front.top}
+                side="front"
+                position="top"
+                color={getTextColorForMaterial(materialId)}
+                fontSize={
+                  48 *
+                  (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
+                }
+                placeholderMesh={textAreaMeshes.frontTop}
+                materialId={materialId}
+              />
+            )}
           {textRings.front.bottom &&
             textRings.front.bottom.trim() &&
-            textAreaPositions.frontBottom && (
-              <CoinText
+            textAreaMeshes.frontBottom && (
+              <CoinTextTexture
                 text={textRings.front.bottom}
-                position={textAreaPositions.frontBottom}
-                depth={-0.5}
-                fontSize={radius * BASE_SCALE_MULTIPLIER * 0.12}
-                visible={true}
+                side="front"
+                position="bottom"
+                color={getTextColorForMaterial(materialId)}
+                fontSize={
+                  48 *
+                  (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
+                }
+                placeholderMesh={textAreaMeshes.frontBottom}
+                materialId={materialId}
               />
             )}
         </>
       )}
 
-      {/* Back Text - Use extracted positions from GLB */}
-      {textRings && !textRings.back.noText && textAreaPositions.backTop && (
+      {/* Back Text - Apply as texture to text area meshes */}
+      {textRings && !textRings.back.noText && (
         <>
-          {textRings.back.top && textRings.back.top.trim() && (
-            <CoinText
-              text={textRings.back.top}
-              position={textAreaPositions.backTop}
-              depth={-0.5}
-              fontSize={radius * BASE_SCALE_MULTIPLIER * 0.12}
-              visible={true}
-            />
-          )}
+          {textRings.back.top &&
+            textRings.back.top.trim() &&
+            textAreaMeshes.backTop && (
+              <CoinTextTexture
+                text={textRings.back.top}
+                side="back"
+                position="top"
+                color={getTextColorForMaterial(materialId)}
+                fontSize={
+                  48 *
+                  (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
+                }
+                placeholderMesh={textAreaMeshes.backTop}
+                materialId={materialId}
+              />
+            )}
           {textRings.back.bottom &&
             textRings.back.bottom.trim() &&
-            textAreaPositions.backBottom && (
-              <CoinText
+            textAreaMeshes.backBottom && (
+              <CoinTextTexture
                 text={textRings.back.bottom}
-                position={textAreaPositions.backBottom}
-                depth={-0.5}
-                fontSize={radius * BASE_SCALE_MULTIPLIER * 0.12}
-                visible={true}
+                side="back"
+                position="bottom"
+                color={getTextColorForMaterial(materialId)}
+                fontSize={
+                  48 *
+                  (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
+                }
+                placeholderMesh={textAreaMeshes.backBottom}
+                materialId={materialId}
               />
             )}
         </>
       )}
 
       {/* Front Artwork - Apply texture directly to placeholder mesh */}
-      {artwork?.front?.previewImage &&
-        artwork.front.previewImage.trim() &&
-        placeholderMeshes.front && (
-          <CoinArtwork
-            imageUrl={artwork.front.previewImage}
-            side="front"
-            radius={radius}
-            position={imagePlaceholderPositions.front}
-            reliefType="flat"
-            placeholderMesh={placeholderMeshes.front}
-          />
-        )}
+      {/* Use previewImage if available, otherwise use uploadedImage */}
+      {frontImageUrl && frontImageUrl.trim() && placeholderMeshes.front && (
+        <CoinArtwork
+          imageUrl={frontImageUrl}
+          side="front"
+          radius={radius}
+          position={imagePlaceholderPositions.front}
+          reliefType="flat"
+          placeholderMesh={placeholderMeshes.front}
+        />
+      )}
 
       {/* Back Artwork - Apply texture directly to placeholder mesh */}
-      {artwork?.back?.previewImage &&
-        artwork.back.previewImage.trim() &&
-        placeholderMeshes.back && (
-          <CoinArtwork
-            imageUrl={artwork.back.previewImage}
-            side="back"
-            radius={radius}
-            position={imagePlaceholderPositions.back}
-            reliefType="flat"
-            placeholderMesh={placeholderMeshes.back}
-          />
-        )}
+      {/* Use previewImage if available, otherwise use uploadedImage */}
+      {backImageUrl && backImageUrl.trim() && placeholderMeshes.back && (
+        <CoinArtwork
+          imageUrl={backImageUrl}
+          side="back"
+          radius={radius}
+          position={imagePlaceholderPositions.back}
+          reliefType="flat"
+          placeholderMesh={placeholderMeshes.back}
+        />
+      )}
     </group>
   );
 };

@@ -39,44 +39,46 @@ export const DynamicLighting: React.FC<DynamicLightingProps> = () => {
     const cameraBehind = camera.position.z < 0;
     const isBackSide = viewingBack || cameraBehind;
 
-    // Adjust light positions based on view - use lerp for smooth transitions
+    // Adjust light positions based on view - optimized for front side visibility
+    // Front side: lighting from angles that properly illuminate the front face
+    // Back side: lighting from opposite angles
     if (keyLightRef.current) {
       const targetPos = isBackSide
-        ? new THREE.Vector3(-10, 10, -10) // Back side: light from opposite direction
-        : new THREE.Vector3(10, 10, 10); // Front side: normal lighting
+        ? new THREE.Vector3(-12, 12, -4) // Back side: from top-left-back
+        : new THREE.Vector3(10, 12, 8); // Front side: from top-right-front (illuminates front properly)
 
-      keyLightRef.current.position.lerp(targetPos, 0.1); // Smooth transition
+      keyLightRef.current.position.lerp(targetPos, 0.15);
     }
 
     if (fillLightRef.current) {
       const targetPos = isBackSide
-        ? new THREE.Vector3(8, 5, -8) // Back side: flipped fill
-        : new THREE.Vector3(-8, 5, 8); // Front side: normal fill
+        ? new THREE.Vector3(10, 10, -2) // Back side: from right-back
+        : new THREE.Vector3(-8, 10, 6); // Front side: from top-left-front (soft fill for front)
 
-      fillLightRef.current.position.lerp(targetPos, 0.1); // Smooth transition
+      fillLightRef.current.position.lerp(targetPos, 0.15);
     }
 
     if (rimLightRef.current) {
       const targetPos = isBackSide
-        ? new THREE.Vector3(0, -8, 10) // Back side: rim from front
-        : new THREE.Vector3(0, -8, -10); // Front side: rim from back
+        ? new THREE.Vector3(0, -8, 8) // Back side: rim from front
+        : new THREE.Vector3(0, -8, -8); // Front side: rim from back (defines front edges)
 
-      rimLightRef.current.position.lerp(targetPos, 0.1); // Smooth transition
+      rimLightRef.current.position.lerp(targetPos, 0.15);
     }
   });
 
   return (
     <>
-      {/* Ambient Light - Same for both sides */}
+      {/* Ambient Light - Increased for better front visibility */}
       {/* eslint-disable-next-line react/no-unknown-property */}
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.6} />
 
-      {/* Key Light - Main illumination (flips based on view) */}
+      {/* Key Light - Main illumination (front: top-right-front, back: top-left-back) */}
       {/* eslint-disable-next-line react/no-unknown-property */}
       <directionalLight
         ref={keyLightRef}
         // eslint-disable-next-line react/no-unknown-property
-        position={[10, 10, 10]}
+        position={[10, 12, 8]}
         // eslint-disable-next-line react/no-unknown-property
         intensity={1.2}
         color={0xffffff}
@@ -84,39 +86,61 @@ export const DynamicLighting: React.FC<DynamicLightingProps> = () => {
         castShadow={false}
       />
 
-      {/* Fill Light - Soft fill from opposite side (flips based on view) */}
+      {/* Fill Light - Soft fill (front: top-left-front, back: right-back) */}
       {/* eslint-disable-next-line react/no-unknown-property */}
       <directionalLight
         ref={fillLightRef}
         // eslint-disable-next-line react/no-unknown-property
-        position={[-8, 5, 8]}
+        position={[-8, 10, 6]}
         // eslint-disable-next-line react/no-unknown-property
-        intensity={0.6}
+        intensity={0.8}
         color={0xfff5e6} // Warm fill
         // eslint-disable-next-line react/no-unknown-property
         castShadow={false}
       />
 
-      {/* Rim Light - Edge definition (flips based on view) */}
+      {/* Rim Light - Edge definition (front: from back, back: from front) */}
       {/* eslint-disable-next-line react/no-unknown-property */}
       <directionalLight
         ref={rimLightRef}
         // eslint-disable-next-line react/no-unknown-property
-        position={[0, -8, -10]}
+        position={[0, -8, -8]}
         // eslint-disable-next-line react/no-unknown-property
-        intensity={0.5}
+        intensity={0.6}
         color={0xe0f2fe} // Cool rim light
         // eslint-disable-next-line react/no-unknown-property
         castShadow={false}
       />
 
-      {/* Top Light - Always from top */}
+      {/* Top Light - From top-left to avoid center hotspot */}
       {/* eslint-disable-next-line react/no-unknown-property */}
       <directionalLight
         // eslint-disable-next-line react/no-unknown-property
-        position={[0, 12, 0]}
+        position={[6, 12, 0]}
         // eslint-disable-next-line react/no-unknown-property
-        intensity={0.7}
+        intensity={0.5}
+        color={0xffffff}
+        // eslint-disable-next-line react/no-unknown-property
+        castShadow={false}
+      />
+
+      {/* Side Lights - Left and right for better edge visibility, angled to avoid center */}
+      {/* eslint-disable-next-line react/no-unknown-property */}
+      <directionalLight
+        // eslint-disable-next-line react/no-unknown-property
+        position={[12, 6, 0]}
+        // eslint-disable-next-line react/no-unknown-property
+        intensity={0.6}
+        color={0xffffff}
+        // eslint-disable-next-line react/no-unknown-property
+        castShadow={false}
+      />
+      {/* eslint-disable-next-line react/no-unknown-property */}
+      <directionalLight
+        // eslint-disable-next-line react/no-unknown-property
+        position={[-12, 6, 0]}
+        // eslint-disable-next-line react/no-unknown-property
+        intensity={0.6}
         color={0xffffff}
         // eslint-disable-next-line react/no-unknown-property
         castShadow={false}

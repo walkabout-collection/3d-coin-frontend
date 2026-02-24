@@ -42,8 +42,17 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
         // Center the texture on the placeholder mesh
         // The placeholder mesh should have centered UVs (0.5, 0.5 is center)
         // We want to fit the image to cover the placeholder while maintaining aspect ratio
-        const imageAspect =
-          loadedTexture.image.width / loadedTexture.image.height;
+        // Type guard for texture image to access width and height
+        const image = loadedTexture.image as
+          | HTMLImageElement
+          | HTMLCanvasElement
+          | HTMLVideoElement
+          | ImageBitmap
+          | null;
+        const imageElement = image instanceof HTMLImageElement ? image : null;
+        const imageAspect = imageElement
+          ? imageElement.width / imageElement.height
+          : 1;
 
         // Placeholder mesh is circular/square (1:1 aspect ratio)
         // Strategy: Fit image to cover the entire placeholder area, centered
@@ -116,13 +125,26 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
       placeholderMesh.visible = true;
 
       if (process.env.NODE_ENV === "development") {
+        // Type guard for texture image to access width and height
+        const image = texture.image as
+          | HTMLImageElement
+          | HTMLCanvasElement
+          | HTMLVideoElement
+          | ImageBitmap
+          | null;
+        const imageElement = image instanceof HTMLImageElement ? image : null;
+        const textureSize = imageElement
+          ? `${imageElement.width}x${imageElement.height}`
+          : "unknown";
+        const aspectRatio = imageElement
+          ? (imageElement.width / imageElement.height).toFixed(2)
+          : "unknown";
+
         console.log(
           `✅ Applied artwork texture to ${side} image placeholder (${placeholderMesh.name})`,
           {
-            textureSize: `${texture.image.width}x${texture.image.height}`,
-            aspectRatio: (texture.image.width / texture.image.height).toFixed(
-              2,
-            ),
+            textureSize,
+            aspectRatio,
             repeat: `(${texture.repeat.x.toFixed(2)}, ${texture.repeat.y.toFixed(2)})`,
             offset: `(${texture.offset.x.toFixed(2)}, ${texture.offset.y.toFixed(2)})`,
           },
