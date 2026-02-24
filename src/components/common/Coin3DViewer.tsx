@@ -18,8 +18,14 @@ interface TextRings {
 }
 
 interface Artwork {
-  front: { previewImage: string | null };
-  back: { previewImage: string | null };
+  front: {
+    previewImage: string | null;
+    uploadedImage: File | null;
+  };
+  back: {
+    previewImage: string | null;
+    uploadedImage: File | null;
+  };
 }
 
 interface Coin3DViewerProps {

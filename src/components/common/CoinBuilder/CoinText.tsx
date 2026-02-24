@@ -26,7 +26,7 @@ export const CoinText: React.FC<CoinTextProps> = ({
 
   // Create embossed/engraved text effect
   const textLayers = useMemo(() => {
-    const layers: JSX.Element[] = [];
+    const layers: React.ReactElement[] = [];
 
     if (depth > 0) {
       // Embossed (raised) - create shadow layer first

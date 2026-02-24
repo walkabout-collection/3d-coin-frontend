@@ -24,10 +24,12 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
   placeholderMesh,
 }) => {
   const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
+  const [alphaMap, setAlphaMap] = React.useState<THREE.Texture | null>(null);
 
   useEffect(() => {
     if (!imageUrl) {
       setTexture(null);
+      setAlphaMap(null);
       return;
     }
 
@@ -38,6 +40,8 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
         loadedTexture.flipY = false;
         loadedTexture.wrapS = THREE.ClampToEdgeWrapping;
         loadedTexture.wrapT = THREE.ClampToEdgeWrapping;
+        // CRITICAL: Preserve original sRGB color space
+        loadedTexture.colorSpace = THREE.SRGBColorSpace;
 
         // Get image dimensions
         const image = loadedTexture.image as
@@ -71,76 +75,93 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
         }
 
         // Enable image smoothing for better quality
+        // Use pixel-perfect rendering to preserve exact colors
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
+        // Ensure no color space conversion during canvas operations
+        // Canvas operations preserve original pixel colors
 
-        // Create circular clipping path first
         const centerX = canvasSize / 2;
         const centerY = canvasSize / 2;
-        const circleRadius = canvasSize / 2;
+        // Use full canvas size as radius to maximize circular area
+        const circleRadius = canvasSize;
 
-        // Start with circular clipping path to ensure perfect circle
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
-        ctx.clip();
+        // STEP 1: Create image texture in COVER mode (no masking)
+        // Scale image uniformly to completely fill the circular area with no gaps
+        // The image will be scaled so the smaller dimension fills the circle diameter
+        // The larger dimension will extend beyond and be clipped by the alpha map
+        ctx.clearRect(0, 0, canvasSize, canvasSize);
 
-        // Calculate image positioning to fill the entire circle while maintaining aspect ratio
-        // Strategy: Scale image to cover the entire circle (cover mode, not fit mode)
-        let drawX = 0;
-        let drawY = 0;
-        let drawWidth = canvasSize;
-        let drawHeight = canvasSize;
+        // Calculate scale to ensure image completely covers the circle
+        // Use the larger scale factor to guarantee full coverage
+        const scaleX = canvasSize / imageElement.width;
+        const scaleY = canvasSize / imageElement.height;
+        const scale = Math.max(scaleX, scaleY); // Use larger scale to ensure full coverage
 
-        if (imageAspect > 1) {
-          // Image is wider than tall - scale to cover width, may crop top/bottom
-          drawHeight = canvasSize / imageAspect;
-          drawY = (canvasSize - drawHeight) / 2;
-        } else if (imageAspect < 1) {
-          // Image is taller than wide - scale to cover height, may crop left/right
-          drawWidth = canvasSize * imageAspect;
-          drawX = (canvasSize - drawWidth) / 2;
-        }
-        // If square, no adjustment needed
+        // Calculate dimensions after scaling
+        const drawWidth = imageElement.width * scale;
+        const drawHeight = imageElement.height * scale;
 
-        // Draw the image onto the canvas (will be clipped to circle)
+        // Center the image (may extend beyond canvas boundaries - that's OK for cover mode)
+        const drawX = (canvasSize - drawWidth) / 2;
+        const drawY = (canvasSize - drawHeight) / 2;
+
+        // Draw the full scaled image (cover mode - fills entire circle, may extend beyond)
+        // This ensures no empty margins, padding, or gaps within the circular area
         ctx.drawImage(imageElement, drawX, drawY, drawWidth, drawHeight);
 
-        // Apply additional circular mask using composite operation for clean edges
-        // This ensures perfect circular shape with anti-aliasing
-        const maskCanvas = document.createElement("canvas");
-        maskCanvas.width = canvasSize;
-        maskCanvas.height = canvasSize;
-        const maskCtx = maskCanvas.getContext("2d");
+        // Create image texture (full image, no masking)
+        const imageTexture = new THREE.CanvasTexture(canvas);
+        imageTexture.flipY = false;
+        imageTexture.wrapS = THREE.ClampToEdgeWrapping;
+        imageTexture.wrapT = THREE.ClampToEdgeWrapping;
+        imageTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        imageTexture.magFilter = THREE.LinearFilter;
+        imageTexture.generateMipmaps = true;
+        // CRITICAL: Preserve sRGB color space - do not convert to linear
+        imageTexture.colorSpace = THREE.SRGBColorSpace;
+        imageTexture.needsUpdate = true;
 
-        if (maskCtx) {
-          // Create white circle on transparent background
-          maskCtx.fillStyle = "white";
-          maskCtx.beginPath();
-          maskCtx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
-          maskCtx.fill();
+        setTexture(imageTexture);
 
-          // Apply mask using destination-in to keep only the circular area
-          ctx.globalCompositeOperation = "destination-in";
-          ctx.drawImage(maskCanvas, 0, 0);
-          ctx.globalCompositeOperation = "source-over";
+        // STEP 2: Create separate alpha map texture (white circle on transparent background)
+        const alphaCanvas = document.createElement("canvas");
+        alphaCanvas.width = canvasSize;
+        alphaCanvas.height = canvasSize;
+        const alphaCtx = alphaCanvas.getContext("2d", {
+          willReadFrequently: true,
+        });
+
+        if (alphaCtx) {
+          // Clear with transparent background
+          alphaCtx.clearRect(0, 0, canvasSize, canvasSize);
+
+          // Create perfect white circle on transparent background
+          // White = fully opaque (alpha = 1), transparent = fully transparent (alpha = 0)
+          alphaCtx.fillStyle = "white";
+          alphaCtx.beginPath();
+          alphaCtx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
+          alphaCtx.fill();
+
+          // Create alpha map texture
+          const alphaMapTexture = new THREE.CanvasTexture(alphaCanvas);
+          alphaMapTexture.flipY = false;
+          alphaMapTexture.wrapS = THREE.ClampToEdgeWrapping;
+          alphaMapTexture.wrapT = THREE.ClampToEdgeWrapping;
+          alphaMapTexture.minFilter = THREE.LinearMipmapLinearFilter;
+          alphaMapTexture.magFilter = THREE.LinearFilter;
+          alphaMapTexture.generateMipmaps = true;
+          // Alpha maps don't need color space conversion
+          alphaMapTexture.needsUpdate = true;
+
+          setAlphaMap(alphaMapTexture);
         }
-
-        // Create texture from the circular canvas
-        const circularTexture = new THREE.CanvasTexture(canvas);
-        circularTexture.flipY = false;
-        circularTexture.wrapS = THREE.ClampToEdgeWrapping;
-        circularTexture.wrapT = THREE.ClampToEdgeWrapping;
-        circularTexture.minFilter = THREE.LinearMipmapLinearFilter;
-        circularTexture.magFilter = THREE.LinearFilter;
-        circularTexture.generateMipmaps = true;
-        circularTexture.needsUpdate = true;
-
-        setTexture(circularTexture);
       },
       undefined,
       (error) => {
         console.error("Failed to load artwork:", error);
         setTexture(null);
+        setAlphaMap(null);
       },
     );
   }, [imageUrl]);
@@ -156,83 +177,109 @@ export const CoinArtwork: React.FC<CoinArtworkProps> = ({
       return;
     }
 
-    if (!texture) {
+    if (!texture || !alphaMap) {
       if (process.env.NODE_ENV === "development") {
-        console.warn(`⚠️ Texture not loaded for ${side} side artwork`);
+        if (!texture) {
+          console.warn(`⚠️ Texture not loaded for ${side} side artwork`);
+        }
+        if (!alphaMap) {
+          console.warn(`⚠️ Alpha map not loaded for ${side} side artwork`);
+        }
       }
       return;
     }
 
     const material = placeholderMesh.material;
 
-    if (material instanceof THREE.MeshStandardMaterial) {
-      // Clone material to avoid affecting other meshes
-      const clonedMaterial = material.clone();
-      clonedMaterial.map = texture;
-      // Enable transparency to show circular mask edges
-      clonedMaterial.transparent = true;
-      clonedMaterial.opacity = 1;
-      // Use alphaTest to ensure clean circular edges
-      clonedMaterial.alphaTest = 0.01;
-      // Adjust material properties for natural image visibility
-      clonedMaterial.metalness = 0.0;
-      clonedMaterial.roughness = 0.7;
-      clonedMaterial.emissive = new THREE.Color(0.0, 0.0, 0.0);
-      clonedMaterial.emissiveIntensity = 0.0;
-      clonedMaterial.color = new THREE.Color(1.0, 1.0, 1.0);
-      clonedMaterial.needsUpdate = true;
+    // CRITICAL: Use MeshBasicMaterial for lighting-independent artwork rendering
+    // MeshBasicMaterial displays textures exactly as provided, unaffected by scene lighting
+    // This ensures artwork colors remain identical to the source image
 
-      if (reliefType === "embossed") {
-        clonedMaterial.normalMap = texture;
-        clonedMaterial.normalScale = new THREE.Vector2(0.5, 0.5);
-      } else if (reliefType === "engraved") {
-        clonedMaterial.color = new THREE.Color(0.7, 0.7, 0.7);
-      }
-
-      placeholderMesh.material = clonedMaterial;
-      placeholderMesh.visible = true;
-
-      if (process.env.NODE_ENV === "development") {
-        // Type guard for texture image to access width and height
-        const image = texture.image as
-          | HTMLImageElement
-          | HTMLCanvasElement
-          | HTMLVideoElement
-          | ImageBitmap
-          | null;
-        const imageElement = image instanceof HTMLImageElement ? image : null;
-        const textureSize = imageElement
-          ? `${imageElement.width}x${imageElement.height}`
-          : "unknown";
-        const aspectRatio = imageElement
-          ? (imageElement.width / imageElement.height).toFixed(2)
-          : "unknown";
-
-        console.log(
-          `✅ Applied artwork texture to ${side} image placeholder (${placeholderMesh.name})`,
-          {
-            textureSize,
-            aspectRatio,
-            repeat: `(${texture.repeat.x.toFixed(2)}, ${texture.repeat.y.toFixed(2)})`,
-            offset: `(${texture.offset.x.toFixed(2)}, ${texture.offset.y.toFixed(2)})`,
-          },
-        );
-      }
-    } else {
-      if (process.env.NODE_ENV === "development") {
-        console.warn(
-          `⚠️ Placeholder mesh material is not MeshStandardMaterial for ${side} side`,
-        );
-      }
+    // Ensure texture color space is preserved
+    if (texture.colorSpace !== THREE.SRGBColorSpace) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
     }
 
+    // Create a new MeshBasicMaterial (lighting-independent)
+    // RECOMMENDED APPROACH: Circular Mask via Alpha Map (Option A)
+    // This preserves performance and visual quality
+    // Reference: material.map = imageTexture, material.alphaMap = circleMaskTexture, material.transparent = true
+    const artworkMaterial = new THREE.MeshBasicMaterial({
+      map: texture, // Full image texture in cover mode (no masking on image itself)
+      alphaMap: alphaMap, // Circular alpha mask (white circle = opaque, transparent = transparent)
+      // Enable transparency to use alphaMap (REQUIRED for alphaMap to work)
+      transparent: true,
+      opacity: 1,
+      // Use low alphaTest for smooth edges (alphaMap handles the circular shape)
+      alphaTest: 0.01,
+      // CRITICAL: White base color (1,1,1) = no color tinting
+      // This ensures the texture colors are displayed exactly as provided
+      color: new THREE.Color(1.0, 1.0, 1.0),
+      // Disable tone mapping to prevent any color shifts
+      toneMapped: false, // Prevents tone mapping from altering artwork colors
+      // Side: DoubleSide to ensure visibility from both angles
+      side: THREE.DoubleSide,
+    });
+
+    // Note: Relief effects (embossed/engraved) are not applied with MeshBasicMaterial
+    // as they require lighting-dependent materials. For color preservation, we prioritize
+    // exact color matching over relief effects. If relief is needed, it would require
+    // a different approach that maintains color accuracy.
+
+    placeholderMesh.material = artworkMaterial;
+    placeholderMesh.visible = true;
+
+    if (process.env.NODE_ENV === "development") {
+      // Type guard for texture image to access width and height
+      const image = texture.image as
+        | HTMLImageElement
+        | HTMLCanvasElement
+        | HTMLVideoElement
+        | ImageBitmap
+        | null;
+      const imageElement = image instanceof HTMLImageElement ? image : null;
+      const textureSize = imageElement
+        ? `${imageElement.width}x${imageElement.height}`
+        : "unknown";
+      const aspectRatio = imageElement
+        ? (imageElement.width / imageElement.height).toFixed(2)
+        : "unknown";
+
+      console.log(
+        `✅ Applied lighting-independent artwork texture to ${side} image placeholder (${placeholderMesh.name})`,
+        {
+          materialType: "MeshBasicMaterial (lighting-independent)",
+          textureSize,
+          aspectRatio,
+          colorSpace: texture.colorSpace,
+          toneMapped: artworkMaterial.toneMapped,
+        },
+      );
+    }
+    // Material is now MeshBasicMaterial (lighting-independent)
+    // No need to check material type since we create a new one
+
     return () => {
-      // Cleanup: restore original material when component unmounts
-      if (placeholderMesh && material) {
-        placeholderMesh.material = material;
+      // Cleanup: dispose of artwork material and restore original material when component unmounts
+      if (placeholderMesh) {
+        // Dispose of the artwork material to free memory
+        if (placeholderMesh.material instanceof THREE.Material) {
+          placeholderMesh.material.dispose();
+        }
+        // Restore original material if available
+        if (material) {
+          placeholderMesh.material = material;
+        }
       }
     };
-  }, [texture, placeholderMesh, side, reliefType]);
+  }, [
+    texture?.uuid ?? null,
+    alphaMap?.uuid ?? null,
+    placeholderMesh?.uuid ?? null,
+    side,
+    reliefType,
+  ]);
 
   // Return null - we're modifying the existing mesh, not creating a new one
   return null;
