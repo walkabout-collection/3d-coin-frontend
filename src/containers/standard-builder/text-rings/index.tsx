@@ -15,17 +15,23 @@ const TextRings = () => {
 
   const { front, back } = textRings;
 
+  const MAX_CHARACTERS = 18;
+
   const handleFrontChange = (field: "top" | "bottom", value: string) => {
+    // Limit to 18 characters maximum
+    const limitedValue = value.slice(0, MAX_CHARACTERS);
     setTextRings({
       ...textRings,
-      front: { ...front, [field]: value },
+      front: { ...front, [field]: limitedValue },
     });
   };
 
   const handleBackChange = (field: "top" | "bottom", value: string) => {
+    // Limit to 18 characters maximum
+    const limitedValue = value.slice(0, MAX_CHARACTERS);
     setTextRings({
       ...textRings,
-      back: { ...back, [field]: value },
+      back: { ...back, [field]: limitedValue },
     });
   };
 
@@ -136,7 +142,20 @@ const TextRings = () => {
                 value={front.top}
                 onChange={(e) => handleFrontChange("top", e.target.value)}
                 disabled={front.noText}
+                maxLength={MAX_CHARACTERS}
               />
+              <p
+                className={`text-xs mt-1 ${
+                  front.top.length === MAX_CHARACTERS
+                    ? "text-red-500 font-semibold"
+                    : "text-gray-500"
+                }`}
+              >
+                {front.top.length}/{MAX_CHARACTERS} characters
+                {front.top.length === MAX_CHARACTERS && (
+                  <span className="ml-1">(Maximum reached)</span>
+                )}
+              </p>
 
               <div className="mb-6">
                 <label className="block text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide">
@@ -150,7 +169,20 @@ const TextRings = () => {
                   value={front.bottom}
                   onChange={(e) => handleFrontChange("bottom", e.target.value)}
                   disabled={front.noText}
+                  maxLength={MAX_CHARACTERS}
                 />
+                <p
+                  className={`text-xs mt-1 ${
+                    front.bottom.length === MAX_CHARACTERS
+                      ? "text-red-500 font-semibold"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {front.bottom.length}/{MAX_CHARACTERS} characters
+                  {front.bottom.length === MAX_CHARACTERS && (
+                    <span className="ml-1">(Maximum reached)</span>
+                  )}
+                </p>
               </div>
               <label className="flex items-start space-x-3 ">
                 <input
@@ -191,7 +223,20 @@ const TextRings = () => {
                 value={back.top}
                 onChange={(e) => handleBackChange("top", e.target.value)}
                 disabled={back.noText}
+                maxLength={MAX_CHARACTERS}
               />
+              <p
+                className={`text-xs mt-1 ${
+                  back.top.length === MAX_CHARACTERS
+                    ? "text-red-500 font-semibold"
+                    : "text-gray-500"
+                }`}
+              >
+                {back.top.length}/{MAX_CHARACTERS} characters
+                {back.top.length === MAX_CHARACTERS && (
+                  <span className="ml-1">(Maximum reached)</span>
+                )}
+              </p>
               <div className="mb-6">
                 <label className="block text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide">
                   Bottom
@@ -204,7 +249,20 @@ const TextRings = () => {
                   value={back.bottom}
                   onChange={(e) => handleBackChange("bottom", e.target.value)}
                   disabled={back.noText}
+                  maxLength={MAX_CHARACTERS}
                 />
+                <p
+                  className={`text-xs mt-1 ${
+                    back.bottom.length === MAX_CHARACTERS
+                      ? "text-red-500 font-semibold"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {back.bottom.length}/{MAX_CHARACTERS} characters
+                  {back.bottom.length === MAX_CHARACTERS && (
+                    <span className="ml-1">(Maximum reached)</span>
+                  )}
+                </p>
               </div>
               <label className="flex items-start space-x-3 mt-2">
                 <input

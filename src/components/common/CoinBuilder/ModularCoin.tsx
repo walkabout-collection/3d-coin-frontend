@@ -1243,7 +1243,7 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
                 position="top"
                 color={getTextColorForMaterial(materialId)}
                 fontSize={
-                  48 *
+                  72 *
                   (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
                 }
                 placeholderMesh={textAreaMeshes.frontTop}
@@ -1259,7 +1259,7 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
                 position="bottom"
                 color={getTextColorForMaterial(materialId)}
                 fontSize={
-                  48 *
+                  72 *
                   (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
                 }
                 placeholderMesh={textAreaMeshes.frontBottom}
@@ -1281,7 +1281,7 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
                 position="top"
                 color={getTextColorForMaterial(materialId)}
                 fontSize={
-                  48 *
+                  72 *
                   (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
                 }
                 placeholderMesh={textAreaMeshes.backTop}
@@ -1297,7 +1297,7 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
                 position="bottom"
                 color={getTextColorForMaterial(materialId)}
                 fontSize={
-                  48 *
+                  72 *
                   (parseDimension(dimensions?.coinDiameter || "25", 25) / 25)
                 }
                 placeholderMesh={textAreaMeshes.backBottom}
