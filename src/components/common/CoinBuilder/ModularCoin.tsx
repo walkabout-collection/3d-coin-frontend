@@ -404,18 +404,24 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
 
     // Calculate scale ratios based on actual vs base dimensions
     // IMPORTANT: These must be completely independent
-    // - Diameter ratio ONLY affects X and Y axes (coin width/depth)
-    // - Thickness ratio ONLY affects Z axis (coin height/thickness)
+    // Model orientation: Coin is lying flat (like on a table)
+    // - X and Z axes = diameter (coin's circular face - horizontal plane)
+    // - Y axis = thickness (coin height - vertical axis)
     const diameterRatio = actualDiameter / baseDiameter;
     const thicknessRatio = actualThickness / baseThickness;
 
-    // Apply scaling - DIAMETER affects X/Y, THICKNESS affects Z
-    // Coin model is assumed to be oriented with:
-    // - X and Y axes = diameter (horizontal plane)
-    // - Z axis = thickness (vertical/height)
-    let scaleX = BASE_SCALE_MULTIPLIER * diameterRatio; // Diameter only
-    let scaleY = BASE_SCALE_MULTIPLIER * diameterRatio; // Diameter only
-    let scaleZ = BASE_SCALE_MULTIPLIER * thicknessRatio; // Thickness only
+    // Apply scaling using RAF (Relative Axis Factor) pattern
+    // CORRECT APPROACH: Diameter controls X & Z, Thickness controls Y
+    // - X and Z axes = diameter (coin's circular face) - UNCHANGED by thickness
+    // - Y axis = thickness (coin height/vertical) - ONLY axis modified for thickness adjustments
+    // This ensures proportional alignment of connected meshes is preserved
+    // Pattern: group.scale.set(x, y, z) where:
+    //   x = diameter (first parameter - coin face width)
+    //   y = thickness (second parameter - coin height/vertical - THIS controls thickness!)
+    //   z = diameter (third parameter - coin face depth)
+    let scaleX = BASE_SCALE_MULTIPLIER * diameterRatio; // X-axis: diameter only
+    let scaleY = BASE_SCALE_MULTIPLIER * thicknessRatio; // Y-axis: thickness only (vertical axis - THIS controls thickness!)
+    let scaleZ = BASE_SCALE_MULTIPLIER * diameterRatio; // Z-axis: diameter only
 
     // Debug: Log model size and scaling to verify orientation
     if (process.env.NODE_ENV === "development") {
@@ -460,8 +466,13 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     }
 
     // Reset scale first to avoid cumulative scaling, then apply new scale
+    // RAF pattern: group.scale.set(x, y, z)
+    //   x = diameter (first parameter - coin face width)
+    //   y = thickness (second parameter - coin height/vertical) - ONLY this changes with thickness
+    //   z = diameter (third parameter - coin face depth)
+    // X and Z remain unchanged when adjusting thickness, preserving proportional alignment
     scene.scale.set(1, 1, 1);
-    scene.scale.set(scaleX, scaleY, scaleZ);
+    scene.scale.set(scaleX, scaleY, scaleZ); // Only Y-axis (second parameter) changes with thickness
 
     // Force matrix update to ensure thickness changes are immediately visible
     scene.updateMatrixWorld(true);

@@ -10,6 +10,7 @@ interface CoinTextTextureProps {
   fontSize?: number;
   placeholderMesh?: THREE.Mesh | null;
   materialId?: string;
+  coinThickness?: number; // Coin thickness in mm, used to control z-axis height of text
 }
 
 /**
@@ -201,6 +202,7 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
   fontSize = 72,
   placeholderMesh,
   materialId = "gold",
+  coinThickness = 2.5, // Default thickness in mm
 }) => {
   // Get material-specific text colors that are darker/richer for realistic minted appearance
   // These colors provide high contrast while maintaining premium, natural appearance
@@ -275,6 +277,21 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
         };
     }
   };
+
+  // Calculate z-axis height based on coin thickness
+  // Thickness is controlled at group level via RAF (Relative Axis Factor) scale parameter
+  // Y-axis (second parameter) controls thickness: group.scale.set(x, y, z)
+  // Base thickness is 2.5mm, scale text height proportionally
+  // Note: Actual thickness will be read from group scale in useEffect if prop not provided
+  const baseThickness = 2.5; // mm
+  const thicknessRatio = (coinThickness || baseThickness) / baseThickness;
+  // Calculate bump scale: base value * thickness ratio
+  // Increased base values for more noticeable difference when thickness changes
+  const calculatedBumpScale = 0.8 * thicknessRatio; // Increased from 0.3 for clearer difference
+  // Calculate normal map depth: base value * thickness ratio
+  const calculatedNormalDepth = 4.0 * thicknessRatio; // Increased from 2.5 for more pronounced effect
+  // Calculate normal scale: base value * thickness ratio
+  const calculatedNormalScale = 3.5 * thicknessRatio; // Increased from 2.0 for clearer visual difference
 
   // Generate textures for 3D extrusion effect
   const textures = useMemo(() => {
@@ -504,9 +521,22 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
     const processedImageData = new ImageData(processedData, width, height);
     ctx.putImageData(processedImageData, 0, 0);
 
-    // Generate enhanced normal map for subtle printed text lighting (visual depth only)
-    // Reduced depth for flat printed appearance
-    const normalCanvas = generateNormalMap(canvas, 0.5);
+    // Create main texture from canvas (for color) with enhanced quality
+    // This is the text texture generated from the HTML canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.flipY = false; // GLB/GLTF uses bottom-left origin
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = true;
+    texture.anisotropy = 8; // Higher anisotropy for better quality
+    texture.colorSpace = THREE.SRGBColorSpace; // Preserve color accuracy
+
+    // Use the text texture directly for normal map to create raised/embossed effect
+    // Generate normal map from text canvas - this simulates the lighting on raised text
+    // Depth scales with coin thickness for proportional z-axis height
+    const normalCanvas = generateNormalMap(canvas, calculatedNormalDepth);
     const normalTexture = new THREE.CanvasTexture(normalCanvas);
     normalTexture.flipY = false;
     normalTexture.wrapS = THREE.ClampToEdgeWrapping;
@@ -514,23 +544,37 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
     normalTexture.minFilter = THREE.LinearMipmapLinearFilter;
     normalTexture.magFilter = THREE.LinearFilter;
     normalTexture.generateMipmaps = true;
-    normalTexture.anisotropy = 8; // Higher anisotropy for better quality
+    normalTexture.anisotropy = 8;
     normalTexture.colorSpace = THREE.SRGBColorSpace;
 
-    // Generate roughness map for subtle surface variation (text slightly less reflective)
+    // Use the text texture directly for bump map to create raised/embossed effect
+    // The text texture itself is used as the bump map (grayscale conversion happens automatically)
+    // We'll use positive bumpScale to make text appear raised above the surface
+    const bumpTexture = texture.clone(); // Use the same texture as bump map
+    bumpTexture.flipY = false;
+    bumpTexture.wrapS = THREE.ClampToEdgeWrapping;
+    bumpTexture.wrapT = THREE.ClampToEdgeWrapping;
+    bumpTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    bumpTexture.magFilter = THREE.LinearFilter;
+    bumpTexture.generateMipmaps = true;
+    bumpTexture.anisotropy = 8;
+
+    // Use the text texture for roughness/metalness variation map
+    // Text areas can have different roughness to enhance the carved appearance
     const roughnessCanvas = document.createElement("canvas");
     roughnessCanvas.width = canvasSize;
     roughnessCanvas.height = canvasSize;
     const roughnessCtx = roughnessCanvas.getContext("2d");
     if (roughnessCtx) {
-      // Create a subtle roughness variation - text areas slightly rougher for printed look
+      // Use the text canvas directly - text areas get different roughness
       const sourceImageData = ctx.getImageData(0, 0, canvasSize, canvasSize);
       const sourceData = sourceImageData.data;
       const roughnessData = new Uint8ClampedArray(canvasSize * canvasSize * 4);
 
       for (let i = 0; i < sourceData.length; i += 4) {
         const alpha = sourceData[i + 3] / 255;
-        // Text areas: slightly higher roughness (0.3-0.4), background: use base material
+        // Text areas: slightly higher roughness for carved appearance (less reflective in recesses)
+        // Background: use base material (0 = fully smooth)
         const roughnessValue = alpha > 0.1 ? Math.floor(128 + alpha * 64) : 0; // 128-192 range
         roughnessData[i] = roughnessValue; // R
         roughnessData[i + 1] = roughnessValue; // G
@@ -555,25 +599,17 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
     roughnessTexture.generateMipmaps = true;
     roughnessTexture.anisotropy = 8;
 
-    // Create main texture from canvas (for color) with enhanced quality
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.flipY = false; // GLB/GLTF uses bottom-left origin
-    texture.wrapS = THREE.ClampToEdgeWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.minFilter = THREE.LinearMipmapLinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.generateMipmaps = true;
-    texture.anisotropy = 8; // Higher anisotropy for better quality
-    texture.colorSpace = THREE.SRGBColorSpace; // Preserve color accuracy
-
     if (process.env.NODE_ENV === "development") {
       console.log(
-        `✅ Created printed text textures for ${side} ${position}: "${text}"`,
+        `✅ Created raised/embossed text textures for ${side} ${position}: "${text}"`,
         {
           canvasSize,
           fontSize,
           color: textColors.base,
           materialId,
+          method:
+            "text texture used for bump map, normal map, and roughness variation",
+          zAxisHeight: "raised above surface",
         },
       );
     }
@@ -582,10 +618,22 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
       map: texture,
       normalMap: normalTexture,
       roughnessMap: roughnessTexture,
+      bumpMap: bumpTexture,
     };
-  }, [text, color, fontSize, side, position, materialId]);
+  }, [
+    text,
+    color,
+    fontSize,
+    side,
+    position,
+    materialId,
+    calculatedNormalDepth,
+  ]);
 
-  // Apply textures to placeholder mesh - text is printed flat on coin surface
+  // Apply textures to placeholder mesh - text appears raised/embossed above coin surface
+  // The text canvas texture is used for bump map, normal map, and roughness variation
+  // Positive bumpScale creates raised text with increased z-axis height
+  // Text height scales with coin thickness controlled by group RAF scale (middle scalar value)
   useEffect(() => {
     if (!placeholderMesh) {
       if (process.env.NODE_ENV === "development") {
@@ -595,6 +643,42 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
       }
       return;
     }
+
+    // Read thickness from group's RAF scale (Relative Axis Factor)
+    // CORRECT RAF pattern: group.scale.set(x, y, z)
+    // Model orientation: Coin is lying flat (like on a table)
+    //   x = diameter (first parameter) - coin face width
+    //   y = thickness (second parameter) - coin height/vertical (THIS controls thickness!)
+    //   z = diameter (third parameter) - coin face depth
+    // X and Z axes remain unchanged when thickness changes, preserving proportional alignment
+    let actualThickness = coinThickness;
+    if (!actualThickness && placeholderMesh.parent) {
+      // Read the scale from parent group (RAF scale parameter)
+      // Only the Y-axis (second parameter) is modified for thickness adjustments
+      // Y-axis is the vertical axis (height) which controls coin thickness
+      const parentScale = placeholderMesh.parent.scale;
+      // Get world scale to account for nested groups
+      const worldScale = new THREE.Vector3();
+      placeholderMesh.parent.getWorldScale(worldScale);
+      // Y-axis is the thickness controller (second parameter in scale.set(x, y, z))
+      // X and Z remain unchanged - only Y scales with thickness
+      // BASE_SCALE_MULTIPLIER = 30, base thickness = 2.5mm
+      // scaleY of 30 = 2.5mm, so: thickness = (scaleY / 30) * 2.5
+      const BASE_SCALE_MULTIPLIER = 30;
+      const baseThicknessMm = 2.5;
+      const scaleY = worldScale.y; // Y-axis scale (second parameter - thickness controller/vertical axis)
+      actualThickness = (scaleY / BASE_SCALE_MULTIPLIER) * baseThicknessMm;
+    }
+
+    // Recalculate text z-axis height based on actual thickness from group RAF scale
+    // Text height scales proportionally with Y-axis (thickness/vertical) changes
+    // X and Z axes remain unchanged, preserving proportional alignment
+    const baseThickness = 2.5; // mm
+    const thicknessRatio = (actualThickness || baseThickness) / baseThickness;
+    // Scale text z-axis height proportionally with coin thickness (Y-axis scale)
+    // Increased base values for more noticeable difference when thickness changes
+    const dynamicBumpScale = 0.8 * thicknessRatio; // Increased from 0.3 for clearer difference
+    const dynamicNormalScale = 3.5 * thicknessRatio; // Increased from 2.0 for clearer visual difference
 
     if (!textures) {
       if (process.env.NODE_ENV === "development") {
@@ -623,10 +707,26 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
       clonedMaterial.map = textures.map;
       clonedMaterial.map.flipY = false;
 
-      // Apply subtle normal map for printed text surface detail (visual depth only, no geometry displacement)
+      // Apply normal map from text texture to create raised/embossed lighting effect
+      // The text texture is used to generate normals that simulate raised text
       clonedMaterial.normalMap = textures.normalMap;
       clonedMaterial.normalMap.flipY = false;
-      clonedMaterial.normalScale = new THREE.Vector2(0.5, 0.5); // Subtle normal effect for printed look
+      // Normal scale scales with coin thickness (Z-axis from group RAF scale) for proportional z-axis height
+      // RAF pattern: Only Z-axis (third parameter) changes - X and Y unchanged
+      clonedMaterial.normalScale = new THREE.Vector2(
+        dynamicNormalScale,
+        dynamicNormalScale,
+      );
+
+      // Apply bump map using the text texture directly
+      // Positive bumpScale creates the illusion that text is raised above the surface
+      // Bump scale scales proportionally with coin thickness (Z-axis from group RAF scale)
+      // RAF pattern: group.scale.set(x, y, z) - only z (third parameter) changes with thickness
+      if (textures.bumpMap) {
+        clonedMaterial.bumpMap = textures.bumpMap;
+        clonedMaterial.bumpMap.flipY = false;
+        clonedMaterial.bumpScale = dynamicBumpScale; // Scales with Z-axis (third parameter) thickness
+      }
 
       // Apply roughness map for subtle surface variation (text slightly less reflective)
       if (textures.roughnessMap) {
@@ -641,7 +741,7 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
       clonedMaterial.displacementScale = 0;
       clonedMaterial.displacementBias = 0;
 
-      // Material properties for printed metallic text on coin surface
+      // Material properties for carved/engraved metallic text on coin surface
       const isGold =
         materialId === "gold" ||
         materialId === "antique-gold" ||
@@ -651,11 +751,11 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
       const isSilver =
         materialId === "silver" || materialId === "antique-silver";
 
-      // Set metallic properties for authentic printed coin text appearance
+      // Set metallic properties for authentic carved/engraved coin text appearance
       // High metalness ensures text appears as part of the metal surface
       clonedMaterial.metalness = isGold || isSilver ? 0.97 : 0.88; // Very high metalness for integral metal appearance
-      // Base roughness - roughness map will add subtle variation
-      clonedMaterial.roughness = isGold ? 0.28 : isSilver ? 0.18 : 0.38; // Smooth metallic surface with slight variation
+      // Base roughness - roughness map will add variation for carved text areas
+      clonedMaterial.roughness = isGold ? 0.28 : isSilver ? 0.18 : 0.38; // Smooth metallic surface with variation for carved effect
 
       // Use the material color for the cloned material
       // The text color is already optimized for each material type with realistic shading
@@ -678,8 +778,8 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
       clonedMaterial.side = THREE.FrontSide;
       clonedMaterial.flatShading = false; // Smooth shading for clean surfaces
 
-      // Enable proper lighting for printed metallic text
-      clonedMaterial.envMapIntensity = 1.3; // Enhanced reflections for realistic metallic printed text
+      // Enable proper lighting for carved/engraved metallic text
+      clonedMaterial.envMapIntensity = 1.3; // Enhanced reflections for realistic carved metallic text
 
       // Add subtle emissive component for better visibility (very subtle)
       clonedMaterial.emissive = new THREE.Color(0x000000);
@@ -707,6 +807,8 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
             textureSize: `${textures.map.image.width}x${textures.map.image.height}`,
             hasNormalMap: !!textures.normalMap,
             hasRoughnessMap: !!textures.roughnessMap,
+            hasBumpMap: !!textures.bumpMap,
+            bumpScale: clonedMaterial.bumpScale,
             hasDisplacementMap: false, // Disabled - text is flat on coin surface
             displacementScale: 0,
             normalScale: clonedMaterial.normalScale,
@@ -732,6 +834,9 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
         if (textures.roughnessMap) {
           textures.roughnessMap.dispose();
         }
+        if (textures.bumpMap) {
+          textures.bumpMap.dispose();
+        }
       }
       // Restore original material when component unmounts
       if (placeholderMesh && material) {
@@ -747,6 +852,7 @@ export const CoinTextTexture: React.FC<CoinTextTextureProps> = ({
     color,
     fontSize,
     materialId,
+    coinThickness, // Re-run when coinThickness changes (from dimensions or group RAF scale)
   ]);
 
   // Return null - we're modifying the existing mesh, not creating a new one
