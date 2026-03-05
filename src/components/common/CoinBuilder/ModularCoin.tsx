@@ -464,15 +464,8 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
       scene.position.y = -center.y;
       scene.position.z = -center.z;
     }
-
-    // Reset scale first to avoid cumulative scaling, then apply new scale
-    // RAF pattern: group.scale.set(x, y, z)
-    //   x = diameter (first parameter - coin face width)
-    //   y = thickness (second parameter - coin height/vertical) - ONLY this changes with thickness
-    //   z = diameter (third parameter - coin face depth)
-    // X and Z remain unchanged when adjusting thickness, preserving proportional alignment
     scene.scale.set(1, 1, 1);
-    scene.scale.set(scaleX, scaleY, scaleZ); // Only Y-axis (second parameter) changes with thickness
+    scene.scale.set(scaleX, scaleY, scaleZ);
 
     // Force matrix update to ensure thickness changes are immediately visible
     scene.updateMatrixWorld(true);
@@ -495,9 +488,9 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     });
 
     if (process.env.NODE_ENV === "development" && meshInfo.length > 0) {
-      console.log("🔍 Coin Mesh Names:", meshInfo);
-      console.log("🔍 Current Edge Type:", validEdgeType);
-      console.log("🔍 Edge Textures State:", {
+      console.log("Coin Mesh Names:", meshInfo);
+      console.log("Current Edge Type:", validEdgeType);
+      console.log("Edge Textures State:", {
         hasBaseColor: !!edgeTextures.map,
         hasNormal: !!edgeTextures.normalMap,
         hasRoughness: !!edgeTextures.roughnessMap,
