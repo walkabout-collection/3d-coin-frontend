@@ -37,6 +37,7 @@ import {
   uploadImage,
   verifyEmail,
   generateCoinSide,
+  generateCoinPreview,
   getCoinSides,
   regenerateWithSide,
   generateCompleteCoin,
@@ -602,6 +603,23 @@ export const useGenerateCoinSide = (
     Parameters<typeof generateCoinSide>[0]
   >({
     mutationFn: generateCoinSide,
+    ...options,
+  });
+
+// Generate coin preview artwork (for Standard Builder flow)
+export const useGenerateCoinPreview = (
+  options?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCoinPreview>>,
+    Error,
+    Parameters<typeof generateCoinPreview>[0]
+  >,
+) =>
+  useMutation<
+    Awaited<ReturnType<typeof generateCoinPreview>>,
+    Error,
+    Parameters<typeof generateCoinPreview>[0]
+  >({
+    mutationFn: generateCoinPreview,
     ...options,
   });
 

@@ -163,6 +163,36 @@ export const generateCoinSide = async (data: {
   return res.data;
 };
 
+// Generate coin preview artwork (for Standard Builder flow)
+// This endpoint generates standalone artwork without coin shapes, borders, or text
+export const generateCoinPreview = async (data: {
+  side: "front" | "back";
+  prompt?: string;
+  imageUrl?: string;
+  image?: File;
+}): Promise<{
+  success: boolean;
+  data: {
+    side: string;
+    imageBase64: string;
+  };
+}> => {
+  const formData = new FormData();
+  formData.append("side", data.side);
+
+  if (data.prompt) formData.append("prompt", data.prompt);
+  if (data.imageUrl) formData.append("imageUrl", data.imageUrl);
+  if (data.image) formData.append("image", data.image);
+
+  const res = await apiClient.post("/ai-flow/generate-coin-preview", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+};
+
 // Get both front and back sides
 export const getCoinSides = async (
   designId: string,

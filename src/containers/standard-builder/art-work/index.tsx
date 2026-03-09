@@ -7,7 +7,7 @@ import { Paperclip, X, AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import ImageUpload from "@/src/components/common/imageUpload";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
-import { useGenerateCoinSide } from "@/src/hooks/useQueries";
+import { useGenerateCoinPreview } from "@/src/hooks/useQueries";
 import Coin3DViewer from "@/src/components/common/Coin3DViewer";
 import {
   validateAIGenerationInput,
@@ -44,9 +44,9 @@ const ArtWork = () => {
   const currentTab = activeTab === "front" ? front : back;
   const currentGeneratedImage = generatedImages[activeTab];
 
-  // Use generateCoinSide instead of uploadImage
-  const { mutate: generateCoinSideMutate, isPending: isGenerating } =
-    useGenerateCoinSide({
+  // Use generateCoinPreview for Standard Builder flow (generates standalone artwork)
+  const { mutate: generateCoinPreviewMutate, isPending: isGenerating } =
+    useGenerateCoinPreview({
       onSuccess: (res) => {
         console.log("API Response:", res);
 
@@ -69,7 +69,7 @@ const ArtWork = () => {
           setError(undefined);
           setValidationErrors([]);
         } else {
-          console.error("Invalid response from generateCoinSide API:", res);
+          console.error("Invalid response from generateCoinPreview API:", res);
           toast.error("Failed to process image from API");
           setError({ message: "Failed to process image from API" });
         }
@@ -151,8 +151,8 @@ const ArtWork = () => {
 
     let fileToSend: File | undefined = currentTab.attachedImage || undefined;
 
-    // Use the new generateCoinSide API with side parameter
-    generateCoinSideMutate({
+    // Use the generateCoinPreview API for Standard Builder flow
+    generateCoinPreviewMutate({
       side: activeTab,
       prompt: currentTab.prompt || undefined,
       image: fileToSend,
