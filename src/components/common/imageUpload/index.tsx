@@ -13,7 +13,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   // Allowed file types
   const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg"];
@@ -36,27 +38,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   }, [value]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setFileError(null);
-
-    if (file) {
-      // Validate file type
-      const isValidType =
-        ALLOWED_TYPES.includes(file.type) ||
-        ALLOWED_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext));
-
-      if (!isValidType) {
-        setFileError("Only PNG and JPG images are allowed");
-        onChange(null);
-        // Reset the input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-        return;
-      }
-    }
-
-    onChange(file || null);
+    const file: File | null =
+      e.target.files && e.target.files[0] ? e.target.files[0] : null;
+    processFile(file);
   };
 
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -69,10 +53,75 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
   };
 
+  // Validate and process file
+  const processFile = (file: File | null) => {
+    setFileError(null);
+
+    if (!file) {
+      onChange(null);
+      return;
+    }
+
+    // Validate file type
+    const isValidType =
+      ALLOWED_TYPES.includes(file.type) ||
+      ALLOWED_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext));
+
+    if (!isValidType) {
+      setFileError("Only PNG and JPG images are allowed");
+      onChange(null);
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    onChange(file);
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
+    }
+  };
+
   return (
     <div className="mb-4">
       <div
-        className={`relative rounded-xl p-8 text-center bg-gray-100 hover:bg-gray-50 border-2 border-dashed border-gray-300 hover:border-primary transition-all duration-200 ${className}`}
+        ref={dropZoneRef}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`relative rounded-xl p-8 text-center bg-gray-100 hover:bg-gray-50 border-2 border-dashed transition-all duration-200 ${
+          isDragging
+            ? "border-primary bg-primary/5 scale-[1.02]"
+            : "border-gray-300 hover:border-primary"
+        } ${className}`}
       >
         <input
           ref={fileInputRef}

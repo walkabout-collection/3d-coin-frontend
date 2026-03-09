@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
@@ -43,6 +43,51 @@ const ArtWork = () => {
   const { front, back } = artwork;
   const currentTab = activeTab === "front" ? front : back;
   const currentGeneratedImage = generatedImages[activeTab];
+
+  // Track blob URLs for cleanup
+  const blobUrlRefs = useRef<{
+    front: string | null;
+    back: string | null;
+  }>({
+    front: null,
+    back: null,
+  });
+
+  // Cleanup blob URLs when component unmounts or when previewImage changes
+  useEffect(() => {
+    return () => {
+      // Cleanup blob URLs on unmount
+      if (blobUrlRefs.current.front) {
+        URL.revokeObjectURL(blobUrlRefs.current.front);
+      }
+      if (blobUrlRefs.current.back) {
+        URL.revokeObjectURL(blobUrlRefs.current.back);
+      }
+    };
+  }, []);
+
+  // Cleanup old blob URL when previewImage changes
+  useEffect(() => {
+    const currentBlobUrl = blobUrlRefs.current[activeTab];
+    const currentPreviewImage = currentTab.previewImage;
+
+    // If previewImage is a blob URL and it's different from what we tracked, revoke the old one
+    if (
+      currentBlobUrl &&
+      currentBlobUrl !== currentPreviewImage &&
+      currentPreviewImage &&
+      currentPreviewImage.startsWith("blob:")
+    ) {
+      URL.revokeObjectURL(currentBlobUrl);
+    }
+
+    // Update tracked blob URL
+    if (currentPreviewImage && currentPreviewImage.startsWith("blob:")) {
+      blobUrlRefs.current[activeTab] = currentPreviewImage;
+    } else {
+      blobUrlRefs.current[activeTab] = null;
+    }
+  }, [currentTab.previewImage, activeTab]);
 
   // Use generateCoinPreview for Standard Builder flow (generates standalone artwork)
   const { mutate: generateCoinPreviewMutate, isPending: isGenerating } =
@@ -414,9 +459,40 @@ const ArtWork = () => {
           </div>
 
           <ImageUpload
-            onChange={(file) =>
-              updateArtworkSide(activeTab, { uploadedImage: file })
-            }
+            onChange={(file) => {
+              if (file) {
+                // Cleanup old blob URL if it exists
+                const oldBlobUrl = blobUrlRefs.current[activeTab];
+                if (oldBlobUrl) {
+                  URL.revokeObjectURL(oldBlobUrl);
+                }
+
+                // Create blob URL for immediate preview on coin
+                const imageUrl = URL.createObjectURL(file);
+                blobUrlRefs.current[activeTab] = imageUrl;
+
+                updateArtworkSide(activeTab, {
+                  uploadedImage: file,
+                  previewImage: imageUrl,
+                });
+                toast.success(
+                  `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} image uploaded successfully!`,
+                );
+              } else {
+                // Cleanup blob URL when removing image
+                const oldBlobUrl = blobUrlRefs.current[activeTab];
+                if (oldBlobUrl) {
+                  URL.revokeObjectURL(oldBlobUrl);
+                  blobUrlRefs.current[activeTab] = null;
+                }
+
+                // Clear both when removing image
+                updateArtworkSide(activeTab, {
+                  uploadedImage: null,
+                  previewImage: null,
+                });
+              }
+            }}
             value={
               activeTab === "front" ? front.uploadedImage : back.uploadedImage
             }
