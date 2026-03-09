@@ -467,17 +467,26 @@ const ArtWork = () => {
                   URL.revokeObjectURL(oldBlobUrl);
                 }
 
-                // Create blob URL for immediate preview on coin
-                const imageUrl = URL.createObjectURL(file);
-                blobUrlRefs.current[activeTab] = imageUrl;
-
-                updateArtworkSide(activeTab, {
-                  uploadedImage: file,
-                  previewImage: imageUrl,
-                });
-                toast.success(
-                  `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} image uploaded successfully!`,
-                );
+                // Convert File to base64 (data URL) for persistence
+                // This ensures the image persists after page refresh
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  if (typeof reader.result === "string") {
+                    // Store base64 data URL in previewImage for persistence
+                    // Base64 data URLs work after page refresh
+                    updateArtworkSide(activeTab, {
+                      uploadedImage: file,
+                      previewImage: reader.result, // Base64 data URL (persists)
+                    });
+                    toast.success(
+                      `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} image uploaded successfully!`,
+                    );
+                  }
+                };
+                reader.onerror = () => {
+                  toast.error("Failed to process image. Please try again.");
+                };
+                reader.readAsDataURL(file);
               } else {
                 // Cleanup blob URL when removing image
                 const oldBlobUrl = blobUrlRefs.current[activeTab];
