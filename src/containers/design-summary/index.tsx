@@ -11,8 +11,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useCreateDesign, useUpdateDraft } from "@/src/hooks/useQueries";
 import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
-import { uploadBase64ToS3 } from "@/src/services/apiServices";
+import { uploadBase64ToS3, getS3RetrieveUrl } from "@/src/services/apiServices";
 import LoadingSpinner from "@/src/components/common/LoadingSpinner";
+import Coin3DViewer from "@/src/components/common/Coin3DViewer";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -31,6 +32,8 @@ const DesignSummarySection = () => {
   const [feedback, setFeedback] = useState<string>("");
   const [amount, setAmount] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [frontImageUrl, setFrontImageUrl] = useState<string | null>(null);
+  const [backImageUrl, setBackImageUrl] = useState<string | null>(null);
 
   const router = useRouter();
   const { mutate: createDesign, isPending } = useCreateDesign({
@@ -96,6 +99,49 @@ const DesignSummarySection = () => {
       window.removeEventListener("authChanged", checkAuth);
     };
   }, []);
+
+  // Helper function to get image URL from previewImage (handles S3 keys, URLs, base64)
+  const getImageUrl = async (
+    previewImage: string | null | undefined,
+  ): Promise<string | null> => {
+    if (!previewImage) return null;
+
+    // If it's already a valid URL (presigned, data, or blob), use directly
+    if (
+      previewImage.startsWith("http://") ||
+      previewImage.startsWith("https://") ||
+      previewImage.startsWith("data:") ||
+      previewImage.startsWith("blob:")
+    ) {
+      return previewImage;
+    }
+
+    // If it's a local path, return null (placeholder)
+    if (previewImage.startsWith("/")) {
+      return null;
+    }
+
+    // Otherwise, assume it's an S3 key and get presigned URL
+    try {
+      const response = await getS3RetrieveUrl(previewImage);
+      return response.url || null;
+    } catch (error) {
+      console.error("Error getting S3 presigned URL:", error);
+      return null;
+    }
+  };
+
+  // Fetch artwork image URLs when artwork changes
+  useEffect(() => {
+    const loadArtworkImages = async () => {
+      const frontUrl = await getImageUrl(artwork.front.previewImage);
+      const backUrl = await getImageUrl(artwork.back.previewImage);
+      setFrontImageUrl(frontUrl);
+      setBackImageUrl(backUrl);
+    };
+
+    loadArtworkImages();
+  }, [artwork.front.previewImage, artwork.back.previewImage]);
 
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
@@ -350,6 +396,34 @@ const DesignSummarySection = () => {
     // Removed dummy API call to prevent console errors
   };
 
+  // Helper function to format artwork display
+  const formatArtworkDisplay = (side: "front" | "back") => {
+    const sideData = artwork[side];
+    if (sideData.prompt) {
+      return sideData.prompt;
+    }
+    // For back side, don't show "Image Uploaded" in display (data still sent in payload)
+    if (side === "back") {
+      return "N/A";
+    }
+    // For front side, show image status
+    if (sideData.previewImage) {
+      // Check if it's a base64 data URL
+      if (sideData.previewImage.startsWith("data:image/")) {
+        return "Image Uploaded";
+      }
+      // If it's a URL or path, show a shorter version
+      return "Image Uploaded";
+    }
+    if (sideData.uploadedImage) {
+      return "Image Uploaded";
+    }
+    if (sideData.attachedImage) {
+      return "Image Attached";
+    }
+    return "N/A";
+  };
+
   const summaryOptions = [
     {
       id: 1,
@@ -378,11 +452,9 @@ const DesignSummarySection = () => {
     {
       id: 4,
       label: "Artwork",
-      value: `Front: ${artwork.front.prompt || artwork.front.previewImage || "N/A"}, Back: ${
-        artwork.back.prompt || artwork.back.previewImage || "N/A"
-      }`,
+      value: `Front: ${formatArtworkDisplay("front")}, Back: ${formatArtworkDisplay("back")}`,
       type: "artwork",
-      image: "/images/home/dimensions.png",
+      image: frontImageUrl || backImageUrl || "/images/home/dimensions.png",
       path: "/standard-builder/artwork",
     },
     {
@@ -401,63 +473,107 @@ const DesignSummarySection = () => {
         Work with our expert team to create your custom design.
       </h2>
 
-      <div className="space-y-4 mb-12">
-        {summaryOptions.map((option) => (
-          <div
-            key={option.id}
-            className="flex items-center justify-between bg-gray-100 py-3 px-4 rounded-lg"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg overflow-hidden">
+      <div className="space-y-4">
+        {summaryOptions.map((option) => {
+          // For Artwork, use actual image URLs
+          const isArtwork = option.type === "artwork";
+          const displayImage =
+            isArtwork && (frontImageUrl || backImageUrl)
+              ? frontImageUrl || backImageUrl
+              : option.image;
+
+          return (
+            <div
+              key={option.id}
+              className="flex items-center justify-between bg-gray-100 py-3 px-4 rounded-lg"
+            >
+              <div className="flex items-center gap-4">
+                {/* For Artwork, show actual images if available */}
+                {isArtwork && (frontImageUrl || backImageUrl) ? (
+                  <div className="flex gap-2">
+                    {frontImageUrl && (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0">
+                        <Image
+                          src={frontImageUrl}
+                          alt="Front Artwork"
+                          width={50}
+                          height={50}
+                          className="object-cover w-full h-full"
+                          unoptimized
+                        />
+                      </div>
+                    )}
+                    {backImageUrl && (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0">
+                        <Image
+                          src={backImageUrl}
+                          alt="Back Artwork"
+                          width={50}
+                          height={50}
+                          className="object-cover w-full h-full"
+                          unoptimized
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-lg overflow-hidden">
+                    <Image
+                      src={displayImage || "/images/home/dimensions.png"}
+                      alt={option.label}
+                      width={50}
+                      height={50}
+                      className="object-contain"
+                    />
+                  </div>
+                )}
+                <div>
+                  <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                    {option.label}
+                  </div>
+                  <div className="text-sm text-gray-800 mt-1">
+                    {option.type.toUpperCase()}: {option.value}
+                  </div>
+                </div>
+              </div>
+              <div
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
+                onClick={() => router.push(option.path)}
+              >
                 <Image
-                  src={option.image}
-                  alt={option.label}
-                  width={50}
-                  height={50}
-                  className="object-contain"
+                  src="/images/home/edit-icon.svg"
+                  alt="Edit Icon"
+                  width={14}
+                  height={14}
+                  className="cursor-pointer"
                 />
               </div>
-              <div>
-                <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
-                  {option.label}
-                </div>
-                <div className="text-sm text-gray-800 mt-1">
-                  {option.type.toUpperCase()}: {option.value}
-                </div>
-              </div>
             </div>
-            <div
-              className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
-              onClick={() => router.push(option.path)}
-            >
-              <Image
-                src="/images/home/edit-icon.svg"
-                alt="Edit Icon"
-                width={14}
-                height={14}
-                className="cursor-pointer"
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Coin Preview */}
+      {/* Coin Preview - 3D Interactive Viewer */}
       <div className="flex justify-center mb-12 relative">
         <div className="flex flex-col items-center">
-          <Image
-            src="/images/home/coin-design.png"
-            alt="Coin"
-            width={335}
-            height={335}
-            className="z-10"
-          />
+          <div className="w-[600px] h-[600px] relative z-10 mb-[-120px]">
+            <Coin3DViewer
+              materialId={material || "gold"}
+              dimensions={dimensions}
+              edgeType={edgeType}
+              textRings={textRings}
+              artwork={artwork}
+              className="w-full h-full"
+              autoRotate={true}
+              enableControls={true}
+            />
+          </div>
           <Image
             src="/images/home/frame.png"
             alt="Coin Base"
             width={494}
             height={143}
-            className="mt-[-50px] z-0"
+            className="z-0"
           />
         </div>
       </div>
