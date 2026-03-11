@@ -30,6 +30,51 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (previousPathnameRef.current === null) {
       if (pathname === "/standard-builder" && !currentDraftId) {
+        // Check if we're editing from Design Summary (preserve store data)
+        const isEditingFromSummary =
+          typeof window !== "undefined" &&
+          sessionStorage.getItem("editing-from-design-summary") === "true";
+
+        if (!isEditingFromSummary) {
+          try {
+            localStorage.removeItem("standard-builder-storage");
+          } catch (error) {
+            console.warn(
+              "[Standard Builder] Failed to clear localStorage:",
+              error,
+            );
+          }
+          reset();
+          hasInitializedRef.current = true;
+          console.log(
+            "[Standard Builder] Store reset - starting fresh (first mount)",
+          );
+        } else {
+          // Clear the flag after using it
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("editing-from-design-summary");
+          }
+          console.log(
+            "[Standard Builder] Preserving store data - editing from Design Summary",
+          );
+          hasInitializedRef.current = true;
+        }
+      }
+      previousPathnameRef.current = pathname;
+      return;
+    }
+
+    const isEnteringFromOutside =
+      !previousPathnameRef.current.startsWith("/standard-builder") &&
+      pathname.startsWith("/standard-builder");
+
+    if (isEnteringFromOutside && !currentDraftId) {
+      // Check if we're editing from Design Summary (preserve store data)
+      const isEditingFromSummary =
+        typeof window !== "undefined" &&
+        sessionStorage.getItem("editing-from-design-summary") === "true";
+
+      if (!isEditingFromSummary) {
         try {
           localStorage.removeItem("standard-builder-storage");
         } catch (error) {
@@ -41,28 +86,18 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({
         reset();
         hasInitializedRef.current = true;
         console.log(
-          "[Standard Builder] Store reset - starting fresh (first mount)",
+          "[Standard Builder] Store reset - starting fresh (entering from outside)",
         );
+      } else {
+        // Clear the flag after using it
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("editing-from-design-summary");
+        }
+        console.log(
+          "[Standard Builder] Preserving store data - editing from Design Summary",
+        );
+        hasInitializedRef.current = true;
       }
-      previousPathnameRef.current = pathname;
-      return;
-    }
-
-    const isEnteringFromOutside =
-      !previousPathnameRef.current.startsWith("/standard-builder") &&
-      pathname === "/standard-builder";
-
-    if (isEnteringFromOutside && !currentDraftId) {
-      try {
-        localStorage.removeItem("standard-builder-storage");
-      } catch (error) {
-        console.warn("[Standard Builder] Failed to clear localStorage:", error);
-      }
-      reset();
-      hasInitializedRef.current = true;
-      console.log(
-        "[Standard Builder] Store reset - starting fresh (entering from outside)",
-      );
     } else if (pathname.startsWith("/standard-builder")) {
       hasInitializedRef.current = true;
     }

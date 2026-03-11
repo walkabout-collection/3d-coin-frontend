@@ -524,12 +524,12 @@ const DesignSummarySection = () => {
           return (
             <div
               key={option.id}
-              className="flex items-center justify-between bg-gray-100 py-3 px-4 rounded-lg"
+              className="flex items-center justify-between bg-gray-100 py-3 px-4 rounded-lg gap-4"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
                 {/* For Artwork, show actual images if available */}
                 {isArtwork && (frontImageUrl || backImageUrl) ? (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     {frontImageUrl && (
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0">
                         <Image
@@ -556,7 +556,7 @@ const DesignSummarySection = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="w-12 h-12 rounded-lg overflow-hidden">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src={displayImage || "/images/home/dimensions.png"}
                       alt={option.label}
@@ -566,18 +566,22 @@ const DesignSummarySection = () => {
                     />
                   </div>
                 )}
-                <div>
+                <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
                     {option.label}
                   </div>
-                  <div className="text-sm text-gray-800 mt-1">
+                  <div className="text-sm text-gray-800 mt-1 break-words">
                     {option.type.toUpperCase()}: {option.value}
                   </div>
                 </div>
               </div>
               <div
-                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors"
-                onClick={() => router.push(option.path)}
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors flex-shrink-0"
+                onClick={() => {
+                  // Mark that we're editing from Design Summary to preserve store data
+                  sessionStorage.setItem("editing-from-design-summary", "true");
+                  router.push(option.path);
+                }}
               >
                 <Image
                   src="/images/home/edit-icon.svg"
