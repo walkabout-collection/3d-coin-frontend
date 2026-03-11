@@ -143,6 +143,37 @@ const DesignSummarySection = () => {
     loadArtworkImages();
   }, [artwork.front.previewImage, artwork.back.previewImage]);
 
+  // Calculate scale factor to ensure coin fits within frame for all diameters
+  // Frame width is ~494px, coin viewer container is 600px
+  // We need to scale coins so they fit within the frame regardless of diameter
+  const parseDimension = (dim: string, defaultValue: number = 25): number => {
+    if (!dim) return defaultValue;
+    const match = dim.match(/(\d+\.?\d*)/);
+    return match ? parseFloat(match[1]) : defaultValue;
+  };
+
+  const coinDiameter = parseDimension(dimensions?.coinDiameter || "25");
+  const baseDiameter = 25; // Base diameter in mm (used in ModularCoin)
+  const diameterRatio = coinDiameter / baseDiameter;
+
+  // Frame dimensions: width ~494px, coin viewer is 600px
+  // We want to ensure coin fits within frame width
+  // Base scale: 1.0 for 25mm coin should fit in frame
+  // For larger coins, scale down proportionally
+  // For smaller coins, can scale up slightly but keep within bounds
+  const frameWidth = 494;
+  const viewerWidth = 600;
+  const baseScale = frameWidth / viewerWidth; // ~0.823 for base fit
+
+  // Scale factor: larger coins need more scaling down
+  // Formula: scale = baseScale / diameterRatio
+  // This ensures larger diameters scale down more to fit
+  const viewerScale = baseScale / diameterRatio;
+
+  // Clamp scale to reasonable bounds (0.6 to 1.0) to prevent extreme scaling
+  // Max scale of 1.0 ensures we don't make coins larger than container
+  const clampedScale = Math.max(0.6, Math.min(1.0, viewerScale));
+
   const handleButtonClick = (id: number) => {
     setSelectedButton(selectedButton === id ? null : id);
   };
@@ -424,6 +455,9 @@ const DesignSummarySection = () => {
     return "N/A";
   };
 
+  // Determine if packaging is enabled (user selected "Yes" and has preferences or backText)
+  const isPackagingEnabled = !!(packaging.preferences || packaging.backText);
+
   const summaryOptions = [
     {
       id: 1,
@@ -457,14 +491,19 @@ const DesignSummarySection = () => {
       image: frontImageUrl || backImageUrl || "/images/home/dimensions.png",
       path: "/standard-builder/artwork",
     },
-    {
-      id: 5,
-      label: "Packaging",
-      value: `Preferences: ${packaging.preferences}, Back Text: ${packaging.backText}`,
-      type: "packaging",
-      image: "/images/home/dimensions.png",
-      path: "/standard-builder/packaging",
-    },
+    // Only include packaging if it's enabled
+    ...(isPackagingEnabled
+      ? [
+          {
+            id: 5,
+            label: "Packaging",
+            value: `Preferences: ${packaging.preferences || "N/A"}, Back Text: ${packaging.backText || "N/A"}`,
+            type: "packaging",
+            image: "/images/home/dimensions.png",
+            path: "/standard-builder/packaging",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -556,7 +595,15 @@ const DesignSummarySection = () => {
       {/* Coin Preview - 3D Interactive Viewer */}
       <div className="flex justify-center mb-12 relative">
         <div className="flex flex-col items-center">
-          <div className="w-[600px] h-[600px] relative z-10 mb-[-120px]">
+          <div
+            className="relative z-10 mb-[-170px]"
+            style={{
+              width: "600px",
+              height: "600px",
+              transform: `scale(${clampedScale})`,
+              transformOrigin: "top center",
+            }}
+          >
             <Coin3DViewer
               materialId={material || "gold"}
               dimensions={dimensions}
