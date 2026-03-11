@@ -230,7 +230,45 @@ const ArtWork = () => {
 
   // Removed unused base64ToFile function
 
+  // Helper function to check if an image is a real uploaded/generated image (not placeholder)
+  const hasRealImage = (side: "front" | "back") => {
+    const sideData = side === "front" ? front : back;
+    // Check if uploadedImage exists (user uploaded via ImageUpload component)
+    if (sideData.uploadedImage !== null) {
+      return true;
+    }
+    // Check if previewImage exists and is not the default SVG placeholder
+    // Real images will be data:image/png, data:image/jpeg, data:image/webp, etc.
+    // Placeholders are data:image/svg+xml
+    if (
+      sideData.previewImage !== null &&
+      !sideData.previewImage.startsWith("data:image/svg+xml")
+    ) {
+      return true;
+    }
+    return false;
+  };
+
   const handleContinue = () => {
+    // Validate that both front and back images are present
+    const hasFrontImage = hasRealImage("front");
+    const hasBackImage = hasRealImage("back");
+
+    if (!hasFrontImage && !hasBackImage) {
+      toast.error("Please generate or upload both front and back images");
+      return;
+    }
+
+    if (!hasFrontImage) {
+      toast.error("Please also generate the front image");
+      return;
+    }
+
+    if (!hasBackImage) {
+      toast.error("Please also generate the back image");
+      return;
+    }
+
     console.log("Artwork Saved:", artwork);
     router.push("/standard-builder/confirm-packaging");
   };
@@ -240,16 +278,8 @@ const ArtWork = () => {
   };
 
   const canContinue = () => {
-    return (
-      front.prompt.trim().length > 0 ||
-      front.attachedImage !== null ||
-      front.uploadedImage !== null ||
-      front.previewImage !== null ||
-      back.prompt.trim().length > 0 ||
-      back.attachedImage !== null ||
-      back.uploadedImage !== null ||
-      back.previewImage !== null
-    );
+    // Check if both front and back have real images (not just placeholders)
+    return hasRealImage("front") && hasRealImage("back");
   };
 
   // Removed unused currentPreviewImage variable
