@@ -570,14 +570,16 @@ const DesignSummarySection = () => {
 
       {/* Coin Preview - 3D Interactive Viewer */}
       <div className="flex justify-center mb-12 relative">
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center relative">
+          {/* Coin container - scaled and positioned */}
           <div
-            className="relative z-10 mb-[-170px]"
+            className="relative z-10"
             style={{
               width: "600px",
               height: "600px",
               transform: `scale(${clampedScale})`,
-              transformOrigin: "top center",
+              transformOrigin: "80% 100%", // Scale from center horizontally, bottom vertically
+              marginBottom: "-150px", // Fixed overlap to position coin on frame
             }}
           >
             <Coin3DViewer
@@ -591,13 +593,15 @@ const DesignSummarySection = () => {
               enableControls={true}
             />
           </div>
-          <Image
-            src="/images/home/frame.png"
-            alt="Coin Base"
-            width={494}
-            height={143}
-            className="z-0"
-          />
+          {/* Frame - positioned below coin */}
+          <div className="relative z-0">
+            <Image
+              src="/images/home/frame.png"
+              alt="Coin Base"
+              width={494}
+              height={143}
+            />
+          </div>
         </div>
       </div>
 
