@@ -462,34 +462,40 @@ const DesignSummarySection = () => {
     {
       id: 1,
       label: "Dimensions",
-      value: `Diameter: ${dimensions.coinDiameter}, Thickness: ${dimensions.coinThickness}`,
       type: "size",
-      image: "/images/home/dimensions.png",
+      // image: "/images/home/dimensions.png", // Commented out - images removed for cleaner UI
       path: "/standard-builder",
+      fields: [
+        { label: "Diameter", value: dimensions.coinDiameter || "N/A" },
+        { label: "Thickness", value: dimensions.coinThickness || "N/A" },
+      ],
     },
     {
       id: 2,
       label: "Material",
-      value: material,
       type: "material",
-      image: "/images/home/dimensions.png",
+      // image: "/images/home/dimensions.png", // Commented out - images removed for cleaner UI
       path: "/standard-builder/material",
+      fields: [{ label: "Material", value: material || "N/A" }],
     },
     {
       id: 3,
       label: "Edge Type",
-      value: edgeType,
       type: "edge",
-      image: "/images/home/dimensions.png",
+      // image: "/images/home/dimensions.png", // Commented out - images removed for cleaner UI
       path: "/standard-builder/edge-type",
+      fields: [{ label: "Edge", value: edgeType || "N/A" }],
     },
     {
       id: 4,
       label: "Artwork",
-      value: `Front: ${formatArtworkDisplay("front")}, Back: ${formatArtworkDisplay("back")}`,
       type: "artwork",
-      image: frontImageUrl || backImageUrl || "/images/home/dimensions.png",
+      // image: frontImageUrl || backImageUrl || "/images/home/dimensions.png", // Commented out - images removed for cleaner UI
       path: "/standard-builder/artwork",
+      fields: [
+        { label: "Front", value: formatArtworkDisplay("front") },
+        { label: "Back", value: formatArtworkDisplay("back") },
+      ],
     },
     // Only include packaging if it's enabled
     ...(isPackagingEnabled
@@ -497,10 +503,16 @@ const DesignSummarySection = () => {
           {
             id: 5,
             label: "Packaging",
-            value: `Preferences: ${packaging.preferences || "N/A"}, Back Text: ${packaging.backText || "N/A"}`,
             type: "packaging",
-            image: "/images/home/dimensions.png",
+            // image: "/images/home/dimensions.png", // Commented out - images removed for cleaner UI
             path: "/standard-builder/packaging",
+            fields: [
+              {
+                label: "Preferences",
+                value: packaging.preferences || "N/A",
+              },
+              { label: "Back Text", value: packaging.backText || "N/A" },
+            ],
           },
         ]
       : []),
@@ -512,71 +524,31 @@ const DesignSummarySection = () => {
         Work with our expert team to create your custom design.
       </h2>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {summaryOptions.map((option) => {
-          // For Artwork, use actual image URLs
-          const isArtwork = option.type === "artwork";
-          const displayImage =
-            isArtwork && (frontImageUrl || backImageUrl)
-              ? frontImageUrl || backImageUrl
-              : option.image;
-
           return (
             <div
               key={option.id}
-              className="flex items-center justify-between bg-gray-100 py-3 px-4 rounded-lg gap-4"
+              className="flex items-start justify-between bg-gray-100 py-5 px-6 rounded-lg gap-4"
             >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* For Artwork, show actual images if available */}
-                {isArtwork && (frontImageUrl || backImageUrl) ? (
-                  <div className="flex gap-2 flex-shrink-0">
-                    {frontImageUrl && (
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0">
-                        <Image
-                          src={frontImageUrl}
-                          alt="Front Artwork"
-                          width={50}
-                          height={50}
-                          className="object-cover w-full h-full"
-                          unoptimized
-                        />
-                      </div>
-                    )}
-                    {backImageUrl && (
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0">
-                        <Image
-                          src={backImageUrl}
-                          alt="Back Artwork"
-                          width={50}
-                          height={50}
-                          className="object-cover w-full h-full"
-                          unoptimized
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={displayImage || "/images/home/dimensions.png"}
-                      alt={option.label}
-                      width={50}
-                      height={50}
-                      className="object-contain"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    {option.label}
-                  </div>
-                  <div className="text-sm text-gray-800 mt-1 break-words">
-                    {option.type.toUpperCase()}: {option.value}
-                  </div>
+              <div className="flex-1 min-w-0">
+                {/* Bold heading for each section */}
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {option.label}
+                </h3>
+                {/* Clean labeled fields */}
+                <div className="space-y-2">
+                  {option.fields.map((field, index) => (
+                    <div key={index} className="text-sm text-gray-800">
+                      <span className="font-medium">{field.label}:</span>{" "}
+                      <span className="text-gray-700">{field.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+              {/* Edit button */}
               <div
-                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors flex-shrink-0"
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors flex-shrink-0 mt-1"
                 onClick={() => {
                   // Mark that we're editing from Design Summary to preserve store data
                   sessionStorage.setItem("editing-from-design-summary", "true");
