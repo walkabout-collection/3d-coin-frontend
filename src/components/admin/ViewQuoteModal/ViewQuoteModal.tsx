@@ -13,12 +13,19 @@ interface User {
 
 interface CoinDesign {
   id: string;
+  name?: string;
+  builderType?: "AI Generator" | "Standard Builder";
+  totalCoins?: number;
+  coinShape?: string;
+  materialFinish?: string;
+  frontText?: string;
+  backText?: string;
+  generatorPrompt?: string;
   frontImage?: string;
   backImage?: string;
   generatorImage?: string;
   frontDescription?: string;
   backDescription?: string;
-  name?: string;
 }
 
 interface Packaging {
@@ -226,122 +233,236 @@ const ViewQuoteModal: React.FC<ViewQuoteModalProps> = ({ id, onClose }) => {
                 </div>
               )}
 
-              {/* Images Section */}
-              {(frontImageUrl || backImageUrl || generatorImageUrl) && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                    Design Images
+              {/* Coin Design Details Section */}
+              {coinDesign && (
+                <div className="space-y-4 pt-4 border-t border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Coin Design Details
                   </h3>
 
-                  {frontImageUrl && (
+                  {/* Builder Type */}
+                  {coinDesign.builderType && (
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <ImageIcon className="h-4 w-4 text-gray-600" />
-                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                          Front Design
-                        </p>
-                      </div>
-                      <div
-                        className="relative w-full h-48 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => {
-                          if (frontImageUrl) {
-                            setViewerImage({
-                              url: frontImageUrl,
-                              alt: "Front design",
-                              title: "Front Design",
-                            });
-                          }
-                        }}
-                        title="Click to view full image"
-                      >
-                        <Image
-                          src={frontImageUrl}
-                          alt="Front design"
-                          fill
-                          className="object-contain"
-                          onError={() => {
-                            frontImageErrorRef.current = true;
-                          }}
-                        />
-                      </div>
-                      {coinDesign?.frontDescription && (
-                        <p className="text-xs text-gray-600 mt-2">
-                          {coinDesign.frontDescription}
-                        </p>
-                      )}
+                      <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                        Builder Type
+                      </p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {coinDesign.builderType}
+                      </p>
                     </div>
                   )}
 
-                  {backImageUrl && (
+                  {/* Coin Design Information Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {coinDesign.name && (
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                          Coin Name
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {coinDesign.name}
+                        </p>
+                      </div>
+                    )}
+
+                    {coinDesign.totalCoins !== undefined &&
+                    coinDesign.totalCoins !== null ? (
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                          Total Coins
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {coinDesign.totalCoins}
+                        </p>
+                      </div>
+                    ) : quote.totalCoins ? (
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                          Total Coins
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {quote.totalCoins}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {coinDesign.coinShape && (
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                          Coin Shape / Diameter
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {coinDesign.coinShape}
+                        </p>
+                      </div>
+                    )}
+
+                    {coinDesign.materialFinish && (
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                          Material Finish
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {coinDesign.materialFinish}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Front Text */}
+                  {coinDesign.frontText && (
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <ImageIcon className="h-4 w-4 text-gray-600" />
-                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                          Back Design
-                        </p>
-                      </div>
-                      <div
-                        className="relative w-full h-48 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => {
-                          if (backImageUrl) {
-                            setViewerImage({
-                              url: backImageUrl,
-                              alt: "Back design",
-                              title: "Back Design",
-                            });
-                          }
-                        }}
-                        title="Click to view full image"
-                      >
-                        <Image
-                          src={backImageUrl}
-                          alt="Back design"
-                          fill
-                          className="object-contain"
-                          onError={() => {
-                            backImageErrorRef.current = true;
-                          }}
-                        />
-                      </div>
-                      {coinDesign?.backDescription && (
-                        <p className="text-xs text-gray-600 mt-2">
-                          {coinDesign.backDescription}
-                        </p>
-                      )}
+                      <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                        Front Text
+                      </p>
+                      <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
+                        {coinDesign.frontText}
+                      </p>
                     </div>
                   )}
 
-                  {generatorImageUrl && (
+                  {/* Back Text */}
+                  {coinDesign.backText && (
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <ImageIcon className="h-4 w-4 text-gray-600" />
-                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                          Generator Image
-                        </p>
-                      </div>
-                      <div
-                        className="relative w-full h-48 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => {
-                          if (generatorImageUrl) {
-                            setViewerImage({
-                              url: generatorImageUrl,
-                              alt: "Generator image",
-                              title: "Generator Image",
-                            });
-                          }
-                        }}
-                        title="Click to view full image"
-                      >
-                        <Image
-                          src={generatorImageUrl}
-                          alt="Generator image"
-                          fill
-                          className="object-contain"
-                          onError={() => {
-                            generatorImageErrorRef.current = true;
-                          }}
-                        />
-                      </div>
+                      <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                        Back Text
+                      </p>
+                      <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
+                        {coinDesign.backText}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Generator Prompt */}
+                  {coinDesign.generatorPrompt && (
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <p className="text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                        Generator Prompt
+                      </p>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        {coinDesign.generatorPrompt}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Design Images */}
+                  {(frontImageUrl || backImageUrl || generatorImageUrl) && (
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                        Design Images
+                      </h4>
+
+                      {frontImageUrl && (
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ImageIcon className="h-4 w-4 text-gray-600" />
+                            <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                              Front Design
+                            </p>
+                          </div>
+                          <div
+                            className="relative w-full h-48 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              if (frontImageUrl) {
+                                setViewerImage({
+                                  url: frontImageUrl,
+                                  alt: "Front design",
+                                  title: "Front Design",
+                                });
+                              }
+                            }}
+                            title="Click to view full image"
+                          >
+                            <Image
+                              src={frontImageUrl}
+                              alt="Front design"
+                              fill
+                              className="object-contain"
+                              onError={() => {
+                                frontImageErrorRef.current = true;
+                              }}
+                            />
+                          </div>
+                          {coinDesign?.frontDescription && (
+                            <p className="text-xs text-gray-600 mt-2">
+                              {coinDesign.frontDescription}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {backImageUrl && (
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ImageIcon className="h-4 w-4 text-gray-600" />
+                            <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                              Back Design
+                            </p>
+                          </div>
+                          <div
+                            className="relative w-full h-48 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              if (backImageUrl) {
+                                setViewerImage({
+                                  url: backImageUrl,
+                                  alt: "Back design",
+                                  title: "Back Design",
+                                });
+                              }
+                            }}
+                            title="Click to view full image"
+                          >
+                            <Image
+                              src={backImageUrl}
+                              alt="Back design"
+                              fill
+                              className="object-contain"
+                              onError={() => {
+                                backImageErrorRef.current = true;
+                              }}
+                            />
+                          </div>
+                          {coinDesign?.backDescription && (
+                            <p className="text-xs text-gray-600 mt-2">
+                              {coinDesign.backDescription}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {generatorImageUrl && (
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ImageIcon className="h-4 w-4 text-gray-600" />
+                            <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                              Generator Image
+                            </p>
+                          </div>
+                          <div
+                            className="relative w-full h-48 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              if (generatorImageUrl) {
+                                setViewerImage({
+                                  url: generatorImageUrl,
+                                  alt: "Generator image",
+                                  title: "Generator Image",
+                                });
+                              }
+                            }}
+                            title="Click to view full image"
+                          >
+                            <Image
+                              src={generatorImageUrl}
+                              alt="Generator image"
+                              fill
+                              className="object-contain"
+                              onError={() => {
+                                generatorImageErrorRef.current = true;
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
