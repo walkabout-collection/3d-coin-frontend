@@ -32,20 +32,42 @@ const refreshAccessToken = async () => {
     throw new Error("No refresh token found");
   }
 
-  const res = await axios.post(`${getApiBaseUrl()}/auth/refresh-token`, {
-    refreshToken,
-  });
+  try {
+    const res = await axios.post(`${getApiBaseUrl()}/auth/refresh-token`, {
+      refreshToken,
+    });
 
-  const { accessToken, refreshToken: newRefreshToken } = res.data.data;
+    // Check if response indicates success
+    if (res.status === 401 || !res.data?.data) {
+      throw new Error("Refresh token expired or invalid");
+    }
 
-  if (!accessToken || !newRefreshToken) {
-    throw new Error("Failed to refresh access token");
+    const { accessToken, refreshToken: newRefreshToken } = res.data.data;
+
+    if (!accessToken || !newRefreshToken) {
+      throw new Error("Failed to refresh access token");
+    }
+
+    setCookie("token", accessToken, 86400); // 1 day
+    setCookie("refreshToken", newRefreshToken, 604800); // 7 days
+
+    return accessToken;
+  } catch (error: unknown) {
+    // If refresh token itself is invalid (401), clear auth
+    if (
+      error &&
+      typeof error === "object" &&
+      "response" in error &&
+      error.response &&
+      typeof error.response === "object" &&
+      "status" in error.response &&
+      error.response.status === 401
+    ) {
+      clearAuthAndNotify();
+      throw new Error("Refresh token expired. Please log in again.");
+    }
+    throw error;
   }
-
-  setCookie("token", accessToken, 86400); // 1 day
-  setCookie("refreshToken", newRefreshToken, 604800); // 7 days
-
-  return accessToken;
 };
 
 // Helper: cookie parser
@@ -67,6 +89,21 @@ const setCookie = (name: string, value: string, maxAge: number) => {
   // Encode the value to handle special characters
   const encodedValue = encodeURIComponent(value);
   document.cookie = `${name}=${encodedValue}; path=/; max-age=${maxAge}; SameSite=Lax`;
+};
+
+// Helper: delete cookie
+const deleteCookie = (name: string) => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; path=/; max-age=0`;
+};
+
+// Helper: clear auth cookies and notify app
+const clearAuthAndNotify = () => {
+  if (typeof document === "undefined") return;
+  deleteCookie("token");
+  deleteCookie("refreshToken");
+  // Dispatch event to notify app of auth change
+  window.dispatchEvent(new Event("authChanged"));
 };
 
 const apiClient = axios.create({
@@ -98,6 +135,13 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (err) {
         console.error("Token refresh failed:", err);
+        // refreshAccessToken already clears auth if refresh token is invalid
+        // Just reject with a user-friendly error message
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Authentication expired. Please log in again.";
+        return Promise.reject(new Error(errorMessage));
       }
     }
 

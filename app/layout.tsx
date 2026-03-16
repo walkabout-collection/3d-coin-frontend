@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/src/components/common/layout/navbar/Navbar";
 import Footer from "@/src/components/common/layout/Footer";
-import ReactQueryProvider from "@/src/providers/ReactQueryProvider"; 
+import ReactQueryProvider from "@/src/providers/ReactQueryProvider";
 import { ToastContainer } from "react-toastify";
 
 const geistSans = Geist({
@@ -37,6 +37,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ReactQueryProvider>
           <div className="mb-20">
