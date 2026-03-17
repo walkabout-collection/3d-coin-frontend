@@ -161,21 +161,29 @@ const ArtWork = () => {
         return;
       }
 
-      const imageUrl = URL.createObjectURL(file);
+      // CRITICAL: Only set attachedImage - this image is ONLY for the prompt box preview
+      // It must NEVER be applied to the coin preview on the left side
+      // The coin preview (previewImage) remains unchanged unless explicitly updated
+      // We do NOT set previewImage here - that would cause the coin to update automatically
       updateArtworkSide(activeTab, {
         attachedImage: file,
-        previewImage: imageUrl,
+        // DO NOT set previewImage here - attached images stay in prompt box only
       });
       setError(undefined);
       setValidationErrors([]);
-      toast.success("Image attached to prompt");
+      toast.success(
+        "Image attached to prompt - preview only, not applied to coin",
+      );
     } else {
-      updateArtworkSide(activeTab, { attachedImage: null, previewImage: null });
+      // Only clear attachedImage, not previewImage
+      updateArtworkSide(activeTab, { attachedImage: null });
     }
   };
 
   const handleRemoveAttachedImage = () => {
-    updateArtworkSide(activeTab, { attachedImage: null, previewImage: null });
+    // Only remove attachedImage, not previewImage
+    // previewImage is for the coin display and should remain unchanged
+    updateArtworkSide(activeTab, { attachedImage: null });
   };
 
   const handleGenerateClick = async () => {

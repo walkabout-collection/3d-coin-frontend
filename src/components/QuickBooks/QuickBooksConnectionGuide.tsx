@@ -14,6 +14,8 @@ import {
   AlertCircle,
   Link2,
 } from "lucide-react";
+import { getQuickBooksErrorMessage } from "@/src/utils/quickbooksErrors";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface QuickBooksConnectionGuideProps {
   onConnectionChange?: (connected: boolean) => void;
@@ -22,6 +24,7 @@ interface QuickBooksConnectionGuideProps {
 const QuickBooksConnectionGuide: React.FC<QuickBooksConnectionGuideProps> = ({
   onConnectionChange,
 }) => {
+  const queryClient = useQueryClient();
   const { data: statusData, isLoading, error, refetch } = useQuickBooksStatus();
 
   const { mutate: connect, isPending: isConnecting } = useConnectQuickBooks({
@@ -92,7 +95,9 @@ const QuickBooksConnectionGuide: React.FC<QuickBooksConnectionGuideProps> = ({
         errorMessage = error.message;
       }
 
-      toast.error(errorMessage, {
+      // Use the error utility for consistent error messages
+      const finalErrorMessage = getQuickBooksErrorMessage(error);
+      toast.error(finalErrorMessage, {
         autoClose: 6000,
       });
     },
@@ -102,12 +107,20 @@ const QuickBooksConnectionGuide: React.FC<QuickBooksConnectionGuideProps> = ({
     useDisconnectQuickBooks({
       onSuccess: () => {
         toast.success("QuickBooks disconnected successfully");
+        // Invalidate all QuickBooks-related queries
+        queryClient.invalidateQueries({ queryKey: ["quickBooksStatus"] });
+        queryClient.invalidateQueries({
+          queryKey: ["quickBooksConnectionStatus"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "quickbooks", "connections"],
+        });
         refetch();
         onConnectionChange?.(false);
       },
       onError: (error) => {
-        const msg = error instanceof Error ? error.message : String(error);
-        toast.error(msg || "Failed to disconnect QuickBooks account");
+        const errorMsg = getQuickBooksErrorMessage(error);
+        toast.error(errorMsg);
       },
     });
 
@@ -143,6 +156,8 @@ const QuickBooksConnectionGuide: React.FC<QuickBooksConnectionGuideProps> = ({
       // Store timestamp to detect stale OAuth attempts
       sessionStorage.setItem("quickbooks_oauth_started", Date.now().toString());
     }
+    // The connect() function will redirect to QuickBooks OAuth
+    // After OAuth, QuickBooks redirects to /payment/quickbooks/callback
     connect();
   };
 

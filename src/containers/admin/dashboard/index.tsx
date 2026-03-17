@@ -66,17 +66,24 @@ export default function AdminDashboard({
     }
 
     // Check if user just returned from OAuth (success case)
-    // Backend redirects to /admin after successful OAuth
+    // The callback page at /payment/quickbooks/callback handles the OAuth flow
+    // and redirects to dashboard, but we check here for admin dashboard
     const oauthRedirect = sessionStorage.getItem("quickbooks_oauth_redirect");
     if (oauthRedirect === "pending") {
       // User initiated OAuth, check if connection was successful
       // Refetch connections to see if new connection was added
       refetchConnections().then(() => {
-        // Check if we have connections now (or if user's connection exists)
-        if (connectionsData?.data && connectionsData.data.length > 0) {
-          toast.success("QuickBooks connected successfully!");
-        }
-        sessionStorage.removeItem("quickbooks_oauth_redirect");
+        // Small delay to ensure backend has processed the connection
+        setTimeout(() => {
+          refetchConnections().then(() => {
+            // Check if we have connections now (or if user's connection exists)
+            if (connectionsData?.data && connectionsData.data.length > 0) {
+              toast.success("QuickBooks connected successfully!");
+            }
+            sessionStorage.removeItem("quickbooks_oauth_redirect");
+            sessionStorage.removeItem("quickbooks_oauth_started");
+          });
+        }, 1000);
       });
     }
   }, [searchParams, router, refetchConnections, connectionsData]);

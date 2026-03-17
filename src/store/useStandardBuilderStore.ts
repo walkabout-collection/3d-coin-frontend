@@ -120,17 +120,19 @@ export const useStandardBuilderStore = create<StandardBuilderState>()(
           prompt: "",
           attachedImage: null,
           uploadedImage: null,
-          // Default placeholder image - simple gray square
+          // Default placeholder image - dark gray fill with centered white "Front Image" label
+          // The coin's circular mesh and CoinArtwork alpha mask handle the circular cropping.
           previewImage:
-            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EFront Image%3C/text%3E%3C/svg%3E",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23252525'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='28' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3EFront Image%3C/text%3E%3C/svg%3E",
         },
         back: {
           prompt: "",
           attachedImage: null,
           uploadedImage: null,
-          // Default placeholder image - simple gray square
+          // Default placeholder image - dark gray fill with centered white "Back Image" label
+          // The coin's circular mesh and CoinArtwork alpha mask handle the circular cropping.
           previewImage:
-            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EBack Image%3C/text%3E%3C/svg%3E",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23252525'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='28' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3EBack Image%3C/text%3E%3C/svg%3E",
         },
       },
       packaging: {
@@ -385,17 +387,19 @@ export const useStandardBuilderStore = create<StandardBuilderState>()(
               prompt: "",
               attachedImage: null,
               uploadedImage: null,
-              // Default placeholder image - simple gray square
+              // Default placeholder image - dark gray fill with centered white "Front Image" label
+              // The coin's circular mesh and CoinArtwork alpha mask handle the circular cropping.
               previewImage:
-                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EFront Image%3C/text%3E%3C/svg%3E",
+                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23252525'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='28' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3EFront Image%3C/text%3E%3C/svg%3E",
             },
             back: {
               prompt: "",
               attachedImage: null,
               uploadedImage: null,
-              // Default placeholder image - simple gray square
+              // Default placeholder image - dark gray fill with centered white "Back Image" label
+              // The coin's circular mesh and CoinArtwork alpha mask handle the circular cropping.
               previewImage:
-                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3EBack Image%3C/text%3E%3C/svg%3E",
+                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23252525'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='28' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3EBack Image%3C/text%3E%3C/svg%3E",
             },
           },
           packaging: {

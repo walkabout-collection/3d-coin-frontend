@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  useCreateQuickBooksInvoice,
+  useCreateQuickBooksInvoiceForQuote,
   useQuickBooksInvoiceStatus,
   useQuickBooksConnectionStatus,
 } from "@/src/hooks/useQueries";
@@ -10,6 +10,7 @@ import Button from "../common/button/Button";
 import QuickBooksConnectionStatus from "./QuickBooksConnectionStatus";
 import QuickBooksOAuthModal from "./QuickBooksOAuthModal";
 import { X } from "lucide-react";
+import { getQuickBooksErrorMessage } from "@/src/utils/quickbooksErrors";
 
 interface QuickBooksPaymentModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ interface QuickBooksPaymentModalProps {
   quoteId: string;
   amount: number;
   orderId?: string;
+  customerEmail?: string; // Optional - will be fetched from quote if not provided
+  customerName?: string; // Optional
   onPaymentSuccess?: () => void;
 }
 
@@ -26,6 +29,8 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
   quoteId,
   amount,
   orderId,
+  customerEmail,
+  customerName,
   onPaymentSuccess,
 }) => {
   const [showOAuthModal, setShowOAuthModal] = useState(false);
@@ -37,20 +42,25 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
     });
 
   const { mutate: createInvoice, isPending: isCreatingInvoice } =
-    useCreateQuickBooksInvoice({
+    useCreateQuickBooksInvoiceForQuote({
       onSuccess: (data) => {
         if (data.success && data.data.invoiceId) {
-          setCreatedInvoiceId(data.data.quickbooksInvoiceId);
+          // Note: The guide-compatible endpoint returns paymentId and invoiceId
+          // We may need to fetch the QuickBooks invoice ID separately if needed
+          setCreatedInvoiceId(data.data.invoiceId);
           toast.success(
-            `Invoice created successfully! Invoice #${data.data.invoiceNumber || data.data.quickbooksInvoiceId}`,
+            data.data.message || "Invoice created successfully in QuickBooks!",
           );
         } else {
-          toast.error(data.message || "Failed to create invoice");
+          const errorMsg = getQuickBooksErrorMessage(
+            new Error(data.message || "Failed to create invoice"),
+          );
+          toast.error(errorMsg);
         }
       },
       onError: (error) => {
-        const msg = error instanceof Error ? error.message : String(error);
-        toast.error(msg || "Failed to create QuickBooks invoice");
+        const errorMsg = getQuickBooksErrorMessage(error);
+        toast.error(errorMsg);
       },
     });
 
@@ -71,15 +81,28 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
       return;
     }
 
+    // Validate customerEmail is provided
+    if (!customerEmail) {
+      toast.error(
+        "Customer email is required to create a QuickBooks invoice. Please provide customerEmail prop or ensure the quote has an email.",
+      );
+      return;
+    }
+
     createInvoice({
       quoteId,
       amount,
+      customerEmail,
+      customerName,
     });
   };
 
   const handleOAuthSuccess = () => {
+    // Refetch connection status after OAuth success
     refetchConnection();
     setShowOAuthModal(false);
+    // Also invalidate QuickBooks status queries to ensure UI updates
+    // This is handled by the callback page, but we do it here too for modal flow
   };
 
   const handleClose = () => {

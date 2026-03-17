@@ -22,13 +22,13 @@ const ChatbotDrawer: React.FC<ChatbotDrawerProps> = ({
           onClick={onClose}
         />
       )}
-  <div
-  className={`fixed bottom-0 right-0 h-[calc(100%-56px)] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
-    isOpen ? "translate-x-0" : "translate-x-full"
-  } w-[450px] flex flex-col z-40`}
->
-
-        <div className="p-8 pb-5">
+      <div
+        className={`fixed bottom-0 right-0 h-[calc(100%-56px)] bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        } w-[450px] flex flex-col z-40`}
+      >
+        {/* Header (fixed) */}
+        <div className="p-8 pb-5 flex-shrink-0">
           <div className="flex flex-col items-center text-center mb-8">
             <div className="rounded-full p-4 mt-10">
               <Image
@@ -44,8 +44,9 @@ const ChatbotDrawer: React.FC<ChatbotDrawerProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 px-8">
-          <div className="space-y-4">
+        {/* Scrollable content */}
+        <div className="flex-1 px-8 overflow-y-auto">
+          <div className="space-y-4 pb-6">
             {questions.map((question, index) => (
               <div
                 key={index}

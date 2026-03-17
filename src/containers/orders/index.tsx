@@ -609,6 +609,15 @@ const Orders = () => {
             quoteId={selectedOrder.quotes?.[0]?.id || ""}
             amount={selectedOrder.totalPrice || 0}
             orderId={selectedOrder.orderId}
+            customerEmail={selectedOrder.quotes?.[0]?.email || undefined}
+            customerName={
+              selectedOrder.quotes?.[0]?.user?.firstName &&
+              selectedOrder.quotes?.[0]?.user?.lastName
+                ? `${selectedOrder.quotes[0].user.firstName} ${selectedOrder.quotes[0].user.lastName}`.trim()
+                : selectedOrder.quotes?.[0]?.user?.firstName ||
+                  selectedOrder.quotes?.[0]?.user?.email ||
+                  undefined
+            }
             onPaymentSuccess={() => {
               setIsQuickBooksModalOpen(false);
               setSelectedOrder(null);
