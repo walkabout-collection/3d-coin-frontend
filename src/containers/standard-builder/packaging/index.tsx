@@ -28,7 +28,7 @@ const Packaging = () => {
       {/* Left Side - 3D Coin Viewer */}
       <div className="flex justify-between w-full max-w-2xl mr-8 py-12">
         <div className="flex items-center w-full">
-          <div className="w-full h-[500px] relative bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg shadow-lg p-4">
+          <div className="w-full h-[500px] relative  p-4">
             <Coin3DViewer
               materialId={material || "gold"}
               dimensions={dimensions}
