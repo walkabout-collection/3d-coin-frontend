@@ -657,18 +657,55 @@ export const uploadBase64ToS3 = async (
   fileName: string = `image-${Date.now()}.png`,
 ): Promise<string> => {
   try {
-    // Extract mime type from base64 string
-    const matches = base64Image.match(/^data:(.*?);base64,(.*)$/);
-    if (!matches) {
+    const normalized = base64Image.trim();
+
+    // Support both:
+    // - base64 data URLs: data:<mime>;base64,<data>
+    // - non-base64 data URLs: data:<mime>,<data> (e.g. svg+xml utf8)
+    const base64Matches = normalized.match(/^data:(.*?);base64,([\s\S]*)$/);
+
+    let mimeType: string;
+    let blob: Blob;
+
+    if (base64Matches) {
+      // Extract mime type from base64 data URL
+      mimeType = base64Matches[1];
+      const base64Data = base64Matches[2].replace(/\s/g, "");
+
+      console.log(
+        `[S3 Upload] Starting upload for ${fileName}, mimeType: ${mimeType}`,
+      );
+
+      // Convert base64 to blob
+      const byteString = atob(base64Data);
+      const n = byteString.length;
+      const u8arr = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        u8arr[i] = byteString.charCodeAt(i);
+      }
+      blob = new Blob([u8arr], { type: mimeType });
+    } else if (normalized.startsWith("data:")) {
+      // Non-base64 data URL: fetch it into a Blob first.
+      const mimeTypeMatch = normalized.match(/^data:([^;,]+)(?:;|,)/);
+      mimeType = mimeTypeMatch?.[1] || "application/octet-stream";
+
+      const fetched = await fetch(normalized);
+      if (!fetched.ok) {
+        throw new Error(
+          `Failed to fetch data URL for ${fileName} (status ${fetched.status})`,
+        );
+      }
+
+      blob = await fetched.blob();
+      // Prefer actual blob type when available.
+      mimeType = blob.type || mimeType;
+
+      console.log(
+        `[S3 Upload] Starting upload for ${fileName}, mimeType: ${mimeType} (from non-base64 data URL)`,
+      );
+    } else {
       throw new Error("Invalid base64 string format");
     }
-
-    const mimeType = matches[1];
-    const base64Data = matches[2];
-
-    console.log(
-      `[S3 Upload] Starting upload for ${fileName}, mimeType: ${mimeType}`,
-    );
 
     // Get presigned URL
     let presignedResponse;
@@ -701,15 +738,6 @@ export const uploadBase64ToS3 = async (
         "Failed to get presigned URL from S3 - missing url or key",
       );
     }
-
-    // Convert base64 to blob
-    const byteString = atob(base64Data);
-    const n = byteString.length;
-    const u8arr = new Uint8Array(n);
-    for (let i = 0; i < n; i++) {
-      u8arr[i] = byteString.charCodeAt(i);
-    }
-    const blob = new Blob([u8arr], { type: mimeType });
 
     console.log(
       `[S3 Upload] Uploading blob to S3 (size: ${blob.size} bytes, type: ${mimeType})`,
