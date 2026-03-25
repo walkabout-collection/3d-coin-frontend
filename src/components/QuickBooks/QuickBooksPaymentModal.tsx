@@ -8,9 +8,9 @@ import {
 import { toast } from "react-toastify";
 import Button from "../common/button/Button";
 import QuickBooksConnectionStatus from "./QuickBooksConnectionStatus";
-import QuickBooksOAuthModal from "./QuickBooksOAuthModal";
 import { X } from "lucide-react";
 import { getQuickBooksErrorMessage } from "@/src/utils/quickbooksErrors";
+import { beginQuickBooksConnect } from "@/src/utils/quickbooksOAuth";
 
 interface QuickBooksPaymentModalProps {
   isOpen: boolean;
@@ -33,13 +33,11 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
   customerName,
   onPaymentSuccess,
 }) => {
-  const [showOAuthModal, setShowOAuthModal] = useState(false);
   const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
 
-  const { data: connectionStatus, refetch: refetchConnection } =
-    useQuickBooksConnectionStatus({
-      enabled: isOpen,
-    });
+  const { data: connectionStatus } = useQuickBooksConnectionStatus({
+    enabled: isOpen,
+  });
 
   const { mutate: createInvoice, isPending: isCreatingInvoice } =
     useCreateQuickBooksInvoiceForQuote({
@@ -70,14 +68,19 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
 
   useEffect(() => {
     if (isOpen && !isConnected) {
-      // Auto-open OAuth modal if not connected
-      setShowOAuthModal(true);
+      beginQuickBooksConnect({ returnTo: window.location.href }).catch((e) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error(msg || "Failed to start QuickBooks connection");
+      });
     }
   }, [isOpen, isConnected]);
 
   const handleCreateInvoice = () => {
     if (!isConnected) {
-      setShowOAuthModal(true);
+      beginQuickBooksConnect({ returnTo: window.location.href }).catch((e) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error(msg || "Failed to start QuickBooks connection");
+      });
       return;
     }
 
@@ -97,12 +100,11 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
     });
   };
 
-  const handleOAuthSuccess = () => {
-    // Refetch connection status after OAuth success
-    refetchConnection();
-    setShowOAuthModal(false);
-    // Also invalidate QuickBooks status queries to ensure UI updates
-    // This is handled by the callback page, but we do it here too for modal flow
+  const handleReconnect = () => {
+    beginQuickBooksConnect({ returnTo: window.location.href }).catch((e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(msg || "Failed to start QuickBooks connection");
+    });
   };
 
   const handleClose = () => {
@@ -121,7 +123,7 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
     if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !showOAuthModal) {
+      if (e.key === "Escape") {
         handleClose();
       }
     };
@@ -133,11 +135,11 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, showOAuthModal]);
+  }, [isOpen]);
 
   // Handle click outside to close
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !showOAuthModal) {
+    if (e.target === e.currentTarget) {
       handleClose();
     }
   };
@@ -190,9 +192,7 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
 
             {/* Connection Status */}
             <div className="mb-6">
-              <QuickBooksConnectionStatus
-                onReconnect={() => setShowOAuthModal(true)}
-              />
+              <QuickBooksConnectionStatus onReconnect={handleReconnect} />
             </div>
 
             {/* Invoice Creation */}
@@ -355,13 +355,6 @@ const QuickBooksPaymentModal: React.FC<QuickBooksPaymentModalProps> = ({
           </div>
         </div>
       </div>
-
-      {/* OAuth Modal */}
-      <QuickBooksOAuthModal
-        isOpen={showOAuthModal}
-        onClose={() => setShowOAuthModal(false)}
-        onSuccess={handleOAuthSuccess}
-      />
     </>
   );
 };

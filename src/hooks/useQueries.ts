@@ -57,8 +57,6 @@ import {
   getUserOrdersLegacy,
   deleteSavedPaymentMethod,
   getPaymentMethodFromSession,
-  initiateQuickBooksOAuth,
-  handleQuickBooksCallback,
   getQuickBooksConnectionStatus,
   getQuickBooksTransactions,
   disconnectQuickBooks,
@@ -81,7 +79,6 @@ import {
   mapAdminQuickBooksTransaction,
   retryAdminQuickBooksFailedSyncs,
   getQuickBooksStatus,
-  connectQuickBooks,
   createQuickBooksInvoiceForQuote,
   getAdminPaymentTransactions,
   type TransactionFilters,
@@ -853,38 +850,6 @@ export const usePaymentMethodFromSession = (
 
 // --- QuickBooks Integration Hooks ---
 
-// Initiate QuickBooks OAuth flow
-export const useInitiateQuickBooksOAuth = (
-  options?: UseMutationOptions<
-    Awaited<ReturnType<typeof initiateQuickBooksOAuth>>,
-    Error,
-    void
-  >,
-) =>
-  useMutation<Awaited<ReturnType<typeof initiateQuickBooksOAuth>>, Error, void>(
-    {
-      mutationFn: () => initiateQuickBooksOAuth(),
-      ...options,
-    },
-  );
-
-// Handle QuickBooks OAuth callback
-export const useHandleQuickBooksCallback = (
-  options?: UseMutationOptions<
-    Awaited<ReturnType<typeof handleQuickBooksCallback>>,
-    Error,
-    Parameters<typeof handleQuickBooksCallback>[0]
-  >,
-) =>
-  useMutation<
-    Awaited<ReturnType<typeof handleQuickBooksCallback>>,
-    Error,
-    Parameters<typeof handleQuickBooksCallback>[0]
-  >({
-    mutationFn: handleQuickBooksCallback,
-    ...options,
-  });
-
 // Get QuickBooks connection status
 export const useQuickBooksConnectionStatus = (
   options?: Omit<
@@ -1261,19 +1226,6 @@ export const useQuickBooksStatus = (
   useQuery<Awaited<ReturnType<typeof getQuickBooksStatus>>, Error>({
     queryKey: ["quickBooksStatus"],
     queryFn: getQuickBooksStatus,
-    ...options,
-  });
-
-// Connect QuickBooks (guide endpoint)
-export const useConnectQuickBooks = (
-  options?: UseMutationOptions<
-    Awaited<ReturnType<typeof connectQuickBooks>>,
-    Error,
-    void
-  >,
-) =>
-  useMutation<Awaited<ReturnType<typeof connectQuickBooks>>, Error, void>({
-    mutationFn: () => connectQuickBooks(),
     ...options,
   });
 

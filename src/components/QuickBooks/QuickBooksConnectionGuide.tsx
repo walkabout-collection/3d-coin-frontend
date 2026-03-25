@@ -2,7 +2,6 @@
 import React from "react";
 import {
   useQuickBooksStatus,
-  useConnectQuickBooks,
   useDisconnectQuickBooks,
 } from "@/src/hooks/useQueries";
 import { toast } from "react-toastify";
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { getQuickBooksErrorMessage } from "@/src/utils/quickbooksErrors";
 import { useQueryClient } from "@tanstack/react-query";
+import { beginQuickBooksConnect } from "@/src/utils/quickbooksOAuth";
 
 interface QuickBooksConnectionGuideProps {
   onConnectionChange?: (connected: boolean) => void;
@@ -26,82 +26,7 @@ const QuickBooksConnectionGuide: React.FC<QuickBooksConnectionGuideProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { data: statusData, isLoading, error, refetch } = useQuickBooksStatus();
-
-  const { mutate: connect, isPending: isConnecting } = useConnectQuickBooks({
-    onSuccess: (response) => {
-      if (response.success && response.data?.authUri) {
-        // Validate authUri before redirecting
-        if (
-          !response.data.authUri ||
-          !response.data.authUri.startsWith("http")
-        ) {
-          toast.error(
-            "Invalid authorization URL received. Please check backend configuration.",
-            { autoClose: 6000 },
-          );
-          sessionStorage.removeItem("quickbooks_oauth_redirect");
-          return;
-        }
-
-        // Log for debugging (remove in production if needed)
-        console.log("Redirecting to QuickBooks OAuth:", response.data.authUri);
-
-        // Redirect to QuickBooks OAuth
-        window.location.href = response.data.authUri;
-      } else {
-        toast.error(
-          response.message || "Failed to initiate QuickBooks connection",
-          { autoClose: 5000 },
-        );
-        sessionStorage.removeItem("quickbooks_oauth_redirect");
-      }
-    },
-    onError: (error) => {
-      // Clear OAuth state on error
-      sessionStorage.removeItem("quickbooks_oauth_redirect");
-      sessionStorage.removeItem("quickbooks_oauth_started");
-
-      let errorMessage = "Failed to connect QuickBooks";
-
-      // Enhanced error handling for common OAuth issues
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as {
-          response?: {
-            status?: number;
-            data?: { message?: string; code?: string };
-          };
-          message?: string;
-        };
-
-        const responseData = axiosError.response?.data;
-        const status = axiosError.response?.status;
-
-        if (responseData?.message) {
-          errorMessage = responseData.message;
-        }
-
-        // Handle specific error cases
-        if (status === 500) {
-          errorMessage =
-            "Backend configuration error. Please verify QuickBooks credentials and redirect URI settings.";
-        } else if (status === 400) {
-          errorMessage =
-            "Invalid request. Please ensure QuickBooks app is properly configured in Developer Portal.";
-        } else if (responseData?.code === "ERR_OAUTH") {
-          errorMessage =
-            "OAuth configuration error. Please check backend environment variables match Developer Portal settings.";
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      // Use the error utility for consistent error messages
-      const finalErrorMessage = getQuickBooksErrorMessage(error);
-      toast.error(finalErrorMessage, {
-        autoClose: 6000,
-      });
-    },
-  });
+  const [isConnecting, setIsConnecting] = React.useState(false);
 
   const { mutate: disconnect, isPending: isDisconnecting } =
     useDisconnectQuickBooks({
@@ -124,41 +49,15 @@ const QuickBooksConnectionGuide: React.FC<QuickBooksConnectionGuideProps> = ({
       },
     });
 
-  const handleConnect = () => {
-    // Prevent multiple simultaneous connection attempts
-    if (isConnecting) {
-      toast.warning("Connection already in progress. Please wait...");
-      return;
+  const handleConnect = async () => {
+    try {
+      setIsConnecting(true);
+      await beginQuickBooksConnect({ returnTo: window.location.href });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(msg || "Failed to start QuickBooks connection");
+      setIsConnecting(false);
     }
-
-    // Check if there's a recent OAuth attempt (within last 30 seconds)
-    if (typeof window !== "undefined") {
-      const lastAttempt = sessionStorage.getItem("quickbooks_oauth_started");
-      if (lastAttempt) {
-        const timeSinceLastAttempt = Date.now() - parseInt(lastAttempt, 10);
-        if (timeSinceLastAttempt < 30000) {
-          // Less than 30 seconds ago
-          toast.warning(
-            "Please wait before trying again. Authorization codes can only be used once.",
-            { autoClose: 5000 },
-          );
-          return;
-        }
-      }
-    }
-
-    // Clear any previous OAuth state to start fresh
-    if (typeof window !== "undefined") {
-      // Remove any old OAuth flags
-      sessionStorage.removeItem("quickbooks_oauth_redirect");
-      // Mark that we're initiating a new OAuth flow
-      sessionStorage.setItem("quickbooks_oauth_redirect", "pending");
-      // Store timestamp to detect stale OAuth attempts
-      sessionStorage.setItem("quickbooks_oauth_started", Date.now().toString());
-    }
-    // The connect() function will redirect to QuickBooks OAuth
-    // After OAuth, QuickBooks redirects to /payment/quickbooks/callback
-    connect();
   };
 
   const handleDisconnect = () => {

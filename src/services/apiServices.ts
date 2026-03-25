@@ -1947,33 +1947,26 @@ export const getPaymentTimeline = async (
 
 // --- QuickBooks Integration API ---
 
-// Initiate QuickBooks OAuth flow
-export const initiateQuickBooksOAuth = async (): Promise<{
-  success: boolean;
-  data: {
-    authUrl: string;
-    state: string;
-  };
-  message?: string;
-}> => {
-  const res = await apiClient.post("/quickbooks/oauth/initiate");
-  return res.data;
-};
-
-// Handle QuickBooks OAuth callback
-export const handleQuickBooksCallback = async (data: {
-  code: string;
-  state: string;
-  realmId?: string;
+// Start QuickBooks OAuth connect flow
+// Note: This should be called via XHR so the Authorization header is included.
+// The backend should respond with an authorization URL to redirect the browser to.
+export const startQuickBooksConnect = async (params?: {
+  returnTo?: string;
 }): Promise<{
   success: boolean;
-  data: {
-    connected: boolean;
-    companyName?: string;
+  data?: {
+    url?: string;
+    authUrl?: string;
+    authUri?: string;
+    redirectUrl?: string;
   };
+  url?: string;
+  authUrl?: string;
+  authUri?: string;
+  redirectUrl?: string;
   message?: string;
 }> => {
-  const res = await apiClient.post("/quickbooks/oauth/callback", data);
+  const res = await apiClient.get("/quickbooks/connect", { params });
   return res.data;
 };
 
@@ -2346,18 +2339,6 @@ export const getQuickBooksStatus = async (): Promise<{
   message?: string;
 }> => {
   const res = await apiClient.get("/quickbooks/status");
-  return res.data;
-};
-
-// Initiate QuickBooks connection (guide endpoint: GET /api/quickbooks/connect)
-export const connectQuickBooks = async (): Promise<{
-  success: boolean;
-  data: {
-    authUri: string;
-  };
-  message?: string;
-}> => {
-  const res = await apiClient.get("/quickbooks/connect");
   return res.data;
 };
 
