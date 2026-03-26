@@ -6,7 +6,6 @@
 import { useEffect, useCallback } from "react";
 import {
   useQuickBooksStatus,
-  useConnectQuickBooks,
   useDisconnectQuickBooks,
   useCreateQuickBooksInvoiceForQuote,
   useQuickBooksTransactions,
@@ -14,6 +13,7 @@ import {
 } from "./useQueries";
 import { getQuickBooksErrorMessage } from "@/src/utils/quickbooksErrors";
 import { toast } from "react-toastify";
+import { beginQuickBooksConnect } from "@/src/utils/quickbooksOAuth";
 
 interface UseQuickBooksOptions {
   autoRefresh?: boolean;
@@ -27,6 +27,7 @@ export const useQuickBooks = (options: UseQuickBooksOptions = {}) => {
     refreshInterval = 30000, // 30 seconds
     onConnectionChange,
   } = options;
+  // Connection initiation is handled via authenticated XHR + redirect (see beginQuickBooksConnect)
 
   // Status query
   const {
@@ -38,27 +39,8 @@ export const useQuickBooks = (options: UseQuickBooksOptions = {}) => {
     refetchInterval: autoRefresh ? refreshInterval : false,
   });
 
-  // Connection mutations
-  const {
-    mutate: connect,
-    isPending: isConnecting,
-    error: connectError,
-  } = useConnectQuickBooks({
-    onSuccess: (response) => {
-      if (response.success && response.data?.authUri) {
-        // Redirect to QuickBooks OAuth
-        window.location.href = response.data.authUri;
-      } else {
-        const errorMsg =
-          response.message || "Failed to initiate QuickBooks connection";
-        toast.error(errorMsg);
-      }
-    },
-    onError: (error) => {
-      const errorMsg = getQuickBooksErrorMessage(error);
-      toast.error(errorMsg);
-    },
-  });
+  const isConnecting = false;
+  const connectError = undefined;
 
   const {
     mutate: disconnect,
@@ -142,8 +124,12 @@ export const useQuickBooks = (options: UseQuickBooksOptions = {}) => {
 
   // Handlers
   const handleConnect = useCallback(() => {
-    connect();
-  }, [connect]);
+    // Fire and forget: this will redirect the browser on success
+    beginQuickBooksConnect({ returnTo: window.location.href }).catch((e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(msg || "Failed to start QuickBooks connection");
+    });
+  }, []);
 
   const handleDisconnect = useCallback(() => {
     if (
