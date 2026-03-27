@@ -71,7 +71,11 @@ export default function AdminDashboard({
 
   // Fetch recent orders (limit 10)
   const { data: orderHistoryData, isPending: isOrdersPending } =
-    useAdminOrderHistory();
+    useAdminOrderHistory(undefined, {
+      // Ensure fresh data right after login/navigation when query cache
+      // may still hold pre-auth or stale results.
+      refetchOnMount: "always",
+    });
 
   const getCardValue = (title: string) => {
     switch (title) {
