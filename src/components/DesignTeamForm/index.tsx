@@ -50,7 +50,7 @@ const DesignTeamForm: React.FC = () => {
       // Step 1: Upload image if exists
       if (data.image) {
         const uploadRes = await uploadImageMutation({ image: data.image });
-        imageUrl = uploadRes.url; 
+        imageUrl = uploadRes.url;
       }
 
       // Step 2: Submit contact form with uploaded image URL
@@ -64,7 +64,6 @@ const DesignTeamForm: React.FC = () => {
       });
 
       reset();
-      alert("Form submitted successfully!");
     } catch (err) {
       console.error("Submission error:", err);
       alert("Failed to submit form. Please try again.");
