@@ -484,12 +484,6 @@ const Orders = () => {
       width: "w-32",
     },
     {
-      key: "paymentDate",
-      label: "Payment Date",
-      width: "w-32",
-      render: (value) => (value ? formatDate(value as string) : "N/A"),
-    },
-    {
       key: "date",
       label: "Order Date",
       width: "w-32",

@@ -21,11 +21,11 @@ export const sidebarItems: SidebarItem[] = [
     href: "/drafts",
     icon: "/images/dashboard/drafts.svg",
   },
-  {
-    name: "Tracking",
-    href: "/dashboard/tracking",
-    icon: "/images/dashboard/tracking.svg",
-  },
+  // {
+  //   name: "Tracking",
+  //   href: "/dashboard/tracking",
+  //   icon: "/images/dashboard/tracking.svg",
+  // },
   {
     name: "Payment Method",
     href: "/dashboard/payment-method",
