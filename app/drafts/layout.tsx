@@ -7,16 +7,22 @@ import { UserProfilesLayoutProps } from "@/src/containers/dashboard/types";
 import { sidebarItems } from "@/src/containers/dashboard/data";
 import { useLogout } from "@/src/hooks/useQueries";
 import { LogOut } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/src/store/useAuthStore";
 
 export default function DraftsLayout({ children }: UserProfilesLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const queryClient = useQueryClient();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   const { mutate: logout } = useLogout({
     onSuccess: () => {
       document.cookie = "token=; path=/; max-age=0";
       document.cookie = "refreshToken=; path=/; max-age=0";
+      clearAuth();
+      queryClient.clear();
       window.dispatchEvent(new Event("authChanged"));
 
       router.push("/login");

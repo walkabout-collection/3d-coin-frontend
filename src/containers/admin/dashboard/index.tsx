@@ -71,7 +71,11 @@ export default function AdminDashboard({
 
   // Fetch recent orders (limit 10)
   const { data: orderHistoryData, isPending: isOrdersPending } =
-    useAdminOrderHistory();
+    useAdminOrderHistory(undefined, {
+      // Ensure fresh data right after login/navigation when query cache
+      // may still hold pre-auth or stale results.
+      refetchOnMount: "always",
+    });
 
   const getCardValue = (title: string) => {
     switch (title) {
@@ -95,7 +99,6 @@ export default function AdminDashboard({
     totalPrice: number;
     paymentStatus?: string;
     paymentMethod: string;
-    paymentDate?: string | null;
     date: string;
     customer?: string;
     customerEmail?: string;
@@ -119,7 +122,6 @@ export default function AdminDashboard({
       date: formatDate(item.date),
       status: item.status || "APPROVED",
       paymentStatus: item.paymentStatus || "UNPAID",
-      paymentDate: item.paymentId ? formatDate(item.date) : null,
       customer: item.customer,
       customerEmail: item.customerEmail,
     }));
@@ -164,12 +166,6 @@ export default function AdminDashboard({
       key: "paymentMethod",
       label: "Payment Method",
       width: "w-32",
-    },
-    {
-      key: "paymentDate",
-      label: "Payment Date",
-      width: "w-32",
-      render: (value) => (value ? formatDate(value as string) : "N/A"),
     },
     {
       key: "date",

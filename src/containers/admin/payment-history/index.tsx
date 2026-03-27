@@ -5,31 +5,19 @@ import { PaymentDataItem } from "./types";
 import AdminTable from "@/src/components/admin/AdminTable";
 import { useAdminOrderHistory } from "@/src/hooks/useQueries";
 
-// Format payment method display
-const formatPaymentMethod = (method: string | undefined): string => {
-  if (!method) return "N/A";
-  switch (method.toUpperCase()) {
-    case "STRIPE":
-      return "CREDIT CARD";
-    case "MANUAL":
-      return "MANUAL";
-    case "QUICKBOOKS":
-      return "QUICKBOOKS";
-    default:
-      return method;
-  }
-};
-
-// Format date as DD/MM/YYYY
+// Format API date as local date/time
 const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return "N/A";
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return "Invalid date";
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
   } catch {
     return "Invalid date";
   }
@@ -58,7 +46,7 @@ const AdminPaymentHistory = () => {
   }));
 
   const displayData: PaymentDataItem[] = rawData.map((item) => ({
-    paymentMethod: formatPaymentMethod(item.paymentMethod),
+    paymentMethod: item.paymentMethod || "N/A",
     originalPaymentMethod: item.paymentMethod, // Store original value for status edit check
     orderTotal: `$${item.total.toFixed(2)}`,
     date: formatDate(item.date),

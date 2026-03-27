@@ -11,6 +11,9 @@ import Input from "../common/input";
 import Button from "../common/button/Button";
 import { useLogin } from "@/src/hooks/useQueries";
 import LoadingSpinner from "../common/LoadingSpinner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/src/store/useAuthStore";
+import type { User } from "@/src/services/api/apiTypes";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,6 +25,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const Login = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const setAuthFromToken = useAuthStore((state) => state.setAuthFromToken);
+  const setUserProfile = useAuthStore((state) => state.setUserProfile);
 
   const {
     register,
@@ -55,7 +61,7 @@ const Login = () => {
     onSuccess: (response) => {
       console.log("Login response:", response);
 
-      const { accessToken, refreshToken } = response;
+      const { accessToken, refreshToken, user } = response;
 
       if (!accessToken) {
         console.error("No access token in response");
@@ -78,6 +84,15 @@ const Login = () => {
       setCookie("token", accessToken, 86400); // 1 day
       setCookie("refreshToken", refreshToken, 604800); // 7 days
 
+      setAuthFromToken(accessToken);
+      const normalizedRole: User["role"] =
+        user?.role === "ADMIN" || user?.role === "USER" ? user.role : undefined;
+      const normalizedUser: User | null = user
+        ? { ...user, role: normalizedRole }
+        : null;
+      setUserProfile(normalizedUser);
+
+      queryClient.invalidateQueries();
       window.dispatchEvent(new Event("authChanged"));
 
       router.push("/dashboard");

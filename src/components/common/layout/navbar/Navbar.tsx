@@ -3,30 +3,20 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
 import { navLinks, navLinksAuth } from "./data";
 import { NavbarProps } from "./types";
 import { useLogout, useGetUserProfile } from "@/src/hooks/useQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  User,
-  Settings,
-  LayoutDashboard,
-  LogOut,
-  ChevronRight,
-} from "lucide-react";
-
-interface TokenPayload {
-  role?: "USER" | "ADMIN";
-  exp?: number;
-}
+import { useAuthStore } from "@/src/store/useAuthStore";
+import { Settings, LayoutDashboard, LogOut, ChevronRight } from "lucide-react";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
+  if (parts.length !== 2) return null;
+  const cookieValue = parts.pop()?.split(";").shift() || null;
+  return cookieValue ? decodeURIComponent(cookieValue) : null;
 };
 
 // Helper function to get user initials
@@ -43,41 +33,40 @@ const Navbar: React.FC<NavbarProps> = ({
   className = "",
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [userRole, setUserRole] = useState<"USER" | "ADMIN" | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const popupRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const previousLoggedInRef = useRef<boolean>(false);
+  const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
+  const userRole = useAuthStore((state) => state.userRole);
+  const setAuthFromToken = useAuthStore((state) => state.setAuthFromToken);
+  const setUserProfile = useAuthStore((state) => state.setUserProfile);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const storeUserProfile = useAuthStore((state) => state.userProfile);
 
   // Fetch user profile
-  const { data: userProfile, refetch: refetchProfile } = useGetUserProfile({
+  const { data: fetchedUserProfile } = useGetUserProfile({
     queryKey: ["userProfile"],
     enabled: isLoggedIn,
-    refetchOnMount: "always",
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
-    staleTime: 0, // Always consider data stale to ensure fresh data
+    staleTime: 0,
   });
 
-  // Refetch profile when user logs in
   useEffect(() => {
-    if (isLoggedIn) {
-      // Small delay to ensure token is set in cookies
-      const timer = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-        refetchProfile();
-      }, 200);
-      return () => clearTimeout(timer);
+    if (fetchedUserProfile) {
+      setUserProfile(fetchedUserProfile);
     }
-  }, [isLoggedIn, queryClient, refetchProfile]);
+  }, [fetchedUserProfile, setUserProfile]);
 
   const { mutate: logout } = useLogout({
     onSuccess: () => {
       document.cookie = "token=; path=/; max-age=0";
       document.cookie = "refreshToken=; path=/; max-age=0";
+      clearAuth();
+      queryClient.clear();
       window.dispatchEvent(new Event("authChanged"));
       router.push("/login");
     },
@@ -89,55 +78,18 @@ const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     const checkAuth = () => {
       const token = getCookie("token");
-      const newLoggedIn = !!token;
-      const previousLoggedIn = previousLoggedInRef.current;
-
-      setIsLoggedIn(newLoggedIn);
-
-      // Decode token to get user role
-      if (token) {
-        try {
-          const payload = jwtDecode<TokenPayload>(token);
-          setUserRole(payload.role || "USER");
-        } catch (err) {
-          setUserRole(null);
-        }
-      } else {
-        setUserRole(null);
+      setAuthFromToken(token);
+      if (!token) {
+        setUserProfile(null);
       }
-
-      // If user just logged in (wasn't logged in before, but now is), refetch profile
-      if (!previousLoggedIn && newLoggedIn) {
-        // Invalidate and refetch user profile
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-        setTimeout(() => {
-          refetchProfile();
-        }, 100);
-      }
-
-      // Update ref for next check
-      previousLoggedInRef.current = newLoggedIn;
     };
-
-    // Initial check
-    const token = getCookie("token");
-    previousLoggedInRef.current = !!token;
-    setIsLoggedIn(!!token);
-
-    // Decode initial token
-    if (token) {
-      try {
-        const payload = jwtDecode<TokenPayload>(token);
-        setUserRole(payload.role || "USER");
-      } catch (err) {
-        setUserRole(null);
-      }
-    }
 
     checkAuth();
     window.addEventListener("authChanged", checkAuth);
     return () => window.removeEventListener("authChanged", checkAuth);
-  }, [queryClient, refetchProfile]);
+  }, [setAuthFromToken, setUserProfile]);
+
+  const userProfile = storeUserProfile ?? fetchedUserProfile ?? null;
 
   useEffect(() => {
     const handleScroll = () => {

@@ -3,16 +3,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
 import { sidebarItems } from "@/src/containers/admin/dashboard/data";
 import { AdminLayoutProps } from "@/src/containers/admin/dashboard/types";
 import { useLogout } from "@/src/hooks/useQueries";
 import { LogOut } from "lucide-react";
-
-interface TokenPayload {
-  role?: "USER" | "ADMIN";
-  exp?: number;
-}
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/src/store/useAuthStore";
 
 // Helper function to get cookie value
 const getCookie = (name: string): string | null => {
@@ -20,7 +16,8 @@ const getCookie = (name: string): string | null => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
-    return parts.pop()?.split(";").shift() || null;
+    const cookieValue = parts.pop()?.split(";").shift() || null;
+    return cookieValue ? decodeURIComponent(cookieValue) : null;
   }
   return null;
 };
@@ -30,46 +27,53 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isAuthSynced, setIsAuthSynced] = useState(false);
+  const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const userRole = useAuthStore((state) => state.userRole);
+  const setAuthFromToken = useAuthStore((state) => state.setAuthFromToken);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  // Keep Zustand auth in sync with cookie updates.
+  useEffect(() => {
+    const syncAuth = () => {
+      const token = getCookie("token");
+      setAuthFromToken(token);
+      setIsAuthSynced(true);
+    };
+
+    syncAuth();
+    window.addEventListener("authChanged", syncAuth);
+    return () => window.removeEventListener("authChanged", syncAuth);
+  }, [setAuthFromToken]);
 
   // Client-side authorization check
   useEffect(() => {
-    const checkAuthorization = () => {
-      const token = getCookie("token");
+    if (!isAuthSynced) {
+      return;
+    }
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+    if (!isAuthenticated) {
+      setIsAuthorized(false);
+      router.push("/login");
+      return;
+    }
 
-      try {
-        const payload = jwtDecode<TokenPayload>(token);
+    if (userRole !== "ADMIN") {
+      setIsAuthorized(false);
+      router.push("/dashboard");
+      return;
+    }
 
-        // Check if token is expired
-        if (payload.exp && Date.now() >= payload.exp * 1000) {
-          router.push("/login");
-          return;
-        }
-
-        // Require ADMIN role
-        if (payload.role !== "ADMIN") {
-          router.push("/dashboard");
-          return;
-        }
-
-        setIsAuthorized(true);
-      } catch (err) {
-        // Invalid token
-        router.push("/login");
-      }
-    };
-
-    checkAuthorization();
-  }, [router]);
+    setIsAuthorized(true);
+  }, [isAuthSynced, isAuthenticated, userRole, router]);
 
   const { mutate: logout } = useLogout({
     onSuccess: () => {
       document.cookie = "token=; path=/; max-age=0";
       document.cookie = "refreshToken=; path=/; max-age=0";
+      clearAuth();
+      queryClient.clear();
       window.dispatchEvent(new Event("authChanged"));
 
       router.push("/login");
