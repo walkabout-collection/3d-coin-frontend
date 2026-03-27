@@ -1,12 +1,15 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useRouter } from "next/navigation";
 import Input from "../common/input";
 import Button from "../common/button/Button";
 import ImageUpload from "../common/imageUpload";
-import { useCreateContact, useUploadImage } from "@/src/hooks/useQueries";
+import { useCreateContact } from "@/src/hooks/useQueries";
+import { uploadBase64ToS3 } from "@/src/services/apiServices";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -25,6 +28,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const DesignTeamForm: React.FC = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -36,21 +41,38 @@ const DesignTeamForm: React.FC = () => {
     resolver: zodResolver(formSchema),
   });
 
-  const { mutateAsync: uploadImageMutation } = useUploadImage();
   const { mutateAsync: createContactMutation } = useCreateContact();
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Failed to convert file to base64"));
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileChange = (file: File | null) => {
-    if (file) setValue("image", file, { shouldValidate: true });
+    setValue("image", file, { shouldValidate: true });
   };
 
   const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
     try {
       let imageUrl: string | undefined;
 
-      // Step 1: Upload image if exists
+      // Step 1: Upload image to S3 if provided
       if (data.image) {
-        const uploadRes = await uploadImageMutation({ image: data.image });
-        imageUrl = uploadRes.url; 
+        const base64Image = await fileToBase64(data.image);
+        const extension = data.image.name.split(".").pop() || "png";
+        const fileName = `design-team-${Date.now()}.${extension}`;
+        imageUrl = await uploadBase64ToS3(base64Image, fileName);
       }
 
       // Step 2: Submit contact form with uploaded image URL
@@ -64,10 +86,11 @@ const DesignTeamForm: React.FC = () => {
       });
 
       reset();
-      alert("Form submitted successfully!");
+      router.push("/");
     } catch (err) {
       console.error("Submission error:", err);
-      alert("Failed to submit form. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -141,9 +164,17 @@ const DesignTeamForm: React.FC = () => {
         <Button
           type="submit"
           variant="primary"
-          className="max-w-xs mx-auto rounded-full py-3 font-semibold mt-10"
+          className="max-w-xs mx-auto rounded-full py-3 font-semibold mt-10 flex items-center justify-center gap-2"
+          disabled={isSubmitting}
         >
-          Send to Design Team
+          {isSubmitting ? (
+            <>
+              <LoadingSpinner size="sm" className="text-white" />
+              <span>Sending...</span>
+            </>
+          ) : (
+            "Send to Design Team"
+          )}
         </Button>
       </form>
     </div>
