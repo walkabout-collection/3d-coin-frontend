@@ -1004,6 +1004,57 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     backBottom: null,
   });
 
+  const applyBaseMetalToPlaceholder = (
+    mesh: THREE.Mesh | null,
+    textures: {
+      map: THREE.Texture | null;
+      normalMap: THREE.Texture | null;
+      roughnessMap: THREE.Texture | null;
+      metalnessMap: THREE.Texture | null;
+      heightMap: THREE.Texture | null;
+    },
+  ) => {
+    if (!mesh) return;
+
+    // If textures aren't loaded yet, avoid overwriting the placeholder material.
+    if (
+      !textures.map &&
+      !textures.normalMap &&
+      !textures.roughnessMap &&
+      !textures.metalnessMap &&
+      !textures.heightMap
+    ) {
+      return;
+    }
+
+    const baseMaterial =
+      mesh.material instanceof THREE.MeshStandardMaterial
+        ? mesh.material
+        : new THREE.MeshStandardMaterial();
+
+    // Clone so we don't affect other meshes.
+    const nextMaterial = baseMaterial.clone();
+    nextMaterial.map = textures.map ?? null;
+    nextMaterial.normalMap = textures.normalMap ?? null;
+    nextMaterial.roughnessMap = textures.roughnessMap ?? null;
+    nextMaterial.metalnessMap = textures.metalnessMap ?? null;
+    nextMaterial.displacementMap = textures.heightMap ?? null;
+    nextMaterial.displacementScale = textures.heightMap ? 0.15 : 0;
+    nextMaterial.displacementBias = textures.heightMap ? -0.075 : 0;
+
+    // Placeholders should look like part of the coin (not transparent UI overlays).
+    nextMaterial.transparent = false;
+    nextMaterial.opacity = 1;
+    nextMaterial.alphaTest = 0;
+    nextMaterial.depthWrite = true;
+    nextMaterial.depthTest = true;
+    nextMaterial.side = THREE.FrontSide;
+    nextMaterial.envMapIntensity = 1.0;
+
+    nextMaterial.needsUpdate = true;
+    mesh.material = nextMaterial;
+  };
+
   // Create object URLs from uploaded images and clean them up
   const frontImageUrl = useMemo(() => {
     if (artwork?.front?.previewImage) {
@@ -1170,6 +1221,47 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
     return () => clearTimeout(timeoutId);
   }, [scene, dimensions?.coinDiameter, dimensions?.coinThickness]); // Re-run when dimensions change
 
+  // Ensure the text-ring placeholder areas match the selected coin material color
+  // when there is no text (either side's `noText` is enabled or the top/bottom strings are empty).
+  useEffect(() => {
+    if (!textRings) return;
+
+    const frontTopHasText =
+      !textRings.front.noText && !!textRings.front.top?.trim();
+    const frontBottomHasText =
+      !textRings.front.noText && !!textRings.front.bottom?.trim();
+    const backTopHasText =
+      !textRings.back.noText && !!textRings.back.top?.trim();
+    const backBottomHasText =
+      !textRings.back.noText && !!textRings.back.bottom?.trim();
+
+    // If CoinTextTexture will render, let it own the material.
+    // Otherwise, re-apply the base coin face material to remove placeholder artifacts.
+    if (!frontTopHasText) {
+      applyBaseMetalToPlaceholder(textAreaMeshes.frontTop, topFaceTextures);
+    }
+    if (!frontBottomHasText) {
+      applyBaseMetalToPlaceholder(textAreaMeshes.frontBottom, topFaceTextures);
+    }
+    if (!backTopHasText) {
+      applyBaseMetalToPlaceholder(textAreaMeshes.backTop, bottomFaceTextures);
+    }
+    if (!backBottomHasText) {
+      applyBaseMetalToPlaceholder(
+        textAreaMeshes.backBottom,
+        bottomFaceTextures,
+      );
+    }
+  }, [
+    textRings,
+    textAreaMeshes.frontTop,
+    textAreaMeshes.frontBottom,
+    textAreaMeshes.backTop,
+    textAreaMeshes.backBottom,
+    topFaceTextures,
+    bottomFaceTextures,
+  ]);
+
   // Text area positions are now set using designer-provided coordinates
   // No fallback needed as we use exact coordinates from the 3D designer
 
@@ -1230,7 +1322,8 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
   }
 
   return (
-    <group ref={groupRef}>
+    // eslint-disable-next-line react/no-unknown-property
+    <group ref={groupRef} rotation={[Math.PI / 2, 0, 0]}>
       {/* GLB Model with applied textures */}
       {/* eslint-disable-next-line react/no-unknown-property */}
       <primitive object={scene} />
