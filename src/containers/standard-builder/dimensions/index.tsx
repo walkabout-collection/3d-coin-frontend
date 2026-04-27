@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import Input from "@/src/components/common/input";
+import Dropdown from "@/src/components/common/dropdown";
 import Button from "@/src/components/common/button/Button";
 import { coinDiameters, coinThicknesses } from "./data";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
@@ -47,17 +47,14 @@ const Dimensions = () => {
             <h3 className="text-md font-bold text-gray-800 mb-4">
               Coin Diameter
             </h3>
-            <Input
-              select
+            <Dropdown
               options={coinDiameters}
               placeholder="Select Coin Diameter"
-              inputSize="md"
-              className="border-none py-3 px-6 rounded-xl"
-              bg="bg-gray-100"
+              ariaLabel="Coin Diameter"
               value={dimensions.coinDiameter}
-              onChange={(e) =>
+              onChange={(value) =>
                 setDimensions({
-                  coinDiameter: e.target.value,
+                  coinDiameter: value,
                   coinThickness: dimensions.coinThickness,
                 })
               }
@@ -68,18 +65,15 @@ const Dimensions = () => {
             <h3 className="text-md font-bold text-gray-800 mb-4">
               Coin Thickness
             </h3>
-            <Input
-              select
+            <Dropdown
               options={coinThicknesses}
               placeholder="Select Coin Thickness"
-              inputSize="md"
-              className="border-none py-3 px-6 rounded-xl"
-              bg="bg-gray-100"
+              ariaLabel="Coin Thickness"
               value={dimensions.coinThickness}
-              onChange={(e) =>
+              onChange={(value) =>
                 setDimensions({
                   coinDiameter: dimensions.coinDiameter,
-                  coinThickness: e.target.value,
+                  coinThickness: value,
                 })
               }
             />

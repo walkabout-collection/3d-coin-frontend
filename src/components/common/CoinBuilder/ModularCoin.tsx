@@ -1322,7 +1322,8 @@ export const ModularCoin: React.FC<ModularCoinProps> = ({
   }
 
   return (
-    <group ref={groupRef}>
+    // eslint-disable-next-line react/no-unknown-property
+    <group ref={groupRef} rotation={[Math.PI / 2, 0, 0]}>
       {/* GLB Model with applied textures */}
       {/* eslint-disable-next-line react/no-unknown-property */}
       <primitive object={scene} />

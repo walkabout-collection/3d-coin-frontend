@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+html {
+  scrollbar-gutter: stable;
+}
+
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  overflow: visible !important;
+}
+
 :root {
   font-family: var(--font-cinzel);
 }
@@ -9,19 +21,19 @@
 }
 
 :root {
-  --background: #FFFFFF;
-  --foreground: #1E293B;
+  --background: #ffffff;
+  --foreground: #1e293b;
 
-  --primary: #121C2A;
+  --primary: #121c2a;
   --secondary: #193359;
 
   /* Ternary Colors */
-  --ternary: #F9D104;
-  --ternary-light: #C9A227;
+  --ternary: #f9d104;
+  --ternary-light: #c9a227;
 
   /* Text Colors */
-  --text-dark: #1E293B;
-  --text-medium: #64748B;
+  --text-dark: #1e293b;
+  --text-medium: #64748b;
 
   /* Shadows */
   --shadow-primary: rgba(0, 0, 0, 0.1);
@@ -86,10 +98,10 @@
 
   /* Custom gradients */
   .bg-gradient-light {
-    background-image: linear-gradient(to bottom, var(--primary), #FFFFFF);
+    background-image: linear-gradient(to bottom, var(--primary), #ffffff);
   }
   .bg-gradient-mobile {
-    background-image: linear-gradient(to bottom, var(--secondary), #E9D9F5);
+    background-image: linear-gradient(to bottom, var(--secondary), #e9d9f5);
   }
 
   /* Grayscale utils */
@@ -126,7 +138,7 @@
     max-width: 50%;
     background-color: var(--ternary-light);
     border-radius: 1rem;
-    height: 300px; 
+    height: 300px;
   }
 
   /* Responsive adjustments */
