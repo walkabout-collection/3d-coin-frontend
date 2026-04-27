@@ -1,11 +1,19 @@
 "use client";
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import {
+  OrbitControls,
+  Environment,
+  useProgress,
+  useGLTF,
+} from "@react-three/drei";
 import { ModularCoin } from "./CoinBuilder/ModularCoin";
 import { DynamicLighting } from "./CoinBuilder/DynamicLighting";
 import { ControlsInitializer } from "./CoinBuilder/ControlsInitializer";
 import { GLBVerification } from "./CoinBuilder/GLBVerification";
+useGLTF.preload("/Coin/Coin.glb");
+
+const CANVAS_BG_COLOR = 0xffffff;
 
 interface Dimensions {
   coinDiameter: string;
@@ -37,9 +45,42 @@ interface Coin3DViewerProps {
   className?: string;
   autoRotate?: boolean;
   enableControls?: boolean;
-  rotationSpeed?: number; // Speed of manual rotation (default: 0.5)
-  orbitRotateSpeed?: number; // Speed of OrbitControls auto-rotate (default: 0.5)
+  rotationSpeed?: number;
+  orbitRotateSpeed?: number;
 }
+
+const CoinLoadingOverlay: React.FC = () => {
+  const { active } = useProgress();
+  const [visible, setVisible] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (active) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setVisible(true);
+    } else {
+      timerRef.current = setTimeout(() => setVisible(false), 400);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [active]);
+
+  if (!visible) return null;
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 pointer-events-none gap-4">
+      <div className="relative w-20 h-20">
+        <div className="absolute inset-0 rounded-full border-4 border-[var(--ternary)]/20" />
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[var(--ternary)] border-r-[var(--ternary-light)] animate-spin" />
+        <div className="absolute inset-2 rounded-full bg-gradient-to-br from-[var(--ternary)] to-[var(--ternary-light)] shadow-inner" />
+      </div>
+      <p className="text-primary text-sm tracking-[0.2em] uppercase font-semibold">
+        Loading Coin
+      </p>
+    </div>
+  );
+};
 
 export const Coin3DViewer: React.FC<Coin3DViewerProps> = ({
   materialId = "gold",
@@ -50,37 +91,33 @@ export const Coin3DViewer: React.FC<Coin3DViewerProps> = ({
   className = "",
   autoRotate = false,
   enableControls = true,
-  rotationSpeed = 0,
-  orbitRotateSpeed = 0,
+  rotationSpeed = 0.3,
+  orbitRotateSpeed = 1,
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = React.useRef<any>(null);
 
-  // Ensure edgeType has a valid default value (handle empty string from store)
   const validEdgeType =
     edgeType && edgeType.trim() !== "" ? edgeType : "smooth";
 
   return (
     <div
-      className={`w-full h-full ${className}`}
+      className={`w-full h-full relative bg-white ${className}`}
       style={{ minHeight: "400px" }}
     >
+      <CoinLoadingOverlay />
       <Canvas
-        camera={{ position: [0, 0, 10], fov: 50 }} // Adjusted for larger coin size - front view
+        camera={{ position: [0, 0, 10], fov: 50 }}
         gl={{
           antialias: true,
-          alpha: true,
+          alpha: false,
           powerPreference: "high-performance",
         }}
-        className="bg-transparent"
         onCreated={({ gl, scene: canvasScene, camera }) => {
-          gl.setClearColor(0x000000, 0); // Transparent background
+          gl.setClearColor(CANVAS_BG_COLOR, 1);
 
-          // Set initial camera position to show front side properly
-          // Position camera in front of coin (positive Z) with slight elevation
-          // This ensures front side is visible by default
           camera.position.set(0, 1.5, 10);
-          camera.lookAt(0, 0, 0); // Look at coin center
+          camera.lookAt(0, 0, 0);
 
           console.log("🎨 Canvas created:", {
             children: canvasScene.children.length,
@@ -92,30 +129,17 @@ export const Coin3DViewer: React.FC<Coin3DViewerProps> = ({
           console.error("❌ Canvas error:", error);
         }}
       >
-        <Suspense
-          fallback={
-            // eslint-disable-next-line react/no-unknown-property
-            <mesh>
-              {/* eslint-disable-next-line react/no-unknown-property */}
-              <boxGeometry args={[2, 2, 0.2]} />
-              <meshStandardMaterial color="blue" />
-            </mesh>
-          }
-        >
-          {/* Studio-style HDRI Environment for optimal texture visualization */}
+        <Suspense fallback={null}>
           <Environment
             preset="studio"
-            background={false} // Don't replace background, just use for lighting
-            environmentIntensity={1.0} // Full intensity for better texture visibility
+            background={false}
+            environmentIntensity={1.0}
           />
 
-          {/* Dynamic Lighting - Adjusts based on viewing angle (front/back) */}
           <DynamicLighting />
 
-          {/* GLB Verification - Logs all mesh names to console */}
-          <GLBVerification />
+          {process.env.NODE_ENV !== "production" && <GLBVerification />}
 
-          {/* Modular Coin Model - Updates in real-time */}
           <ModularCoin
             materialId={materialId}
             dimensions={dimensions}
@@ -126,19 +150,20 @@ export const Coin3DViewer: React.FC<Coin3DViewerProps> = ({
             rotationSpeed={rotationSpeed}
           />
 
-          {/* Controls - Only rotation enabled, zoom/scale disabled */}
           {enableControls && (
             <>
               <OrbitControls
                 ref={controlsRef}
                 enableZoom={true}
-                enablePan={true}
+                enablePan={false}
                 enableRotate={true}
+                enableDamping
+                dampingFactor={0.05}
                 minDistance={0.8}
                 maxDistance={0.8}
-                autoRotate={autoRotate}
+                autoRotate={false}
                 autoRotateSpeed={orbitRotateSpeed}
-                target={[0, 0, 0]} // Look at coin center
+                target={[0, 0, 0]}
                 makeDefault
               />
               <ControlsInitializer controlsRef={controlsRef} />

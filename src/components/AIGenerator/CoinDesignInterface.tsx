@@ -444,7 +444,7 @@ const CoinDesignInterface: React.FC<CoinDesignInterfaceProps> = ({
                 {/* Prompt Textarea */}
                 <textarea
                   className="w-full bg-transparent outline-none resize-none text-base placeholder-gray-400 text-gray-800 leading-relaxed flex-1 min-h-[200px] pr-4 mb-4"
-                  placeholder={`Enter prompt for ${activeTab} image (10-1000 characters)… `}
+                  placeholder={`Describe the ${activeTab} image. What should it look like? Think about subject, style, colors, lighting, background, and any text or symbols. ore detail = better results (10–1000 characters).`}
                   value={currentTab.prompt}
                   onChange={(e) => {
                     setPrompt(e.target.value);

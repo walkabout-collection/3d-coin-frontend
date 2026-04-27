@@ -3,7 +3,14 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/src/components/common/button/Button";
-import { Paperclip, X, AlertCircle } from "lucide-react";
+import {
+  Paperclip,
+  X,
+  AlertCircle,
+  Sparkles,
+  ChevronLeft,
+  Check,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import ImageUpload from "@/src/components/common/imageUpload";
 import { useStandardBuilderStore } from "@/src/store/useStandardBuilderStore";
@@ -14,6 +21,11 @@ import {
   validateAIGenerationImageFile,
   validateAIGenerationImageDimensions,
 } from "@/src/utils/validation";
+import {
+  themeOptions,
+  styleOptions,
+  composeImagePrompt,
+} from "./promptSuggestions";
 
 const ArtWork = () => {
   const router = useRouter();
@@ -40,6 +52,12 @@ const ArtWork = () => {
     back: null,
   });
 
+  // AI Suggest 2-step wizard state
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestStep, setSuggestStep] = useState<1 | 2>(1);
+  const [suggestTheme, setSuggestTheme] = useState<string | null>(null);
+  const suggestPopoverRef = useRef<HTMLDivElement | null>(null);
+
   const { front, back } = artwork;
   const currentTab = activeTab === "front" ? front : back;
   const currentGeneratedImage = generatedImages[activeTab];
@@ -65,6 +83,58 @@ const ArtWork = () => {
       }
     };
   }, []);
+
+  // Close suggestions popover on outside click
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        suggestPopoverRef.current &&
+        !suggestPopoverRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showSuggestions]);
+
+  // Reset suggestions when switching tabs
+  useEffect(() => {
+    setShowSuggestions(false);
+    setSuggestStep(1);
+    setSuggestTheme(null);
+  }, [activeTab]);
+
+  const handleOpenSuggestions = () => {
+    setSuggestStep(1);
+    setSuggestTheme(null);
+    setShowSuggestions(true);
+  };
+
+  const handleCloseSuggestions = () => {
+    setShowSuggestions(false);
+    setSuggestStep(1);
+    setSuggestTheme(null);
+  };
+
+  const handlePickTheme = (themeValue: string) => {
+    setSuggestTheme(themeValue);
+    setSuggestStep(2);
+  };
+
+  const handlePickStyle = (styleValue: string) => {
+    if (!suggestTheme) return;
+    const composed = composeImagePrompt(activeTab, suggestTheme, styleValue);
+    updateArtworkSide(activeTab, { prompt: composed });
+    setValidationErrors([]);
+    handleCloseSuggestions();
+    toast.success("AI suggestion applied to prompt");
+  };
+
+  const handleBackToThemes = () => {
+    setSuggestStep(1);
+  };
 
   // Cleanup old blob URL when previewImage changes
   useEffect(() => {
@@ -390,7 +460,7 @@ const ArtWork = () => {
                     {/* Prompt Textarea */}
                     <textarea
                       className="w-full bg-transparent outline-none resize-none text-base placeholder-gray-400 text-gray-800 leading-relaxed flex-1 min-h-[150px] pr-4 mb-4"
-                      placeholder={`Enter prompt for ${activeTab} image (10-1000 characters)…`}
+                      placeholder={`Describe the ${activeTab} image. What should it look like?Think about subject, style, colors, lighting, background, and any text or symbols. More detail = better results (10–1000 characters).`}
                       value={currentTab.prompt}
                       onChange={(e) => {
                         updateArtworkSide(activeTab, {
@@ -408,19 +478,166 @@ const ArtWork = () => {
                     )}
 
                     {/* Action Buttons Inside Prompt Box */}
-                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                      <button
-                        className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2.5 rounded-full transition-all duration-200 cursor-pointer font-medium text-sm"
-                        onClick={() =>
-                          document
-                            .getElementById(`image-upload-prompt-${activeTab}`)
-                            ?.click()
-                        }
-                        type="button"
-                      >
-                        <Paperclip size={18} className="text-gray-600" />
-                        <span>ATTACH</span>
-                      </button>
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-100 gap-3">
+                      <div className="flex items-center gap-3">
+                        <button
+                          className="h-11 min-w-[130px] flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 rounded-full transition-all duration-200 cursor-pointer font-semibold text-sm"
+                          onClick={() =>
+                            document
+                              .getElementById(
+                                `image-upload-prompt-${activeTab}`,
+                              )
+                              ?.click()
+                          }
+                          type="button"
+                        >
+                          <Paperclip size={18} className="text-gray-600" />
+                          <span>ATTACH</span>
+                        </button>
+
+                        <div className="relative" ref={suggestPopoverRef}>
+                          <button
+                            className="group relative h-11 min-w-[130px] flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-800 text-white px-6 rounded-full shadow-md shadow-blue-900/30 hover:shadow-lg hover:shadow-yellow-400/40 transition-all duration-300 cursor-pointer font-semibold text-sm overflow-hidden"
+                            onClick={handleOpenSuggestions}
+                            type="button"
+                          >
+                            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+                            <Sparkles
+                              size={18}
+                              className="text-yellow-400 drop-shadow-[0_0_4px_rgba(250,204,21,0.6)] animate-pulse"
+                            />
+                            <span>TRY AI</span>
+                          </button>
+
+                          {showSuggestions && (
+                            <div className="absolute left-0 bottom-full mb-2 w-[420px] bg-white border-2 border-yellow-300 rounded-xl shadow-xl z-20 overflow-hidden">
+                              {/* Header with progress + close */}
+                              <div className="px-4 pt-4 pb-3 bg-gradient-to-r from-yellow-50 to-white border-b border-yellow-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[11px] font-semibold text-[#193359] uppercase tracking-wide">
+                                    Guided Builder · Step {suggestStep} of 2
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={handleCloseSuggestions}
+                                    className="text-gray-400 hover:text-gray-700 cursor-pointer"
+                                    aria-label="Close suggestions"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-1.5 mb-3">
+                                  {[1, 2].map((i) => (
+                                    <div
+                                      key={i}
+                                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                        i <= suggestStep
+                                          ? "bg-gradient-to-r from-[#FFD700] to-[#FFC300]"
+                                          : "bg-gray-200"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <h4 className="text-sm font-semibold text-gray-900">
+                                  {suggestStep === 1
+                                    ? `What's on the ${activeTab.toUpperCase()} side?`
+                                    : "How should it look?"}
+                                </h4>
+                              </div>
+
+                              {/* Body */}
+                              <div className="p-3 max-h-[360px] overflow-y-auto">
+                                {suggestStep === 1 && (
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {themeOptions.map((opt) => (
+                                      <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() =>
+                                          handlePickTheme(opt.value)
+                                        }
+                                        className="relative text-left p-3 rounded-lg border-2 border-gray-200 bg-white hover:border-[#FFD700] hover:bg-yellow-50/40 transition-all duration-200 cursor-pointer"
+                                      >
+                                        <div
+                                          className="text-xl mb-1"
+                                          aria-hidden="true"
+                                        >
+                                          {opt.icon}
+                                        </div>
+                                        <div className="font-semibold text-xs text-gray-900 leading-tight">
+                                          {opt.label}
+                                        </div>
+                                        <div className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                                          {opt.description}
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {suggestStep === 2 && (
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {styleOptions.map((opt) => (
+                                      <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() =>
+                                          handlePickStyle(opt.value)
+                                        }
+                                        className="relative text-left p-3 rounded-lg border-2 border-gray-200 bg-white hover:border-[#FFD700] hover:bg-yellow-50/40 transition-all duration-200 cursor-pointer"
+                                      >
+                                        <div
+                                          className="text-xl mb-1"
+                                          aria-hidden="true"
+                                        >
+                                          {opt.icon}
+                                        </div>
+                                        <div className="font-semibold text-xs text-gray-900 leading-tight">
+                                          {opt.label}
+                                        </div>
+                                        <div className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                                          {opt.description}
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Footer */}
+                              <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                                {suggestStep === 2 ? (
+                                  <button
+                                    type="button"
+                                    onClick={handleBackToThemes}
+                                    className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-[#193359] cursor-pointer transition-colors"
+                                  >
+                                    <ChevronLeft size={14} />
+                                    Back
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-gray-500 leading-snug">
+                                    Pick a theme to continue
+                                  </span>
+                                )}
+                                {suggestStep === 2 && suggestTheme && (
+                                  <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                                    <Check
+                                      size={12}
+                                      className="text-green-600"
+                                    />
+                                    {
+                                      themeOptions.find(
+                                        (t) => t.value === suggestTheme,
+                                      )?.label
+                                    }
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
                       <input
                         type="file"
@@ -431,7 +648,7 @@ const ArtWork = () => {
                       />
 
                       <Button
-                        className="!bg-blue-900 hover:!bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold text-sm max-w-[140px] flex items-center justify-center gap-2"
+                        className="!bg-blue-900 hover:!bg-blue-800 text-white !h-11 !min-w-[130px] px-6 rounded-full font-semibold text-sm flex items-center justify-center gap-2"
                         onClick={handleGenerateClick}
                         variant="primary"
                         disabled={isGenerating || validationErrors.length > 0}
