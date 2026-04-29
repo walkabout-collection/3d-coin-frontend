@@ -175,10 +175,12 @@ const StandardBuilderLayout: React.FC<{ children: React.ReactNode }> = ({
                     className={`
                       w-16 h-16 rounded-full flex items-center justify-center
                       transition-all duration-300 ease-in-out
-                      hover:scale-105 focus:outline-none 
+                      hover:scale-105 focus:outline-none
                       ${getStepClasses(step)}
                     `}
                     disabled={!step.active && !step.completed}
+                    aria-label={`Go to ${step.title}`}
+                    aria-current={step.active ? "step" : undefined}
                   >
                     <IconComponent
                       size={32}
