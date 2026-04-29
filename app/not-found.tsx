@@ -1,8 +1,17 @@
-"use client";
-
+import type { Metadata } from "next";
 import React from "react";
 import Link from "next/link";
 import Button from "@/src/components/common/button/Button";
+
+export const metadata: Metadata = {
+  title: "Page Not Found | Legacy Forge",
+  description: "The page you are looking for does not exist or has been moved.",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
 
 const NotFound = () => {
   return (
@@ -11,9 +20,7 @@ const NotFound = () => {
       <div className="absolute inset-0 bg-black/20" />
 
       <div className="relative z-10 text-center px-4">
-        <h1 className="text-6xl sm:text-7xl font-bold text-primary">
-          404
-        </h1>
+        <h1 className="text-6xl sm:text-7xl font-bold text-primary">404</h1>
         <h2 className="mt-4 text-2xl sm:text-3xl font-semibold text-ternary">
           Page Not Found
         </h2>

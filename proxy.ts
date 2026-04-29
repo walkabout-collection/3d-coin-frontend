@@ -7,7 +7,7 @@ interface TokenPayload {
   exp?: number;
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // 1️⃣ Read JWT token from cookies

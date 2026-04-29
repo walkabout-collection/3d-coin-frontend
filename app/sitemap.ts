@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.legacyforge.com";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.legacyforgecoins.com";
 
 const PUBLIC_PATHS: Array<{
   path: string;

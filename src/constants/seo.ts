@@ -4,18 +4,29 @@ export const DEFAULT_OG_IMAGE = "/images/HeroCoin.png";
 export const DEFAULT_OG_IMAGE_WIDTH = 1200;
 export const DEFAULT_OG_IMAGE_HEIGHT = 630;
 export const SITE_NAME = "Legacy Forge";
+export const TWITTER_HANDLE = process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? "";
+
+type OgType = "website" | "article" | "profile";
 
 type PublicRouteEntry = {
   metaTitle: string;
   description: string;
   path: string;
   ogImage?: string;
+  ogType?: OgType;
+  noindex?: boolean;
   twitter?: {
     card?: "summary" | "summary_large_image" | "app" | "player";
     title?: string;
     description?: string;
     image?: string;
   };
+};
+
+const NOINDEX_ROBOTS: Metadata["robots"] = {
+  index: false,
+  follow: false,
+  googleBot: { index: false, follow: false },
 };
 
 export function buildPublicMetadata(route: PublicRouteEntry): Metadata {
@@ -31,7 +42,7 @@ export function buildPublicMetadata(route: PublicRouteEntry): Metadata {
       canonical: route.path,
     },
     openGraph: {
-      type: "website",
+      type: route.ogType ?? "website",
       siteName: SITE_NAME,
       url: route.path,
       title: route.metaTitle,
@@ -50,6 +61,10 @@ export function buildPublicMetadata(route: PublicRouteEntry): Metadata {
       title: twitterTitle,
       description: twitterDescription,
       images: [twitterImage],
+      ...(TWITTER_HANDLE
+        ? { site: TWITTER_HANDLE, creator: TWITTER_HANDLE }
+        : {}),
     },
+    ...(route.noindex ? { robots: NOINDEX_ROBOTS } : {}),
   };
 }

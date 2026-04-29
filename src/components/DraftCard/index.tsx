@@ -315,6 +315,7 @@ const DraftCard: React.FC<DraftCardProps> = ({
                 disabled={deleteDraftMutation.isPending}
                 className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Delete"
+                aria-label="Delete draft"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

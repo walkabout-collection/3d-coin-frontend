@@ -5,6 +5,11 @@ import Navbar from "@/src/components/common/layout/navbar/Navbar";
 import Footer from "@/src/components/common/layout/Footer";
 import ReactQueryProvider from "@/src/providers/ReactQueryProvider";
 import { ToastContainer } from "react-toastify";
+import JsonLd from "@/src/components/common/seo/JsonLd";
+import {
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/src/constants/structuredData";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.legacyforge.com";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.legacyforgecoins.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -91,6 +96,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
         suppressHydrationWarning
       >
+        <JsonLd data={[organizationJsonLd, websiteJsonLd]} />
         <ReactQueryProvider>
           <div className="mb-20">
             <Navbar />
