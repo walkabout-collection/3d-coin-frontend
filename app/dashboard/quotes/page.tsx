@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: routes.QUOTES.path,
   },
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
 };
 
 export { default } from "@/src/containers/quotes";

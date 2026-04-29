@@ -1,17 +1,6 @@
-import { Metadata } from "next";
 import { routes } from "@/src/constants/routes";
+import { buildPublicMetadata } from "@/src/constants/seo";
 
-export const metadata: Metadata = {
-  title: routes.SIGNUP.metaTitle,
-  description: routes.SIGNUP.description,
-  openGraph: {
-    title: routes.SIGNUP.metaTitle,
-    description: routes.SIGNUP.description,
-    url: routes.SIGNUP.path,
-  },
-  alternates: {
-    canonical: routes.SIGNUP.path,
-  },
-};
+export const metadata = buildPublicMetadata(routes.SIGNUP);
 
 export { default } from "@/src/containers/signup";

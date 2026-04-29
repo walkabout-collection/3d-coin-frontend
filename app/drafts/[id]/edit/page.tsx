@@ -1,12 +1,17 @@
-"use client";
-import React, { use } from "react";
+import type { Metadata } from "next";
+import { internalRoutes, noindexRobots } from "@/src/constants/internalRoutes";
 import DraftEditPage from "@/src/containers/drafts/edit";
 
-export default function DraftEdit({
+export const metadata: Metadata = {
+  ...internalRoutes.DRAFT_EDIT,
+  robots: noindexRobots,
+};
+
+export default async function DraftEdit({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const { id } = await params;
   return <DraftEditPage draftId={id} />;
 }
