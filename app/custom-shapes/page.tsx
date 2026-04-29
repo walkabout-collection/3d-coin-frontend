@@ -1,17 +1,6 @@
-import { Metadata } from "next";
 import { routes } from "@/src/constants/routes";
+import { buildPublicMetadata } from "@/src/constants/seo";
 
-export const metadata: Metadata = {
-  title: routes.CUSTOM_SHAPES.metaTitle,
-  description: routes.CUSTOM_SHAPES.description,
-  openGraph: {
-    title: routes.CUSTOM_SHAPES.metaTitle,
-    description: routes.CUSTOM_SHAPES.description,
-    url: routes.CUSTOM_SHAPES.path,
-  },
-  alternates: {
-    canonical: routes.CUSTOM_SHAPES.path,
-  },
-};
+export const metadata = buildPublicMetadata(routes.CUSTOM_SHAPES);
 
 export { default } from "@/src/containers/custom-shapes";

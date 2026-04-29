@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
+import { internalRoutes, noindexRobots } from "@/src/constants/internalRoutes";
 
 export const metadata: Metadata = {
-  title: "Tracking | Legacy Forge",
-  description: "Track your custom coin orders with Legacy Forge.",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
-  },
+  ...internalRoutes.DASHBOARD_TRACKING,
+  robots: noindexRobots,
 };
 
 export default function TrackingPageDisabled() {

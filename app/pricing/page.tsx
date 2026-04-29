@@ -1,17 +1,6 @@
-import { Metadata } from "next";
 import { routes } from "@/src/constants/routes";
+import { buildPublicMetadata } from "@/src/constants/seo";
 
-export const metadata: Metadata = {
-  title: routes.PRICING.metaTitle,
-  description: routes.PRICING.description,
-  openGraph: {
-    title: routes.PRICING.metaTitle,
-    description: routes.PRICING.description,
-    url: routes.PRICING.path,
-  },
-  alternates: {
-    canonical: routes.PRICING.path,
-  },
-};
+export const metadata = buildPublicMetadata(routes.PRICING);
 
 export { default } from "@/src/containers/pricing";

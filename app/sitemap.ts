@@ -18,11 +18,6 @@ const PUBLIC_PATHS: Array<{
   { path: "/custom-shapes", changeFrequency: "monthly", priority: 0.9 },
   { path: "/standard-builder", changeFrequency: "monthly", priority: 0.9 },
   {
-    path: "/standard-builder/dimensions",
-    changeFrequency: "monthly",
-    priority: 0.6,
-  },
-  {
     path: "/standard-builder/material",
     changeFrequency: "monthly",
     priority: 0.6,

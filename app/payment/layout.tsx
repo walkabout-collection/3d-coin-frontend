@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
+import { internalRoutes, noindexRobots } from "@/src/constants/internalRoutes";
 
 export const metadata: Metadata = {
-  title: "Payment | Legacy Forge",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
-  },
+  ...internalRoutes.PAYMENT,
+  robots: noindexRobots,
 };
 
 export default function PaymentLayout({

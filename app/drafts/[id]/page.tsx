@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
+import { internalRoutes, noindexRobots } from "@/src/constants/internalRoutes";
 import DraftDetailPage from "@/src/containers/drafts/detail";
 
 export const metadata: Metadata = {
-  title: "Draft Detail | Legacy Forge",
-  description: "Review the details of your saved coin design draft.",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
-  },
+  ...internalRoutes.DRAFT_DETAIL,
+  robots: noindexRobots,
 };
 
 export default async function DraftDetail({

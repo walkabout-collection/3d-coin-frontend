@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
+import { internalRoutes, noindexRobots } from "@/src/constants/internalRoutes";
 
 export const metadata: Metadata = {
-  title: "Settings | Legacy Forge",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
-  },
+  ...internalRoutes.SETTINGS,
+  robots: noindexRobots,
 };
 
 export default function SettingsLayout({

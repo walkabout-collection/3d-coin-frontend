@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
+import { internalRoutes, noindexRobots } from "@/src/constants/internalRoutes";
 import AdminTransactionHistory from "@/src/containers/admin/transaction-history";
 
 export const metadata: Metadata = {
-  title: "Transaction History | Legacy Forge",
-  description: "Review the full transaction history across all accounts.",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
-  },
+  ...internalRoutes.ADMIN_TRANSACTION_HISTORY,
+  robots: noindexRobots,
 };
 
 export default function TransactionHistoryPage() {
