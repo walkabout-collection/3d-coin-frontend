@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Tracking | Legacy Forge",
-  description: "Track your custom coin orders with Legacy Forge.",
+  title: "Settings | Legacy Forge",
   robots: {
     index: false,
     follow: false,
@@ -10,6 +9,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function TrackingPageDisabled() {
-  return null;
+export default function SettingsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
 }

@@ -1,12 +1,21 @@
-"use client";
-import React, { use } from "react";
+import type { Metadata } from "next";
 import DraftDetailPage from "@/src/containers/drafts/detail";
 
-export default function DraftDetail({
+export const metadata: Metadata = {
+  title: "Draft Detail | Legacy Forge",
+  description: "Review the details of your saved coin design draft.",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
+
+export default async function DraftDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const { id } = await params;
   return <DraftDetailPage draftId={id} />;
 }

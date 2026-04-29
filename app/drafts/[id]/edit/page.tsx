@@ -1,12 +1,21 @@
-"use client";
-import React, { use } from "react";
+import type { Metadata } from "next";
 import DraftEditPage from "@/src/containers/drafts/edit";
 
-export default function DraftEdit({
+export const metadata: Metadata = {
+  title: "Edit Draft | Legacy Forge",
+  description: "Edit your saved coin design draft.",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
+
+export default async function DraftEdit({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const { id } = await params;
   return <DraftEditPage draftId={id} />;
 }
