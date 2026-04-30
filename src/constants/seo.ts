@@ -6,6 +6,12 @@ export const DEFAULT_OG_IMAGE_HEIGHT = 630;
 export const SITE_NAME = "Legacy Forge";
 export const TWITTER_HANDLE = process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? "";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.legacyforgecoins.com";
+
+const absolute = (path: string) =>
+  path.startsWith("http") ? path : new URL(path, SITE_URL).toString();
+
 type OgType = "website" | "article" | "profile";
 
 type PublicRouteEntry = {
@@ -39,17 +45,17 @@ export function buildPublicMetadata(route: PublicRouteEntry): Metadata {
     title: route.metaTitle,
     description: route.description,
     alternates: {
-      canonical: route.path,
+      canonical: absolute(route.path),
     },
     openGraph: {
       type: route.ogType ?? "website",
       siteName: SITE_NAME,
-      url: route.path,
+      url: absolute(route.path),
       title: route.metaTitle,
       description: route.description,
       images: [
         {
-          url: ogImage,
+          url: absolute(ogImage),
           width: DEFAULT_OG_IMAGE_WIDTH,
           height: DEFAULT_OG_IMAGE_HEIGHT,
           alt: route.metaTitle,
