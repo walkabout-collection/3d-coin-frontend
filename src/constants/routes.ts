@@ -143,13 +143,6 @@ export const routes = {
     description:
       "Build a classic round 3D coin with Legacy Forge's Standard Builder. Use real-time previews to choose dimensions, metals, finishes, edge styles, custom engravings, and artwork — then submit for an instant quote and production.",
   },
-  DIMENSIONS: {
-    title: "Dimensions",
-    path: "/standard-builder/dimensions",
-    metaTitle: "Legacy Forge | Coin Dimensions",
-    description:
-      "Choose the diameter and thickness of your custom Legacy Forge coin. Pick from a range of standard sizes or specify exact dimensions to suit challenge coins, military coins, corporate awards, and commemorative pieces.",
-  },
   MATERIAL: {
     title: "Material",
     path: "/standard-builder/material",
