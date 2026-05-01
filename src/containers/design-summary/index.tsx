@@ -14,6 +14,7 @@ import PaymentModal from "@/src/components/PaymentMethodModal.tsx";
 import { uploadBase64ToS3, getS3RetrieveUrl } from "@/src/services/apiServices";
 import LoadingSpinner from "@/src/components/common/LoadingSpinner";
 import Coin3DViewer from "@/src/components/common/Coin3DViewer";
+import { formatDiameterLabel } from "@/src/containers/standard-builder/dimensions/data";
 
 const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -350,7 +351,7 @@ const DesignSummarySection = () => {
             ? `${textRings.back.top}\n${textRings.back.bottom}`
             : textRings.back.top || textRings.back.bottom || undefined,
         coinShape: dimensions.coinDiameter
-          ? `Diameter: ${dimensions.coinDiameter}`
+          ? `Diameter: ${formatDiameterLabel(dimensions.coinDiameter)}`
           : undefined,
         materialFinish: material || undefined,
         packaging: packaging.preferences ? true : false,
@@ -466,7 +467,10 @@ const DesignSummarySection = () => {
       // image: "/images/home/dimensions.png", // Commented out - images removed for cleaner UI
       path: "/standard-builder",
       fields: [
-        { label: "Diameter", value: dimensions.coinDiameter || "N/A" },
+        {
+          label: "Diameter",
+          value: formatDiameterLabel(dimensions.coinDiameter),
+        },
         { label: "Thickness", value: dimensions.coinThickness || "N/A" },
       ],
     },

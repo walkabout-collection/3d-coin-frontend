@@ -45,12 +45,12 @@ const Dimensions = () => {
         <div className="w-full max-w-md p-6 te rounded-lg shadow-md">
           <div>
             <h3 className="text-md font-bold text-gray-800 mb-4">
-              Coin Diameter
+              Coin Diameter (in)
             </h3>
             <Dropdown
               options={coinDiameters}
               placeholder="Select Coin Diameter"
-              ariaLabel="Coin Diameter"
+              ariaLabel="Coin Diameter in inches"
               value={dimensions.coinDiameter}
               onChange={(value) =>
                 setDimensions({
@@ -63,12 +63,12 @@ const Dimensions = () => {
 
           <div className="mt-6">
             <h3 className="text-md font-bold text-gray-800 mb-4">
-              Coin Thickness
+              Coin Thickness (mm)
             </h3>
             <Dropdown
               options={coinThicknesses}
               placeholder="Select Coin Thickness"
-              ariaLabel="Coin Thickness"
+              ariaLabel="Coin Thickness in millimeters"
               value={dimensions.coinThickness}
               onChange={(value) =>
                 setDimensions({
